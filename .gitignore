@@ -1,0 +1,62 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+matcha
+matcha.exe
+
+# Test binary
+*.test
+
+# Output of the coverage tool
+*.out
+
+# Dependency directories
+vendor/
+# Node modules (all locations)
+node_modules/
+# Only ignore root-level node package files (web/package.json should be tracked)
+/package-lock.json
+/package.json
+
+# Go workspace file
+go.work
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+data/
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+
+# Frontend build output (keep directory structure)
+static/dist/*
+!static/dist/.gitkeep
+!static/dist/
+
+# Web frontend build artifacts
+web/dist/
+web/node_modules/
+
+# Logs
+*.log
