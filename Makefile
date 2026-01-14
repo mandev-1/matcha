@@ -45,15 +45,15 @@ init-db:
 	mkdir -p data
 	sqlite3 data/matcha.db < migrations/schema.sql
 
-# Frontend commands
+# Frontend commands (Next.js)
 frontend-install:
-	cd web && npm install
+	cd static/heroUi && npm install
 
 frontend-build:
-	cd web && npm run build
+	cd static/heroUi && npm run build
 
 frontend-dev:
-	cd web && npm run dev
+	cd static/heroUi && npm run dev
 
 # Build everything (backend + frontend)
 build-all: frontend-build build

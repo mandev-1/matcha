@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	"goji.io"
 	"goji.io/pat"
@@ -40,21 +42,48 @@ func SetupAPIRoutes(mux *goji.Mux) {
 
 // SetupFrontendRoutes serves the React app (catch-all)
 func SetupFrontendRoutes(mux *goji.Mux) {
-	// Serve React app build files
-	fs := http.FileServer(http.Dir("./static/dist"))
+	// Serve static assets from React build (assets are in static/dist/assets/)
+	assetsFS := http.FileServer(http.Dir("./static/dist/assets"))
 	
-	// Serve index.html for all non-API routes
+	// Wrap the file server to ensure correct MIME types
+	assetHandler := func(w http.ResponseWriter, r *http.Request) {
+		// Set correct MIME types based on file extension
+		ext := filepath.Ext(r.URL.Path)
+		switch ext {
+		case ".js":
+			w.Header().Set("Content-Type", "application/javascript")
+		case ".css":
+			w.Header().Set("Content-Type", "text/css")
+		case ".json":
+			w.Header().Set("Content-Type", "application/json")
+		case ".png":
+			w.Header().Set("Content-Type", "image/png")
+		case ".jpg", ".jpeg":
+			w.Header().Set("Content-Type", "image/jpeg")
+		case ".svg":
+			w.Header().Set("Content-Type", "image/svg+xml")
+		case ".woff", ".woff2":
+			w.Header().Set("Content-Type", "font/woff2")
+		}
+		http.StripPrefix("/assets/", assetsFS).ServeHTTP(w, r)
+	}
+	
+	mux.HandleFunc(pat.Get("/assets/*"), assetHandler)
+	
+	// Serve index.html for all non-API routes (catch-all - must be last)
 	mux.HandleFunc(pat.Get("/*"), func(w http.ResponseWriter, r *http.Request) {
 		// Don't serve React app for API routes
-		if r.URL.Path[:4] == "/api" {
+		if strings.HasPrefix(r.URL.Path, "/api") {
+			http.NotFound(w, r)
+			return
+		}
+		// Don't serve index.html for asset requests
+		if strings.HasPrefix(r.URL.Path, "/assets") {
 			http.NotFound(w, r)
 			return
 		}
 		// Serve index.html for React Router
 		http.ServeFile(w, r, "./static/dist/index.html")
 	})
-	
-	// Serve static assets from React build
-	mux.HandleFunc(pat.Get("/assets/*"), http.StripPrefix("/assets/", fs).ServeHTTP)
 }
 

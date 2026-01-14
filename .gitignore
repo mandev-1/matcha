@@ -58,5 +58,11 @@ static/dist/*
 web/dist/
 web/node_modules/
 
+# Next.js build artifacts
+static/heroUi/.next/
+static/heroUi/standalone/
+static/heroUi/.turbo/
+static/heroUi/node_modules/
+
 # Logs
 *.log

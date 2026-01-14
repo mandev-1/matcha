@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"matcha/internal/config"
 	"matcha/internal/database"
@@ -31,7 +33,7 @@ func main() {
 		log.Fatalf("Failed to create data directory: %v", err)
 	}
 
-	// Create new Goji mux
+	// Setup routes
 	mux := goji.NewMux()
 
 	// Serve static files (CSS, JS, images)
@@ -44,20 +46,18 @@ func main() {
 	// This must be last to catch all non-API routes
 	handlers.SetupFrontendRoutes(mux)
 
-	// Routes (legacy - will be removed)
-	// handlers.SetupRoutes(mux)
-
-	// Setup graceful shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
-	// Start server in a goroutine
+	// Setup server
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	server := &http.Server{
 		Addr:    addr,
 		Handler: mux,
 	}
 
+	// Setup graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Start server in a goroutine
 	go func() {
 		log.Printf("Server starting on %s", addr)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -68,4 +68,14 @@ func main() {
 	// Wait for interrupt signal
 	<-sigChan
 	log.Println("Shutting down server...")
+
+	// Graceful shutdown with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("Server forced to shutdown: %v", err)
+	} else {
+		log.Println("Server gracefully stopped")
+	}
 }

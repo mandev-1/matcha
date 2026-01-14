@@ -3,11 +3,12 @@ FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app/web
 
-# Copy frontend package files
+# Copy frontend package files and npm config
 COPY web/package.json web/package-lock.json* ./
+COPY web/.npmrc* ./
 
 # Install frontend dependencies
-RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # Copy frontend source
 COPY web/ ./
