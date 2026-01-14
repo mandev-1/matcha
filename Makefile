@@ -61,4 +61,13 @@ build-all: frontend-build build
 # Run in development mode (backend + frontend)
 dev: frontend-dev
 
+# Start MailHog for local development
+mailhog:
+	docker run -d -p 1025:1025 -p 8025:8025 --name mailhog mailhog/mailhog || docker start mailhog
+
+# Stop MailHog
+mailhog-stop:
+	docker stop mailhog || true
+	docker rm mailhog || true
+
 

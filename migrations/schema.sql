@@ -1,6 +1,7 @@
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     first_name TEXT NOT NULL,
@@ -14,6 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
     longitude REAL,
     location TEXT,
     is_email_verified INTEGER DEFAULT 0,
+    email_verification_token TEXT,
+    set_up INTEGER DEFAULT 0,
     is_online INTEGER DEFAULT 0,
     last_seen DATETIME,
     profile_picture_id INTEGER,
@@ -86,6 +89,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- Indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_location ON users(latitude, longitude);
 CREATE INDEX IF NOT EXISTS idx_likes_from_user ON likes(from_user_id);

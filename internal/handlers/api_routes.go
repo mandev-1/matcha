@@ -15,6 +15,8 @@ func SetupAPIRoutes(mux *goji.Mux) {
 	mux.HandleFunc(pat.Post("/api/register"), RegisterAPI)
 	mux.HandleFunc(pat.Post("/api/login"), LoginAPI)
 	mux.HandleFunc(pat.Post("/api/logout"), LogoutAPI)
+	mux.HandleFunc(pat.Get("/api/verify-email"), VerifyEmailAPI)
+	mux.HandleFunc(pat.Post("/api/resend-verification"), ResendVerificationAPI)
 
 	// Profile API
 	mux.HandleFunc(pat.Get("/api/profile"), ProfileAPI)

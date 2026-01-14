@@ -5,6 +5,7 @@ import "time"
 // User represents a user in the system
 type User struct {
 	ID                int64     `json:"id"`
+	Username          string    `json:"username"`
 	Email             string    `json:"email"`
 	PasswordHash      string    `json:"-"` // Never expose password hash
 	FirstName         string    `json:"first_name"`
@@ -17,12 +18,14 @@ type User struct {
 	Latitude          float64   `json:"latitude"`
 	Longitude         float64   `json:"longitude"`
 	Location          string    `json:"location"`
-	IsEmailVerified   bool      `json:"is_email_verified"`
-	IsOnline          bool      `json:"is_online"`
-	LastSeen          time.Time `json:"last_seen"`
-	ProfilePictureID  int64     `json:"profile_picture_id"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
+	IsEmailVerified       bool      `json:"is_email_verified"`
+	EmailVerificationToken string    `json:"-"`
+	SetUp                  bool      `json:"set_up"`
+	IsOnline               bool      `json:"is_online"`
+	LastSeen               time.Time `json:"last_seen"`
+	ProfilePictureID       int64     `json:"profile_picture_id"`
+	CreatedAt              time.Time `json:"created_at"`
+	UpdatedAt              time.Time `json:"updated_at"`
 }
 
 // UserPicture represents a user's uploaded picture
