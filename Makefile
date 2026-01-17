@@ -65,7 +65,17 @@ dev: frontend-dev
 mailhog:
 	docker run -d -p 1025:1025 -p 8025:8025 --name mailhog mailhog/mailhog || docker start mailhog
 
+# Start MailHog for local development
+mailhog-podman:
+	podman run -d -p 1025:1025 -p 8025:8025 --name mailhog mailhog/mailhog || podman start mailhog
+
 # Stop MailHog
 mailhog-stop:
 	docker stop mailhog || true
 	docker rm mailhog || true
+
+# Stop MailHog (Podman)
+mailhog-stop-podman:
+	podman stop mailhog || true
+	podman rm mailhog || true
+	
