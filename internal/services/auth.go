@@ -7,10 +7,38 @@ import (
 	"matcha/internal/config"
 	"matcha/internal/database"
 	"matcha/internal/models"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+// Common English words that should not be accepted as passwords
+var commonWords = []string{
+	"password", "password123", "12345678", "123456789", "qwerty", "abc123",
+	"password1", "welcome", "monkey", "1234567", "letmein", "trustno1",
+	"dragon", "baseball", "iloveyou", "master", "sunshine", "ashley",
+	"bailey", "passw0rd", "shadow", "123123", "654321", "superman",
+	"qazwsx", "michael", "football", "welcome", "jesus", "ninja",
+	"mustang", "password1", "princess", "qwerty123", "solo", "starwars",
+	"hello", "hello123", "welcome123", "admin", "admin123", "root",
+	"test", "test123", "guest", "user", "demo", "sample",
+}
+
+// IsCommonWord checks if a password is a commonly used English word
+func IsCommonWord(password string) bool {
+	// Exception for dev password
+	if password == "Test1234" {
+		return false
+	}
+	lowerPassword := strings.ToLower(password)
+	for _, word := range commonWords {
+		if lowerPassword == word || strings.Contains(lowerPassword, word) {
+			return true
+		}
+	}
+	return false
+}
 
 // HashPassword hashes a password using bcrypt
 func HashPassword(password string) (string, error) {
@@ -71,7 +99,7 @@ func CreateUser(username, email, password, firstName, lastName string) (*models.
 
 	// Insert user
 	result, err := database.DB.Exec(
-		`INSERT INTO users (username, email, password_hash, first_name, last_name, email_verification_token, set_up, is_email_verified, created_at, updated_at)
+		`INSERT INTO users (username, email, password_hash, first_name, last_name, email_verification_token, is_setup, is_email_verified, created_at, updated_at)
 		 VALUES (?, ?, ?, ?, ?, ?, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		username, email, passwordHash, firstName, lastName, token,
 	)
@@ -91,7 +119,7 @@ func CreateUser(username, email, password, firstName, lastName string) (*models.
 		FirstName:             firstName,
 		LastName:              lastName,
 		EmailVerificationToken: token,
-		SetUp:                 false,
+		IsSetup:              false,
 		IsEmailVerified:      false,
 		CreatedAt:             time.Now(),
 		UpdatedAt:             time.Now(),
@@ -127,15 +155,15 @@ func VerifyUser(token string) error {
 func AuthenticateUser(username, password string) (*models.User, error) {
 	var user models.User
 	var passwordHash string
-	var isEmailVerified, setUp int
+	var isEmailVerified, isSetup int
 
 	err := database.DB.QueryRow(
-		`SELECT id, username, email, password_hash, first_name, last_name, is_email_verified, set_up, created_at, updated_at
+		`SELECT id, username, email, password_hash, first_name, last_name, is_email_verified, is_setup, created_at, updated_at
 		 FROM users WHERE username = ?`,
 		username,
 	).Scan(
 		&user.ID, &user.Username, &user.Email, &passwordHash, &user.FirstName, &user.LastName,
-		&isEmailVerified, &setUp, &user.CreatedAt, &user.UpdatedAt,
+		&isEmailVerified, &isSetup, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("invalid username or password")
@@ -147,7 +175,7 @@ func AuthenticateUser(username, password string) (*models.User, error) {
 	}
 
 	user.IsEmailVerified = isEmailVerified == 1
-	user.SetUp = setUp == 1
+	user.IsSetup = isSetup == 1
 
 	return &user, nil
 }

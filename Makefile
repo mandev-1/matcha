@@ -69,5 +69,3 @@ mailhog:
 mailhog-stop:
 	docker stop mailhog || true
 	docker rm mailhog || true
-
-

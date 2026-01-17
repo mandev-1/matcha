@@ -8,10 +8,13 @@ import { Checkbox } from "@heroui/checkbox";
 import { Link } from "@heroui/link";
 import { Form } from "@heroui/form";
 import { Icon } from "@iconify/react";
+import { useAuth } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { login } = useAuth();
   const [isVisible, setIsVisible] = React.useState(false);
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -91,16 +94,24 @@ export default function LoginPage() {
           return;
         }
 
-        // Store token in localStorage
-        if (data.data?.token) {
-          localStorage.setItem("token", data.data.token);
+        // Store token and user in auth context
+        if (data.data?.token && data.data?.user) {
+          const userData = {
+            id: data.data.user.id,
+            username: data.data.user.username || username, // Fallback to form username if not in response
+            email: data.data.user.email,
+            set_up: data.data.user.set_up,
+            is_setup: data.data.user.is_setup || false,
+          };
+          
+          login(data.data.token, userData);
         }
 
         // Check if user needs to set up profile
-        if (data.data?.user?.set_up === false) {
+        if (data.data?.user?.is_setup === false || data.data?.user?.is_setup === 0) {
           router.push("/runway");
         } else {
-          router.push("/profile");
+          router.push("/matcha");
         }
       } else {
         setError(data.error || "Login failed");
@@ -114,7 +125,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex h-full w-full items-center justify-center">
+    <ProtectedRoute redirectIfAuth="/matcha">
+      <div className="flex h-full w-full items-center justify-center">
       <div className="rounded-large flex w-full max-w-sm flex-col gap-4 px-8 pt-6 pb-10">
         <p className="text-left text-3xl font-semibold">
           Log In
@@ -220,6 +232,7 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }
 

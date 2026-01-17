@@ -7,12 +7,35 @@ import { Input } from "@heroui/input";
 import { Checkbox } from "@heroui/checkbox";
 import { Link } from "@heroui/link";
 import { Icon } from "@iconify/react";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+
+const MailIcon = (props: React.SVGProps<SVGSVGElement>) => {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      focusable="false"
+      height="1em"
+      role="presentation"
+      viewBox="0 0 24 24"
+      width="1em"
+      {...props}
+    >
+      <path
+        d="M17 3.5H7C4 3.5 2 5 2 8.5V15.5C2 19 4 20.5 7 20.5H17C20 20.5 22 19 22 15.5V8.5C22 5 20 3.5 17 3.5ZM17.47 9.59L14.34 12.09C13.68 12.62 12.84 12.88 12 12.88C11.16 12.88 10.31 12.62 9.66 12.09L6.53 9.59C6.21 9.33 6.16 8.85 6.41 8.53C6.67 8.21 7.14 8.15 7.46 8.41L10.59 10.91C11.35 11.52 12.64 11.52 13.4 10.91L16.53 8.41C16.85 8.15 17.33 8.2 17.58 8.53C17.84 8.85 17.79 9.33 17.47 9.59Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
 
 export default function Component() {
   const router = useRouter();
   const [isVisible, setIsVisible] = React.useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = React.useState(false);
   const [formData, setFormData] = React.useState({
+    firstName: "",
+    lastName: "",
     username: "",
     email: "",
     password: "",
@@ -31,19 +54,46 @@ export default function Component() {
     });
   };
 
+  // Common English words that should not be accepted as passwords
+  const commonWords = [
+    "password", "password123", "12345678", "123456789", "qwerty", "abc123",
+    "password1", "welcome", "monkey", "1234567", "letmein", "trustno1",
+    "dragon", "baseball", "iloveyou", "master", "sunshine", "ashley",
+    "bailey", "passw0rd", "shadow", "123123", "654321", "superman",
+    "qazwsx", "michael", "football", "welcome", "jesus", "ninja",
+    "mustang", "password1", "princess", "qwerty123", "solo", "starwars",
+    "hello", "hello123", "welcome123", "admin", "admin123", "root",
+    "test", "test123", "guest", "user", "demo", "sample"
+  ];
+
+  const isCommonWord = (password: string): boolean => {
+    // Exception for dev password
+    if (password === "Test1234") {
+      return false;
+    }
+    const lowerPassword = password.toLowerCase();
+    return commonWords.some(word => lowerPassword === word || lowerPassword.includes(word));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      setError("First name and last name are required");
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
-    // Split username into first_name and last_name for display purposes
-    const nameParts = formData.username.trim().split(/\s+/);
-    const firstName = nameParts[0] || formData.username;
-    const lastName = nameParts.slice(1).join(" ") || nameParts[0] || formData.username;
+    // Check for common English words
+    if (isCommonWord(formData.password)) {
+      setError("Password cannot be a commonly used English word");
+      return;
+    }
 
     setLoading(true);
 
@@ -53,8 +103,8 @@ export default function Component() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: formData.username.trim(),
-          first_name: firstName,
-          last_name: lastName,
+          first_name: formData.firstName.trim(),
+          last_name: formData.lastName.trim(),
           email: formData.email,
           password: formData.password,
         }),
@@ -75,7 +125,8 @@ export default function Component() {
   };
 
   return (
-    <div className="flex h-full w-full items-center justify-center">
+    <ProtectedRoute redirectIfAuth="/matcha">
+      <div className="flex h-full w-full items-center justify-center">
       <div className="rounded-large flex w-full max-w-sm flex-col gap-4 px-8 pt-6 pb-10">
         <p className="text-left text-3xl font-semibold text-pink-500">
           Sign Up
@@ -94,6 +145,28 @@ export default function Component() {
         )}
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <Input
+            isRequired
+            label="First Name"
+            labelPlacement="outside"
+            name="firstName"
+            placeholder="Enter your first name"
+            type="text"
+            variant="bordered"
+            value={formData.firstName}
+            onChange={handleChange}
+          />
+          <Input
+            isRequired
+            label="Last Name"
+            labelPlacement="outside"
+            name="lastName"
+            placeholder="Enter your last name"
+            type="text"
+            variant="bordered"
+            value={formData.lastName}
+            onChange={handleChange}
+          />
           <Input
             isRequired
             label="Username"
@@ -115,9 +188,13 @@ export default function Component() {
             variant="bordered"
             value={formData.email}
             onChange={handleChange}
+            startContent={
+              <MailIcon className="text-2xl text-default-400 pointer-events-none shrink-0" />
+            }
           />
           <Input
             isRequired
+            autoComplete="new-password"
             endContent={
               <button type="button" onClick={toggleVisibility}>
                 {isVisible ? (
@@ -144,6 +221,7 @@ export default function Component() {
           />
           <Input
             isRequired
+            autoComplete="new-password"
             endContent={
               <button type="button" onClick={toggleConfirmVisibility}>
                 {isConfirmVisible ? (
@@ -189,6 +267,7 @@ export default function Component() {
         </p>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }
 

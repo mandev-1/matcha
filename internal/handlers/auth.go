@@ -42,6 +42,12 @@ func RegisterAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check for common English words
+	if services.IsCommonWord(req.Password) {
+		SendError(w, http.StatusBadRequest, "Password cannot be a commonly used English word")
+		return
+	}
+
 	// Create user
 	cfg := config.Load()
 	user, token, err := services.CreateUser(req.Username, req.Email, req.Password, req.FirstName, req.LastName)
@@ -119,8 +125,9 @@ func LoginAPI(w http.ResponseWriter, r *http.Request) {
 		"token": token,
 		"user": map[string]interface{}{
 			"id":            user.ID,
+			"username":      user.Username,
 			"email":         user.Email,
-			"set_up":        user.SetUp,
+			"is_setup":      user.IsSetup,
 			"email_verified": true,
 		},
 	})

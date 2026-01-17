@@ -20,7 +20,7 @@ type User struct {
 	Location          string    `json:"location"`
 	IsEmailVerified       bool      `json:"is_email_verified"`
 	EmailVerificationToken string    `json:"-"`
-	SetUp                  bool      `json:"set_up"`
+	IsSetup                bool      `json:"is_setup"`
 	IsOnline               bool      `json:"is_online"`
 	LastSeen               time.Time `json:"last_seen"`
 	ProfilePictureID       int64     `json:"profile_picture_id"`

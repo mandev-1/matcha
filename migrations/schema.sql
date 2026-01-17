@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
     is_email_verified INTEGER DEFAULT 0,
     email_verification_token TEXT,
     set_up INTEGER DEFAULT 0,
+    is_setup INTEGER DEFAULT 0,
     is_online INTEGER DEFAULT 0,
     last_seen DATETIME,
     profile_picture_id INTEGER,
