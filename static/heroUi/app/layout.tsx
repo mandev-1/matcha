@@ -10,6 +10,7 @@ import { Navbar } from "@/components/navbar";
 import { LoginStatus } from "@/components/LoginStatus";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { ScrollShadow } from "@heroui/scroll-shadow";
+import { ToastProvider } from "@heroui/toast";
 
 export const metadata: Metadata = {
   title: {
@@ -41,6 +42,7 @@ export default function RootLayout({
         )}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
+          <ToastProvider />
           <div className="relative flex flex-col h-full">
             <Navbar />
             <ScrollShadow className="flex-1 overflow-y-auto" size={100}>

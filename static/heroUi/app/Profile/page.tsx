@@ -19,6 +19,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
 import { Spacer } from "@heroui/spacer";
 import { Divider } from "@heroui/divider";
+import { addToast } from "@heroui/toast";
 import clsx from "clsx";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -84,14 +85,45 @@ const CustomRadio = (props: any) => {
   );
 };
 
+const LockIcon = (props: React.SVGProps<SVGSVGElement>) => {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      focusable="false"
+      height="1em"
+      role="presentation"
+      viewBox="0 0 24 24"
+      width="1em"
+      {...props}
+    >
+      <path
+        d="M12.0011 17.3498C12.9013 17.3498 13.6311 16.6201 13.6311 15.7198C13.6311 14.8196 12.9013 14.0898 12.0011 14.0898C11.1009 14.0898 10.3711 14.8196 10.3711 15.7198C10.3711 16.6201 11.1009 17.3498 12.0011 17.3498Z"
+        fill="currentColor"
+      />
+      <path
+        d="M18.28 9.53V8.28C18.28 5.58 17.63 2 12 2C6.37 2 5.72 5.58 5.72 8.28V9.53C2.92 9.88 2 11.3 2 14.79V16.65C2 20.75 3.25 22 7.35 22H16.65C20.75 22 22 20.75 22 16.65V14.79C22 11.3 21.08 9.88 18.28 9.53ZM12 18.74C10.33 18.74 8.98 17.38 8.98 15.72C8.98 14.05 10.34 12.7 12 12.7C13.66 12.7 15.02 14.06 15.02 15.72C15.02 17.39 13.67 18.74 12 18.74ZM7.35 9.44C7.27 9.44 7.2 9.44 7.12 9.44V8.28C7.12 5.35 7.95 3.4 12 3.4C16.05 3.4 16.88 5.35 16.88 8.28V9.45C16.8 9.45 16.73 9.45 16.65 9.45H7.35V9.44Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
 export default function Component() {
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
   const {isOpen: isResetModalOpen, onOpen: onResetModalOpen, onOpenChange: onResetModalOpenChange} = useDisclosure();
+  const {isOpen: isPasswordResetModalOpen, onOpen: onPasswordResetModalOpen, onOpenChange: onPasswordResetModalOpenChange} = useDisclosure();
   const { user, logout } = useAuth();
   const [selectedTab, setSelectedTab] = React.useState<string>("basics");
   const [isResetting, setIsResetting] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isResettingPassword, setIsResettingPassword] = React.useState(false);
+  const [newPassword, setNewPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = React.useState(false);
+  const [passwordError, setPasswordError] = React.useState("");
   
   // Form state
   const [firstName, setFirstName] = React.useState<string>("");
@@ -164,6 +196,14 @@ export default function Component() {
   }, []);
 
   const addTag = () => {
+    if (tags.length >= 5) {
+      addToast({
+        title: "Maximum tags reached",
+        description: "You can only add up to 5 tags.",
+        color: "warning",
+      });
+      return;
+    }
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
       setTagInput("");
@@ -213,13 +253,91 @@ export default function Component() {
         throw new Error(data.error || "Failed to update profile");
       }
 
-      alert("Profile updated successfully!");
-      window.location.reload();
+      addToast({
+        title: "Profile updated successfully",
+        description: "Your profile has been saved.",
+        color: "primary",
+      });
     } catch (error) {
       console.error("Error saving profile:", error);
-      alert("Failed to update profile. Please try again.");
+      addToast({
+        title: "Failed to update profile",
+        description: error instanceof Error ? error.message : "Please try again.",
+        color: "danger",
+      });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePasswordReset = async (onClose: () => void) => {
+    // Validate passwords
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters long");
+      return;
+    }
+
+    // Check for common words
+    const commonWords = [
+      "password", "password123", "12345678", "123456789", "qwerty", "abc123",
+      "password1", "welcome", "monkey", "1234567", "letmein", "trustno1",
+      "dragon", "baseball", "iloveyou", "master", "sunshine", "ashley",
+      "bailey", "passw0rd", "shadow", "123123", "654321", "superman",
+      "qazwsx", "michael", "football", "welcome", "jesus", "ninja",
+      "mustang", "password1", "princess", "qwerty123", "solo", "starwars",
+      "hello", "hello123", "welcome123", "admin", "admin123", "root",
+      "test", "test123", "guest", "user", "demo", "sample"
+    ];
+
+    const lowerPassword = newPassword.toLowerCase();
+    const isCommon = commonWords.some(word => lowerPassword === word || lowerPassword.includes(word));
+    
+    if (isCommon && newPassword !== "Test1234") {
+      setPasswordError("Password cannot be a commonly used English word");
+      return;
+    }
+
+    setIsResettingPassword(true);
+    setPasswordError("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/profile/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          new_password: newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to reset password");
+      }
+
+      // Clear form and close modal
+      setNewPassword("");
+      setConfirmPassword("");
+      onClose();
+      addToast({
+        title: "Password reset successfully",
+        description: "Your password has been updated.",
+        color: "secondary",
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      setPasswordError(error instanceof Error ? error.message : "Failed to reset password. Please try again.");
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -284,7 +402,7 @@ export default function Component() {
 
                 <Card isFooterBlurred className="w-full h-[300px] col-span-12 sm:col-span-7">
                   <CardHeader>
-                    <h3 className="text-xl font-semibold">Basic Information</h3>
+                    <h3 className="text-xl font-semibold text-sky-300">Basic Information</h3>
                   </CardHeader>
                   <CardBody className="flex flex-col gap-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -332,11 +450,47 @@ export default function Component() {
           </Button>
         </CardFooter>
       </Card>
+      <Card className="w-full h-[300px] col-span-12 sm:col-span-5">
+        <CardHeader>
+          <h3 className="text-xl font-semibold text-sky-300">Account Security</h3>
+        </CardHeader>
+        <CardBody className="flex flex-col gap-4">
+          <Input
+            label="Username"
+            labelPlacement="outside"
+            value={user?.username || ""}
+            variant="bordered"
+            isReadOnly
+            description="Your username cannot be changed"
+          />
+          <Input
+            label="Password"
+            labelPlacement="outside"
+            type="password"
+            value="••••••••"
+            variant="bordered"
+            isReadOnly
+            description="Click below to reset your password"
+            endContent={
+              <Icon icon="solar:lock-password-linear" className="text-2xl text-default-400 pointer-events-none shrink-0" />
+            }
+          />
+        </CardBody>
+        <CardFooter className="justify-end">
+          <Button 
+            color="primary" 
+            variant="flat"
+            onPress={onPasswordResetModalOpen}
+          >
+            Reset Password
+          </Button>
+        </CardFooter>
+      </Card>
 
                       {/* Sexual Preference */}
                       <Card className="col-span-12 sm:col-span-4 h-[300px]">
                       <CardHeader>
-                    <h3 className="text-xl font-semibold">What I want:</h3>
+                    <h3 className="text-xl font-semibold text-sky-300">What I want:</h3>
                   </CardHeader>
                   <CardBody>
                     <Tabs
@@ -365,7 +519,7 @@ export default function Component() {
 
       <Card className="col-span-12 sm:col-span-4 h-[300px]">
         <CardHeader className=" z-10 top-1 flex-col items-start!">
-                    <h3 className="text-xl font-semibold">My Gender</h3>
+                    <h3 className="text-xl font-semibold text-sky-300">My Gender</h3>
                   </CardHeader>
                   <CardBody>
                     <RadioGroup
@@ -386,7 +540,7 @@ export default function Component() {
                       {/* Siblings */}
                       <Card className="col-span-12 sm:col-span-4 h-[300px]">
                   <CardHeader>
-                    <h3 className="text-xl font-semibold">Siblings</h3>
+                    <h3 className="text-xl font-semibold text-sky-300">Siblings</h3>
                   </CardHeader>
                   <CardBody>
                     <Select
@@ -409,9 +563,9 @@ export default function Component() {
                   </CardBody>
                 </Card>
                       {/* Big Five Personality Traits */}
-                      <Card className="col-span-12 sm:col-span-4 h-[300px]">
+                      <Card className="col-span-12 sm:col-span-8 h-[300px]">
                       <CardHeader>
-                    <h3 className="text-xl font-semibold">Big Five Personality Traits</h3>
+                    <h3 className="text-xl font-semibold text-sky-300">Big Five Personality Traits</h3>
                   </CardHeader>
                   <CardBody className="flex flex-col gap-4">
                     <Select
@@ -486,33 +640,38 @@ export default function Component() {
                     </Select>
                   </CardBody>
                 </Card>
-      <Card isFooterBlurred className="w-full h-[300px] col-span-12 sm:col-span-5">
-        <CardHeader className="absolute z-10 top-1 flex-col items-start">
-          <p className="text-tiny text-white/60 uppercase font-bold">New</p>
-          <h4 className="text-black font-medium text-2xl">Acme camera</h4>
-        </CardHeader>
-        <Image
-          removeWrapper
-          alt="Card example background"
-          className="z-0 w-full h-full scale-125 -translate-y-6 object-cover"
-          src="https://heroui.com/images/card-example-6.jpeg"
-        />
-        <CardFooter className="absolute bg-white/30 bottom-0 border-t-1 border-zinc-100/50 z-10 justify-between">
-          <div>
-            <p className="text-black text-tiny">Available soon.</p>
-            <p className="text-black text-tiny">Get notified.</p>
-          </div>
-          <Button className="text-tiny" color="primary" radius="full" size="sm">
-            Notify Me
-          </Button>
-        </CardFooter>
-      </Card>
+
+
+                {/* Caliper Profile */}
+                <Card className="col-span-12 sm:col-span-4 h-[300px]">
+                <CardHeader>
+                    <h3 className="text-xl font-semibold text-sky-300">Caliper Profile</h3>
+                  </CardHeader>
+                  <CardBody>
+                    <Select
+                      label="Caliper Profile"
+                      placeholder="Select your Caliper profile"
+                      selectedKeys={caliper ? [caliper] : []}
+                      onSelectionChange={(keys) => {
+                        const value = Array.from(keys)[0] as string;
+                        setCaliper(value);
+                      }}
+                      variant="bordered"
+                    >
+                      <SelectItem key="analytical">Analytical</SelectItem>
+                      <SelectItem key="conceptual">Conceptual</SelectItem>
+                      <SelectItem key="social">Social</SelectItem>
+                      <SelectItem key="structured">Structured</SelectItem>
+                    </Select>
+                  </CardBody>
+                </Card>
+
 
                 {/* Bio */}
                 <Card isFooterBlurred className="w-full h-[300px] col-span-12 sm:col-span-12">
                 <CardHeader>
                     <div className="flex flex-col items-start">
-                      <h3 className="text-xl font-semibold">Bio</h3>
+                      <h3 className="text-xl font-semibold text-sky-300">Bio</h3>
                       <p className="text-small text-default-500">
                         Write a short biography of your situation right now, what stage of life you are entering, where are you coming from and what is important and filling for you right now
                       </p>
@@ -533,16 +692,12 @@ export default function Component() {
                     </p>
                   </CardBody>
                 </Card>
-    </div>
-
-
-
 
 
                 {/* Hobbies & Interests */}
-                <Card>
+                <Card isFooterBlurred className="w-full h-[300px] col-span-7 sm:col-span-7">
                   <CardHeader>
-                    <h3 className="text-xl font-semibold">Hobbies & Interests</h3>
+                    <h3 className="text-xl font-semibold text-sky-300">Hobbies & Interests</h3>
                   </CardHeader>
                   <CardBody className="flex flex-col gap-4">
                     <div className="flex gap-2">
@@ -558,9 +713,19 @@ export default function Component() {
                         }}
                         variant="bordered"
                         className="flex-1"
+                        isDisabled={tags.length >= 5}
                       />
-                      <Button onPress={addTag} variant="flat">Add</Button>
+                      <Button 
+                        onPress={addTag} 
+                        variant="flat"
+                        isDisabled={tags.length >= 5 || !tagInput.trim()}
+                      >
+                        Add
+                      </Button>
                     </div>
+                    {tags.length >= 5 && (
+                      <p className="text-small text-warning">Maximum of 5 tags reached</p>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       {tags.map((tag) => (
                         <Chip
@@ -577,13 +742,10 @@ export default function Component() {
                 </Card>
 
 
-
-
-
                 {/* MBTI */}
-                <Card>
+                <Card isFooterBlurred className="w-full h-[300px] col-span-5 sm:col-span-5">
                   <CardHeader>
-                    <h3 className="text-xl font-semibold">MBTI (Myers-Briggs Type Indicator)</h3>
+                    <h3 className="text-xl font-semibold text-sky-300">MBTI (Myers-Briggs Type Indicator)</h3>
                   </CardHeader>
                   <CardBody>
                     <Select
@@ -615,33 +777,12 @@ export default function Component() {
                     </Select>
                   </CardBody>
                 </Card>
+    </div>
 
-                {/* Caliper Profile */}
-                <Card>
-                  <CardHeader>
-                    <h3 className="text-xl font-semibold">Caliper Profile</h3>
-                  </CardHeader>
-                  <CardBody>
-                    <Select
-                      label="Caliper Profile"
-                      placeholder="Select your Caliper profile"
-                      selectedKeys={caliper ? [caliper] : []}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        setCaliper(value);
-                      }}
-                      variant="bordered"
-                    >
-                      <SelectItem key="analytical">Analytical</SelectItem>
-                      <SelectItem key="conceptual">Conceptual</SelectItem>
-                      <SelectItem key="social">Social</SelectItem>
-                      <SelectItem key="structured">Structured</SelectItem>
-                    </Select>
-                  </CardBody>
-                </Card>
+
 
                 {/* Save Button */}
-                <div className="flex justify-end gap-4 pb-8">
+                <div className="flex w-full justify-end gap-4 pb-72">
                   <Button type="button" variant="bordered" onPress={() => window.location.reload()}>
                     Cancel
                   </Button>
@@ -1035,6 +1176,96 @@ export default function Component() {
                   isLoading={isResetting}
                 >
                   Yes, Reset Profile
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Password Reset Modal */}
+      <Modal 
+        isOpen={isPasswordResetModalOpen} 
+        placement="top-center" 
+        onOpenChange={onPasswordResetModalOpenChange}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">Reset Password</ModalHeader>
+              <ModalBody>
+                <Input
+                  isRequired
+                  endContent={
+                    <button
+                      className="focus:outline-none"
+                      type="button"
+                      onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                    >
+                      {isPasswordVisible ? (
+                        <Icon className="text-2xl text-default-400 pointer-events-none" icon="solar:eye-closed-linear" />
+                      ) : (
+                        <Icon className="text-2xl text-default-400 pointer-events-none" icon="solar:eye-bold" />
+                      )}
+                    </button>
+                  }
+                  label="New Password"
+                  placeholder="Enter your new password"
+                  type={isPasswordVisible ? "text" : "password"}
+                  variant="bordered"
+                  value={newPassword}
+                  onValueChange={(value) => {
+                    setNewPassword(value);
+                    setPasswordError("");
+                  }}
+                  errorMessage={passwordError}
+                  isInvalid={!!passwordError}
+                  startContent={
+                    <LockIcon className="text-2xl text-default-400 pointer-events-none shrink-0" />
+                  }
+                />
+                <Input
+                  isRequired
+                  endContent={
+                    <button
+                      className="focus:outline-none"
+                      type="button"
+                      onClick={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
+                    >
+                      {isConfirmPasswordVisible ? (
+                        <Icon className="text-2xl text-default-400 pointer-events-none" icon="solar:eye-closed-linear" />
+                      ) : (
+                        <Icon className="text-2xl text-default-400 pointer-events-none" icon="solar:eye-bold" />
+                      )}
+                    </button>
+                  }
+                  label="Confirm Password"
+                  placeholder="Confirm your new password"
+                  type={isConfirmPasswordVisible ? "text" : "password"}
+                  variant="bordered"
+                  value={confirmPassword}
+                  onValueChange={(value) => {
+                    setConfirmPassword(value);
+                    setPasswordError("");
+                  }}
+                  errorMessage={newPassword && confirmPassword && newPassword !== confirmPassword ? "Passwords do not match" : ""}
+                  isInvalid={!!newPassword && !!confirmPassword && newPassword !== confirmPassword}
+                  startContent={
+                    <LockIcon className="text-2xl text-default-400 pointer-events-none shrink-0" />
+                  }
+                />
+              </ModalBody>
+              <ModalFooter>
+                <Button color="danger" variant="flat" onPress={onClose} isDisabled={isResettingPassword}>
+                  Cancel
+                </Button>
+                <Button 
+                  color="primary" 
+                  onPress={() => handlePasswordReset(onClose)}
+                  isLoading={isResettingPassword}
+                  className="bg-pink-500 text-white hover:bg-pink-600"
+                >
+                  Reset Password
                 </Button>
               </ModalFooter>
             </>

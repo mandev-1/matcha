@@ -270,28 +270,26 @@ func ProfileUpdateAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update tags if provided
-	if req.Tags != nil {
-		// Delete existing tags
-		_, err := database.DB.Exec("DELETE FROM user_tags WHERE user_id = ?", userID)
-		if err != nil {
-			log.Printf("Error deleting tags: %v", err)
-		} else {
-			// Insert new tags
+	// Always update tags (even if empty array, to clear them)
+	// Delete existing tags first
+	_, err = database.DB.Exec("DELETE FROM user_tags WHERE user_id = ?", userID)
+	if err != nil {
+		log.Printf("Error deleting tags: %v", err)
+	} else {
+		// Insert new tags if any are provided
+		if req.Tags != nil && len(req.Tags) > 0 {
 			for _, tag := range req.Tags {
+				tag = strings.TrimSpace(tag)
 				if tag != "" {
-					_, err := database.DB.Exec("INSERT OR IGNORE INTO user_tags (user_id, tag) VALUES (?, ?)", userID, tag)
+					_, err := database.DB.Exec("INSERT INTO user_tags (user_id, tag) VALUES (?, ?)", userID, tag)
 					if err != nil {
-						log.Printf("Error inserting tag: %v", err)
+						log.Printf("Error inserting tag '%s': %v", tag, err)
+					} else {
+						log.Printf("Successfully inserted tag '%s' for user %d", tag, userID)
 					}
 				}
 			}
 		}
-	}
-
-	// Also delete user tags when resetting profile
-	_, err = database.DB.Exec("DELETE FROM user_tags WHERE user_id = ?", userID)
-	if err != nil {
-		log.Printf("Error deleting tags during reset: %v", err)
 	}
 
 	SendSuccess(w, map[string]interface{}{
@@ -409,6 +407,68 @@ func ResetProfileAPI(w http.ResponseWriter, r *http.Request) {
 
 	SendSuccess(w, map[string]interface{}{
 		"message": "Profile reset successfully",
+	})
+}
+
+// ChangePasswordRequest represents password change request
+type ChangePasswordRequest struct {
+	NewPassword string `json:"new_password"`
+}
+
+// ChangePasswordAPI handles POST /api/profile/change-password
+func ChangePasswordAPI(w http.ResponseWriter, r *http.Request) {
+	// Get user ID from token
+	userID, err := getUserIDFromRequest(r)
+	if err != nil {
+		SendError(w, http.StatusUnauthorized, "Invalid or missing authentication token")
+		return
+	}
+
+	// Parse request body
+	var req ChangePasswordRequest
+	if err := ParseJSONBody(r, &req); err != nil {
+		SendError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate password
+	if req.NewPassword == "" {
+		SendError(w, http.StatusBadRequest, "New password is required")
+		return
+	}
+
+	if len(req.NewPassword) < 8 {
+		SendError(w, http.StatusBadRequest, "Password must be at least 8 characters long")
+		return
+	}
+
+	// Check for common words
+	if services.IsCommonWord(req.NewPassword) {
+		SendError(w, http.StatusBadRequest, "Password cannot be a commonly used English word")
+		return
+	}
+
+	// Hash the new password
+	passwordHash, err := services.HashPassword(req.NewPassword)
+	if err != nil {
+		log.Printf("Error hashing password: %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to hash password")
+		return
+	}
+
+	// Update password in database
+	_, err = database.DB.Exec(
+		"UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+		passwordHash, userID,
+	)
+	if err != nil {
+		log.Printf("Error updating password: %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to update password")
+		return
+	}
+
+	SendSuccess(w, map[string]interface{}{
+		"message": "Password updated successfully",
 	})
 }
 

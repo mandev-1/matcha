@@ -23,6 +23,7 @@ func SetupAPIRoutes(mux *goji.Mux) {
 	mux.HandleFunc(pat.Post("/api/profile"), ProfileUpdateAPI)
 	mux.HandleFunc(pat.Post("/api/profile/setup-complete"), SetupCompleteAPI)
 	mux.HandleFunc(pat.Post("/api/profile/reset"), ResetProfileAPI)
+	mux.HandleFunc(pat.Post("/api/profile/change-password"), ChangePasswordAPI)
 
 	// Browse/Search API
 	mux.HandleFunc(pat.Get("/api/browse"), BrowseAPI)
