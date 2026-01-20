@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -33,11 +35,37 @@ func main() {
 		log.Fatalf("Failed to create data directory: %v", err)
 	}
 
+	// Create uploads directory if it doesn't exist
+	if err := os.MkdirAll("uploads", 0755); err != nil {
+		log.Fatalf("Failed to create uploads directory: %v", err)
+	}
+
 	// Setup routes
 	mux := goji.NewMux()
 
 	// Serve static files (CSS, JS, images)
 	mux.HandleFunc(pat.Get("/static/*"), http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))).ServeHTTP)
+	
+	// Serve uploaded images with proper MIME types
+	mux.HandleFunc(pat.Get("/uploads/*"), func(w http.ResponseWriter, r *http.Request) {
+		// Set proper MIME type based on file extension
+		ext := filepath.Ext(r.URL.Path)
+		switch strings.ToLower(ext) {
+		case ".jpg", ".jpeg":
+			w.Header().Set("Content-Type", "image/jpeg")
+		case ".png":
+			w.Header().Set("Content-Type", "image/png")
+		case ".gif":
+			w.Header().Set("Content-Type", "image/gif")
+		case ".webp":
+			w.Header().Set("Content-Type", "image/webp")
+		default:
+			w.Header().Set("Content-Type", "application/octet-stream")
+		}
+		// Cache images for 1 year
+		w.Header().Set("Cache-Control", "public, max-age=31536000")
+		http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))).ServeHTTP(w, r)
+	})
 
 	// API routes (must come before catch-all)
 	handlers.SetupAPIRoutes(mux)

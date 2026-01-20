@@ -13,3 +13,4 @@ ALTER TABLE users ADD COLUMN siblings TEXT;
 ALTER TABLE users ADD COLUMN mbti TEXT;
 ALTER TABLE users ADD COLUMN caliper_profile TEXT;
 
+

@@ -13,8 +13,6 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Input, Textarea } from "@heroui/input";
 import { Form } from "@heroui/form";
-import { RadioGroup, useRadio } from "@heroui/radio";
-import { VisuallyHidden } from "@react-aria/visually-hidden";
 import { Select, SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
 import { Spacer } from "@heroui/spacer";
@@ -22,68 +20,11 @@ import { Divider } from "@heroui/divider";
 import { addToast } from "@heroui/toast";
 import clsx from "clsx";
 import { useAuth } from "@/contexts/AuthContext";
-
-const CustomRadio = (props: any) => {
-  const {
-    Component,
-    children,
-    description,
-    getBaseProps,
-    getWrapperProps,
-    getInputProps,
-    getLabelProps,
-    getLabelWrapperProps,
-    getControlProps,
-  } = useRadio(props);
-
-  const isPink = props.value === "female";
-
-  return (
-    <Component
-      {...getBaseProps({
-        className: clsx(
-          "group inline-flex items-center hover:opacity-70 active:opacity-50 justify-between flex-row-reverse tap-highlight-transparent m-0",
-          "cursor-pointer border-2 border-default rounded-lg gap-4 p-4",
-          isPink 
-            ? "data-[selected=true]:border-pink-500" 
-            : "data-[selected=true]:border-primary",
-          props.className,
-        ),
-      })}
-    >
-      <VisuallyHidden>
-        <input {...getInputProps()} />
-      </VisuallyHidden>
-      <span {...getWrapperProps({
-        className: clsx(
-          isPink 
-            ? "[&>span[data-selected=true]]:!bg-pink-500 [&>span[data-selected=true]]:!border-pink-500" 
-            : "",
-        ),
-      })}>
-        <span 
-          {...getControlProps({
-            className: clsx(
-              isPink 
-                ? "data-[selected=true]:!bg-pink-500 data-[selected=true]:!border-pink-500" 
-                : "",
-            ),
-            style: isPink ? {
-              "--heroui-primary": "#ec4899",
-              "--heroui-primary-foreground": "#ffffff",
-            } as React.CSSProperties : undefined,
-          })} 
-        />
-      </span>
-      <div {...getLabelWrapperProps()}>
-        {children && <span {...getLabelProps()}>{children}</span>}
-        {description && (
-          <span className="text-small text-foreground opacity-70">{description}</span>
-        )}
-      </div>
-    </Component>
-  );
-};
+import LocationSetup from "@/components/LocationSetup";
+import LocationMap from "@/components/LocationMap";
+import CardProfile from "./card-profile";
+import CardBasics from "./card-basics";
+import CardOther from "./card-other";
 
 const LockIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -113,8 +54,37 @@ export default function Component() {
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
   const {isOpen: isResetModalOpen, onOpen: onResetModalOpen, onOpenChange: onResetModalOpenChange} = useDisclosure();
   const {isOpen: isPasswordResetModalOpen, onOpen: onPasswordResetModalOpen, onOpenChange: onPasswordResetModalOpenChange} = useDisclosure();
+  const {isOpen: isLocationModalOpen, onOpen: onLocationModalOpen, onOpenChange: onLocationModalOpenChange} = useDisclosure();
+  const {isOpen: isImageUploadModalOpen, onOpen: onImageUploadModalOpen, onOpenChange: onImageUploadModalOpenChange} = useDisclosure();
   const { user, logout } = useAuth();
-  const [selectedTab, setSelectedTab] = React.useState<string>("basics");
+
+  // Add style for pink radio button inner dot
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      [data-value="female"] span[data-selected="true"] {
+        background-color: #ec4899 !important;
+        border-color: #ec4899 !important;
+      }
+      [data-value="female"] span[data-selected="true"]::before {
+        background-color: #ec4899 !important;
+      }
+      [data-value="female"] span[data-selected="true"]::after {
+        background-color: #ec4899 !important;
+      }
+      [data-value="female"] span[data-selected="true"] span {
+        background-color: #ec4899 !important;
+      }
+      [data-value="female"] span[data-selected="true"] > * {
+        background-color: #ec4899 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+  const [selectedTab, setSelectedTab] = React.useState<string>("card-preview");
   const [isResetting, setIsResetting] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -124,6 +94,15 @@ export default function Component() {
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = React.useState(false);
   const [passwordError, setPasswordError] = React.useState("");
+  const [latitude, setLatitude] = React.useState<number | null>(null);
+  const [longitude, setLongitude] = React.useState<number | null>(null);
+  const [location, setLocation] = React.useState<string>("");
+  const [locationUpdatedAt, setLocationUpdatedAt] = React.useState<string | null>(null);
+  const [lastSeen, setLastSeen] = React.useState<string | null>(null);
+  
+  // Image state
+  const [userImages, setUserImages] = React.useState<(string | null)[]>(Array(5).fill(null));
+  const [isUploadingImages, setIsUploadingImages] = React.useState(false);
   
   // Form state
   const [firstName, setFirstName] = React.useState<string>("");
@@ -167,6 +146,19 @@ export default function Component() {
             setSelectedPreference(profile.sexual_preference || "");
             setBio(profile.biography || "");
             setTags(profile.tags || []);
+            setLatitude(profile.latitude || null);
+            setLongitude(profile.longitude || null);
+            setLocation(profile.location || "");
+            setLocationUpdatedAt(profile.location_updated_at || null);
+            setLastSeen(profile.last_seen || null);
+            
+            // Check if location is missing and show modal
+            if (!profile.latitude || !profile.longitude) {
+              // Small delay to let the page load first
+              setTimeout(() => {
+                onLocationModalOpen();
+              }, 500);
+            }
             
             // Load Big Five personality traits
             if (profile.big_five) {
@@ -183,6 +175,23 @@ export default function Component() {
             setSiblings(profile.siblings || "");
             setMbti(profile.mbti || "");
             setCaliper(profile.caliper_profile || "");
+
+            // Load images
+            if (profile.images && Array.isArray(profile.images)) {
+              const imagesArray = Array(5).fill(null);
+              profile.images.forEach((img: { file_path: string; order_index: number }) => {
+                if (img.order_index >= 0 && img.order_index < 5) {
+                  // Convert relative path to full URL if needed
+                  const imageUrl = img.file_path.startsWith("http") 
+                    ? img.file_path 
+                    : img.file_path.startsWith("/") 
+                    ? img.file_path 
+                    : `/${img.file_path}`;
+                  imagesArray[img.order_index] = imageUrl;
+                }
+              });
+              setUserImages(imagesArray);
+            }
           }
         }
       } catch (error) {
@@ -381,6 +390,7 @@ export default function Component() {
             selectedKey={selectedTab}
             onSelectionChange={(key) => setSelectedTab(key as string)}
           >
+            <Tab key="card-preview" title="My Card" />
             <Tab key="basics" title="Basics" />
             <Tab key="settings" title="Settings" />
           </Tabs>
@@ -388,438 +398,69 @@ export default function Component() {
             Help
           </Button>
         </div>
+        {selectedTab === "card-preview" && (
+          <CardProfile
+            userImages={userImages}
+            firstName={firstName}
+            lastName={lastName}
+            user={user}
+            selectedGender={selectedGender}
+            bio={bio}
+            tags={tags}
+            selectedPreference={selectedPreference}
+            mbti={mbti}
+            lastSeen={lastSeen}
+            onImageUploadModalOpen={onImageUploadModalOpen}
+            onEditClick={() => setSelectedTab("basics")}
+          />
+        )}
         {selectedTab === "basics" && (
-          <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-4">
-            {isLoading ? (
-              <p className="text-default-500">Loading profile...</p>
-            ) : (
-              <Form onSubmit={handleSave} className="flex flex-col gap-6">
-
-
-
-                <div className="max-w-[900px] gap-2 grid grid-cols-12 grid-rows-2 px-8">
-                                    {/* Basic Information */}
-
-                <Card isFooterBlurred className="w-full h-[300px] col-span-12 sm:col-span-7">
-                  <CardHeader>
-                    <h3 className="text-xl font-semibold text-sky-300">Basic Information</h3>
-                  </CardHeader>
-                  <CardBody className="flex flex-col gap-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
-                        isRequired
-                        label="First Name"
-                        labelPlacement="outside"
-                        value={firstName}
-                        onValueChange={setFirstName}
-                        variant="bordered"
-                      />
-                      <Input
-                        isRequired
-                        label="Last Name"
-                        labelPlacement="outside"
-                        value={lastName}
-                        onValueChange={setLastName}
-                        variant="bordered"
-                      />
-                    </div>
-                    <Input
-                      isRequired
-                      label="Email"
-                      labelPlacement="outside"
-                      type="email"
-                      value={email}
-                      onValueChange={setEmail}
-                      variant="bordered"
-                    />
-                  </CardBody>
-        <CardFooter className="absolute bg-black/40 bottom-0 z-10 border-t-1 border-default-600 dark:border-default-100">
-          <div className="flex grow gap-2 items-center">
-            <Image
-              alt="Breathing app icon"
-              className="rounded-full w-10 h-11 bg-black"
-              src="https://heroui.com/images/breathing-app-icon.jpeg"
-            />
-            <div className="flex flex-col">
-              <p className="text-tiny text-white/60">Tinder Garden</p>
-              <p className="text-tiny text-white/60">Want a young wife (guaranteed)? Book in advance!</p>
-            </div>
-          </div>
-          <Button radius="full" size="sm">
-            Try now
-          </Button>
-        </CardFooter>
-      </Card>
-      <Card className="w-full h-[300px] col-span-12 sm:col-span-5">
-        <CardHeader>
-          <h3 className="text-xl font-semibold text-sky-300">Account Security</h3>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-4">
-          <Input
-            label="Username"
-            labelPlacement="outside"
-            value={user?.username || ""}
-            variant="bordered"
-            isReadOnly
-            description="Your username cannot be changed"
+          <CardBasics
+            isLoading={isLoading}
+            isSaving={isSaving}
+            firstName={firstName}
+            lastName={lastName}
+            email={email}
+            user={user}
+            selectedGender={selectedGender}
+            selectedPreference={selectedPreference}
+            bio={bio}
+            tags={tags}
+            tagInput={tagInput}
+            siblings={siblings}
+            bigFive={bigFive}
+            mbti={mbti}
+            caliper={caliper}
+            setFirstName={setFirstName}
+            setLastName={setLastName}
+            setEmail={setEmail}
+            setSelectedGender={setSelectedGender}
+            setSelectedPreference={setSelectedPreference}
+            setBio={setBio}
+            setTagInput={setTagInput}
+            setSiblings={setSiblings}
+            setBigFive={setBigFive}
+            setMbti={setMbti}
+            setCaliper={setCaliper}
+            addTag={addTag}
+            removeTag={removeTag}
+            handleSave={handleSave}
+            onPasswordResetModalOpen={onPasswordResetModalOpen}
           />
-          <Input
-            label="Password"
-            labelPlacement="outside"
-            type="password"
-            value="••••••••"
-            variant="bordered"
-            isReadOnly
-            description="Click below to reset your password"
-            endContent={
-              <Icon icon="solar:lock-password-linear" className="text-2xl text-default-400 pointer-events-none shrink-0" />
-            }
-          />
-        </CardBody>
-        <CardFooter className="justify-end">
-          <Button 
-            color="primary" 
-            variant="flat"
-            onPress={onPasswordResetModalOpen}
-          >
-            Reset Password
-          </Button>
-        </CardFooter>
-      </Card>
-
-                      {/* Sexual Preference */}
-                      <Card className="col-span-12 sm:col-span-4 h-[300px]">
-                      <CardHeader>
-                    <h3 className="text-xl font-semibold text-sky-300">What I want:</h3>
-                  </CardHeader>
-                  <CardBody>
-                    <Tabs
-                      aria-label="Preference selection"
-                      selectedKey={selectedPreference}
-                      onSelectionChange={(key) => setSelectedPreference(key as string)}
-                      className="w-full"
-                      classNames={{
-                        tabList: "w-full",
-                        tab: "flex-1 w-1/2",
-                      }}
-                    >
-                      <Tab key="male" title="Male">
-                        <div className="p-4">
-                          I will be shown people who identify as male. These people vouched for being responsible and respectful.
-                        </div>
-                      </Tab>
-                      <Tab key="female" title="Female">
-                        <div className="p-4">
-                          I will be shown females only. (Nice)
-                        </div>
-                      </Tab>
-                    </Tabs>
-                  </CardBody>
-                </Card>
-
-      <Card className="col-span-12 sm:col-span-4 h-[300px]">
-        <CardHeader className=" z-10 top-1 flex-col items-start!">
-                    <h3 className="text-xl font-semibold text-sky-300">My Gender</h3>
-                  </CardHeader>
-                  <CardBody>
-                    <RadioGroup
-                      value={selectedGender}
-                      onValueChange={setSelectedGender}
-                      orientation="horizontal"
-                      className="flex flex-row gap-3 w-full [&>div[data-value=female]>div>span>span[data-selected=true]]:!bg-pink-500 [&>div[data-value=female]>div>span>span[data-selected=true]]:!border-pink-500"
-                    >
-                      <CustomRadio className="flex-1 w-1/2" value="male" description="Lorem Ipsum dolor sit amet">
-                        I'm a guy / boy
-                      </CustomRadio>
-                      <CustomRadio className="flex-1 w-1/2" value="female" description="I identify as Female">
-                        Female gender (no penis)
-                      </CustomRadio>
-                    </RadioGroup>
-                  </CardBody>
-      </Card>
-                      {/* Siblings */}
-                      <Card className="col-span-12 sm:col-span-4 h-[300px]">
-                  <CardHeader>
-                    <h3 className="text-xl font-semibold text-sky-300">Siblings</h3>
-                  </CardHeader>
-                  <CardBody>
-                    <Select
-                      label="Siblings"
-                      placeholder="Select your sibling position"
-                      selectedKeys={siblings ? [siblings] : []}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        setSiblings(value);
-                      }}
-                      variant="bordered"
-                    >
-                      <SelectItem key="middle_child">Middle child</SelectItem>
-                      <SelectItem key="slightly_older_siblings">Slightly older siblings</SelectItem>
-                      <SelectItem key="oldest_child">I'm the oldest child</SelectItem>
-                      <SelectItem key="youngest_child">I'm the youngest child</SelectItem>
-                      <SelectItem key="only_child">Only child</SelectItem>
-                      <SelectItem key="twin">Twin</SelectItem>
-                    </Select>
-                  </CardBody>
-                </Card>
-                      {/* Big Five Personality Traits */}
-                      <Card className="col-span-12 sm:col-span-8 h-[300px]">
-                      <CardHeader>
-                    <h3 className="text-xl font-semibold text-sky-300">Big Five Personality Traits</h3>
-                  </CardHeader>
-                  <CardBody className="flex flex-col gap-4">
-                    <Select
-                      label="Openness"
-                      placeholder="Select openness level"
-                      selectedKeys={bigFive.openness ? [bigFive.openness] : []}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        setBigFive({ ...bigFive, openness: value });
-                      }}
-                      variant="bordered"
-                    >
-                      <SelectItem key="low">Low</SelectItem>
-                      <SelectItem key="medium">Medium</SelectItem>
-                      <SelectItem key="high">High</SelectItem>
-                    </Select>
-                    <Select
-                      label="Conscientiousness"
-                      placeholder="Select conscientiousness level"
-                      selectedKeys={bigFive.conscientiousness ? [bigFive.conscientiousness] : []}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        setBigFive({ ...bigFive, conscientiousness: value });
-                      }}
-                      variant="bordered"
-                    >
-                      <SelectItem key="low">Low</SelectItem>
-                      <SelectItem key="medium">Medium</SelectItem>
-                      <SelectItem key="high">High</SelectItem>
-                    </Select>
-                    <Select
-                      label="Extraversion"
-                      placeholder="Select extraversion level"
-                      selectedKeys={bigFive.extraversion ? [bigFive.extraversion] : []}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        setBigFive({ ...bigFive, extraversion: value });
-                      }}
-                      variant="bordered"
-                    >
-                      <SelectItem key="low">Low</SelectItem>
-                      <SelectItem key="medium">Medium</SelectItem>
-                      <SelectItem key="high">High</SelectItem>
-                    </Select>
-                    <Select
-                      label="Agreeableness"
-                      placeholder="Select agreeableness level"
-                      selectedKeys={bigFive.agreeableness ? [bigFive.agreeableness] : []}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        setBigFive({ ...bigFive, agreeableness: value });
-                      }}
-                      variant="bordered"
-                    >
-                      <SelectItem key="low">Low</SelectItem>
-                      <SelectItem key="medium">Medium</SelectItem>
-                      <SelectItem key="high">High</SelectItem>
-                    </Select>
-                    <Select
-                      label="Neuroticism"
-                      placeholder="Select neuroticism level"
-                      selectedKeys={bigFive.neuroticism ? [bigFive.neuroticism] : []}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        setBigFive({ ...bigFive, neuroticism: value });
-                      }}
-                      variant="bordered"
-                    >
-                      <SelectItem key="low">Low</SelectItem>
-                      <SelectItem key="medium">Medium</SelectItem>
-                      <SelectItem key="high">High</SelectItem>
-                    </Select>
-                  </CardBody>
-                </Card>
-
-
-                {/* Caliper Profile */}
-                <Card className="col-span-12 sm:col-span-4 h-[300px]">
-                <CardHeader>
-                    <h3 className="text-xl font-semibold text-sky-300">Caliper Profile</h3>
-                  </CardHeader>
-                  <CardBody>
-                    <Select
-                      label="Caliper Profile"
-                      placeholder="Select your Caliper profile"
-                      selectedKeys={caliper ? [caliper] : []}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        setCaliper(value);
-                      }}
-                      variant="bordered"
-                    >
-                      <SelectItem key="analytical">Analytical</SelectItem>
-                      <SelectItem key="conceptual">Conceptual</SelectItem>
-                      <SelectItem key="social">Social</SelectItem>
-                      <SelectItem key="structured">Structured</SelectItem>
-                    </Select>
-                  </CardBody>
-                </Card>
-
-
-                {/* Bio */}
-                <Card isFooterBlurred className="w-full h-[300px] col-span-12 sm:col-span-12">
-                <CardHeader>
-                    <div className="flex flex-col items-start">
-                      <h3 className="text-xl font-semibold text-sky-300">Bio</h3>
-                      <p className="text-small text-default-500">
-                        Write a short biography of your situation right now, what stage of life you are entering, where are you coming from and what is important and filling for you right now
-                      </p>
-                    </div>
-                  </CardHeader>
-                  <CardBody>
-                    <Textarea
-                      isClearable
-                      label="Bio"
-                      maxLength={250}
-                      value={bio}
-                      variant="bordered"
-                      onValueChange={setBio}
-                      onClear={() => setBio("")}
-                    />
-                    <p className="text-small text-default-400 mt-2">
-                      Max. 250 characters. <span className="text-default-500">{bio.length}/250</span>
-                    </p>
-                  </CardBody>
-                </Card>
-
-
-                {/* Hobbies & Interests */}
-                <Card isFooterBlurred className="w-full h-[300px] col-span-7 sm:col-span-7">
-                  <CardHeader>
-                    <h3 className="text-xl font-semibold text-sky-300">Hobbies & Interests</h3>
-                  </CardHeader>
-                  <CardBody className="flex flex-col gap-4">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Add a tag (e.g., #vegan, #geek)"
-                        value={tagInput}
-                        onValueChange={setTagInput}
-                        onKeyPress={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addTag();
-                          }
-                        }}
-                        variant="bordered"
-                        className="flex-1"
-                        isDisabled={tags.length >= 5}
-                      />
-                      <Button 
-                        onPress={addTag} 
-                        variant="flat"
-                        isDisabled={tags.length >= 5 || !tagInput.trim()}
-                      >
-                        Add
-                      </Button>
-                    </div>
-                    {tags.length >= 5 && (
-                      <p className="text-small text-warning">Maximum of 5 tags reached</p>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {tags.map((tag) => (
-                        <Chip
-                          key={tag}
-                          onClose={() => removeTag(tag)}
-                          variant="flat"
-                          color="primary"
-                        >
-                          {tag}
-                        </Chip>
-                      ))}
-                    </div>
-                  </CardBody>
-                </Card>
-
-
-                {/* MBTI */}
-                <Card isFooterBlurred className="w-full h-[300px] col-span-5 sm:col-span-5">
-                  <CardHeader>
-                    <h3 className="text-xl font-semibold text-sky-300">MBTI (Myers-Briggs Type Indicator)</h3>
-                  </CardHeader>
-                  <CardBody>
-                    <Select
-                      label="MBTI Type"
-                      placeholder="Select your MBTI type"
-                      selectedKeys={mbti ? [mbti] : []}
-                      onSelectionChange={(keys) => {
-                        const value = Array.from(keys)[0] as string;
-                        setMbti(value);
-                      }}
-                      variant="bordered"
-                    >
-                      <SelectItem key="INTJ">INTJ - Architect</SelectItem>
-                      <SelectItem key="INTP">INTP - Thinker</SelectItem>
-                      <SelectItem key="ENTJ">ENTJ - Commander</SelectItem>
-                      <SelectItem key="ENTP">ENTP - Debater</SelectItem>
-                      <SelectItem key="INFJ">INFJ - Advocate</SelectItem>
-                      <SelectItem key="INFP">INFP - Mediator</SelectItem>
-                      <SelectItem key="ENFJ">ENFJ - Protagonist</SelectItem>
-                      <SelectItem key="ENFP">ENFP - Campaigner</SelectItem>
-                      <SelectItem key="ISTJ">ISTJ - Logistician</SelectItem>
-                      <SelectItem key="ISFJ">ISFJ - Protector</SelectItem>
-                      <SelectItem key="ESTJ">ESTJ - Executive</SelectItem>
-                      <SelectItem key="ESFJ">ESFJ - Consul</SelectItem>
-                      <SelectItem key="ISTP">ISTP - Virtuoso</SelectItem>
-                      <SelectItem key="ISFP">ISFP - Adventurer</SelectItem>
-                      <SelectItem key="ESTP">ESTP - Entrepreneur</SelectItem>
-                      <SelectItem key="ESFP">ESFP - Entertainer</SelectItem>
-                    </Select>
-                  </CardBody>
-                </Card>
-    </div>
-
-
-
-                {/* Save Button */}
-                <div className="flex w-full justify-end gap-4 pb-72">
-                  <Button type="button" variant="bordered" onPress={() => window.location.reload()}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" color="primary" isLoading={isSaving} className="bg-pink-500 text-white hover:bg-pink-600">
-                    Save Changes
-                  </Button>
-                </div>
-              </Form>
-            )}
-          </div>
         )}
         
         {selectedTab === "settings" && (
-          <div className="flex justify-center items-center">
-            <Card isFooterBlurred className="border-none" radius="lg">
-              <Image
-                alt="Woman listing to music"
-                className="object-cover"
-                height={200}
-                src="https://heroui.com/images/hero-card.jpeg"
-                width={200}
-              />
-              <CardFooter className="justify-between before:bg-white/10 border-white/20 border-1 overflow-hidden py-1 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
-                <p className="text-tiny text-white/80">Wipe profile (dev)?</p>
-                <Button
-                  className="text-tiny text-white bg-black/20"
-                  color="default"
-                  radius="lg"
-                  size="sm"
-                  variant="flat"
-                  onPress={onResetModalOpen}
-                >
-                  Reset
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
+          <CardOther
+            latitude={latitude}
+            longitude={longitude}
+            location={location}
+            locationUpdatedAt={locationUpdatedAt}
+            setLatitude={setLatitude}
+            setLongitude={setLongitude}
+            setLocation={setLocation}
+            onLocationModalOpen={onLocationModalOpen}
+            onResetModalOpen={onResetModalOpen}
+          />
         )}
 
 
@@ -1266,6 +907,231 @@ export default function Component() {
                   className="bg-pink-500 text-white hover:bg-pink-600"
                 >
                   Reset Password
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/* Location Setup Modal */}
+      <LocationSetup
+        isOpen={isLocationModalOpen}
+        onOpenChange={onLocationModalOpenChange}
+        onLocationSet={(loc) => {
+          setLatitude(loc.latitude);
+          setLongitude(loc.longitude);
+          setLocation(loc.location);
+        }}
+        existingLocation={{
+          latitude,
+          longitude,
+          location,
+        }}
+      />
+
+      {/* Image Upload Modal */}
+      <Modal 
+        isOpen={isImageUploadModalOpen} 
+        onOpenChange={onImageUploadModalOpenChange}
+        size="2xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Icon icon="solar:gallery-add-bold" className="text-2xl text-primary" />
+                  <span>Upload & Manage Images</span>
+                </div>
+                <p className="text-sm text-default-500 font-normal mt-1">
+                  Click on any slot to upload an image. Slot 1 is your profile picture.
+                </p>
+              </ModalHeader>
+              <ModalBody>
+                <div className="flex flex-col gap-4">
+                  {/* Image Carousel/Grid */}
+                  <div className="grid grid-cols-5 gap-3">
+                    {userImages.map((imageUrl, index) => (
+                      <div
+                        key={index}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 ${
+                          index === 0 
+                            ? "border-primary border-dashed" 
+                            : "border-default-200"
+                        } cursor-pointer hover:border-primary transition-colors`}
+                        onClick={() => {
+                          const input = document.createElement("input");
+                          input.type = "file";
+                          input.accept = "image/*";
+                          input.onchange = async (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (!file) return;
+
+                            // Show preview
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              const newImages = [...userImages];
+                              newImages[index] = event.target?.result as string;
+                              setUserImages(newImages);
+                            };
+                            reader.readAsDataURL(file);
+
+                            // Upload image
+                            setIsUploadingImages(true);
+                            try {
+                              const formData = new FormData();
+                              formData.append("image", file);
+                              formData.append("slot", index.toString());
+                              formData.append("is_profile", index === 0 ? "1" : "0");
+
+                              const token = localStorage.getItem("token");
+                              const response = await fetch("/api/profile/upload-image", {
+                                method: "POST",
+                                headers: {
+                                  Authorization: `Bearer ${token}`,
+                                },
+                                body: formData,
+                              });
+
+                              // Check if response is JSON
+                              const contentType = response.headers.get("content-type");
+                              if (!contentType || !contentType.includes("application/json")) {
+                                const text = await response.text();
+                                throw new Error(`Server error: ${text.substring(0, 100)}`);
+                              }
+
+                              const data = await response.json();
+                              if (response.ok && data.success) {
+                                const updatedImages = [...userImages];
+                                updatedImages[index] = data.data.file_path;
+                                setUserImages(updatedImages);
+                                addToast({
+                                  title: "Image uploaded",
+                                  description: index === 0 ? "Profile image updated" : `Image ${index + 1} uploaded`,
+                                  color: "success",
+                                });
+                              } else {
+                                throw new Error(data.error || "Failed to upload image");
+                              }
+                            } catch (error) {
+                              console.error("Error uploading image:", error);
+                              addToast({
+                                title: "Upload failed",
+                                description: error instanceof Error ? error.message : "Failed to upload image",
+                                color: "danger",
+                              });
+                              // Revert preview
+                              const revertedImages = [...userImages];
+                              revertedImages[index] = imageUrl;
+                              setUserImages(revertedImages);
+                            } finally {
+                              setIsUploadingImages(false);
+                            }
+                          };
+                          input.click();
+                        }}
+                      >
+                        {imageUrl ? (
+                          <>
+                            <Image
+                              src={imageUrl}
+                              alt={`Slot ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Icon icon="solar:camera-add-linear" className="text-3xl text-white" />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-default-100">
+                            <Icon icon="solar:gallery-add-linear" className="text-4xl text-default-400 mb-2" />
+                            <span className="text-xs text-default-500">Click to upload</span>
+                          </div>
+                        )}
+                        {index === 0 && (
+                          <div className="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-1 rounded">
+                            Profile
+                          </div>
+                        )}
+                        <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                          {index + 1}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Swap Controls */}
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-semibold">Reorder Images</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[0, 1, 2, 3].map((index) => (
+                        <Button
+                          key={index}
+                          size="sm"
+                          variant="flat"
+                          color="default"
+                          onPress={async () => {
+                            // Swap images at index and index+1
+                            const newImages = [...userImages];
+                            const temp = newImages[index];
+                            newImages[index] = newImages[index + 1];
+                            newImages[index + 1] = temp;
+                            setUserImages(newImages);
+
+                            // Update backend
+                            try {
+                              const token = localStorage.getItem("token");
+                              const response = await fetch("/api/profile/reorder-images", {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  Authorization: `Bearer ${token}`,
+                                },
+                                body: JSON.stringify({
+                                  slot1: index,
+                                  slot2: index + 1,
+                                }),
+                              });
+
+                              const data = await response.json();
+                              if (response.ok && data.success) {
+                                addToast({
+                                  title: "Images reordered",
+                                  description: `Swapped slots ${index + 1} and ${index + 2}`,
+                                  color: "success",
+                                });
+                              } else {
+                                throw new Error(data.error || "Failed to reorder images");
+                              }
+                            } catch (error) {
+                              console.error("Error reordering images:", error);
+                              addToast({
+                                title: "Reorder failed",
+                                description: error instanceof Error ? error.message : "Failed to reorder images",
+                                color: "danger",
+                              });
+                              // Revert swap
+                              const revertedImages = [...userImages];
+                              const temp = revertedImages[index];
+                              revertedImages[index] = revertedImages[index + 1];
+                              revertedImages[index + 1] = temp;
+                              setUserImages(revertedImages);
+                            }
+                          }}
+                          startContent={<Icon icon="solar:swap-linear" className="text-sm" />}
+                        >
+                          Swap {index + 1} ↔ {index + 2}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button color="default" variant="light" onPress={onClose}>
+                  Close
                 </Button>
               </ModalFooter>
             </>

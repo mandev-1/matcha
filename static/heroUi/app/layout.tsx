@@ -11,6 +11,7 @@ import { LoginStatus } from "@/components/LoginStatus";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import { ToastProvider } from "@heroui/toast";
+import { LocationMiddleware } from "@/components/LocationMiddleware";
 
 export const metadata: Metadata = {
   title: {
@@ -43,18 +44,20 @@ export default function RootLayout({
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <ToastProvider />
-          <div className="relative flex flex-col h-full">
-            <Navbar />
-            <ScrollShadow className="flex-1 overflow-y-auto" size={100}>
-              <main className="container mx-auto max-w-7xl px-6 h-full">
-                {children}
-              </main>
-            </ScrollShadow>
-            <div className="fixed bottom-4 left-[76px] z-50">
-              <ThemeSwitch />
+          <LocationMiddleware>
+            <div className="relative flex flex-col h-full">
+              <Navbar />
+              <ScrollShadow className="flex-1 overflow-y-auto" size={100}>
+                <main className="container mx-auto max-w-7xl px-1 md:px-6 h-full">
+                  {children}
+                </main>
+              </ScrollShadow>
+              <div className="fixed bottom-4 left-[76px] z-50">
+                <ThemeSwitch />
+              </div>
+              <LoginStatus />
             </div>
-            <LoginStatus />
-          </div>
+          </LocationMiddleware>
         </Providers>
       </body>
     </html>

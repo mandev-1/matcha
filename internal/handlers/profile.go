@@ -1,10 +1,18 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"matcha/internal/database"
 	"matcha/internal/services"
@@ -31,6 +39,9 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 		Biography         *string
 		BirthDate         *string
 		Location          *string
+		Latitude          *float64
+		Longitude         *float64
+		LocationUpdatedAt *string
 		FameRating        float64
 		IsSetup           bool
 		Openness          *string
@@ -41,23 +52,24 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 		Siblings          *string
 		MBTI              *string
 		CaliperProfile    *string
+		LastSeen          *string
 	}
 
 	err = database.DB.QueryRow(`
 		SELECT 
 			id, username, email, first_name, last_name,
 			gender, sexual_preference, biography, birth_date,
-			location, fame_rating, is_setup,
+			location, latitude, longitude, location_updated_at, fame_rating, is_setup,
 			openness, conscientiousness, extraversion, agreeableness, neuroticism,
-			siblings, mbti, caliper_profile
+			siblings, mbti, caliper_profile, last_seen
 		FROM users 
 		WHERE id = ?
 	`, userID).Scan(
 		&user.ID, &user.Username, &user.Email, &user.FirstName, &user.LastName,
 		&user.Gender, &user.SexualPreference, &user.Biography, &user.BirthDate,
-		&user.Location, &user.FameRating, &user.IsSetup,
+		&user.Location, &user.Latitude, &user.Longitude, &user.LocationUpdatedAt, &user.FameRating, &user.IsSetup,
 		&user.Openness, &user.Conscientiousness, &user.Extraversion, &user.Agreeableness, &user.Neuroticism,
-		&user.Siblings, &user.MBTI, &user.CaliperProfile,
+		&user.Siblings, &user.MBTI, &user.CaliperProfile, &user.LastSeen,
 	)
 
 	if err != nil {
@@ -92,6 +104,18 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	if user.Location != nil {
 		response["location"] = *user.Location
+	}
+	if user.Latitude != nil {
+		response["latitude"] = *user.Latitude
+	}
+	if user.Longitude != nil {
+		response["longitude"] = *user.Longitude
+	}
+	if user.LocationUpdatedAt != nil {
+		response["location_updated_at"] = *user.LocationUpdatedAt
+	}
+	if user.LastSeen != nil {
+		response["last_seen"] = *user.LastSeen
 	}
 
 	// Add Big Five personality traits
@@ -140,6 +164,35 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 		response["tags"] = []string{}
 	}
 
+	// Load images from user_pictures table
+	imageRows, err := database.DB.Query(`
+		SELECT id, file_path, is_profile, order_index 
+		FROM user_pictures 
+		WHERE user_id = ? 
+		ORDER BY order_index ASC
+	`, userID)
+	if err == nil {
+		defer imageRows.Close()
+		images := []map[string]interface{}{}
+		for imageRows.Next() {
+			var id int64
+			var filePath string
+			var isProfile int
+			var orderIndex int
+			if err := imageRows.Scan(&id, &filePath, &isProfile, &orderIndex); err == nil {
+				images = append(images, map[string]interface{}{
+					"id":          id,
+					"file_path":   filePath,
+					"is_profile":  isProfile == 1,
+					"order_index": orderIndex,
+				})
+			}
+		}
+		response["images"] = images
+	} else {
+		response["images"] = []map[string]interface{}{}
+	}
+
 	SendSuccess(w, response)
 }
 
@@ -156,6 +209,9 @@ type ProfileUpdateRequest struct {
 	MBTI              string            `json:"mbti"`
 	CaliperProfile    string            `json:"caliper_profile"`
 	Tags              []string          `json:"tags"`
+	Latitude          *float64          `json:"latitude"`
+	Longitude         *float64          `json:"longitude"`
+	Location          string            `json:"location"`
 }
 
 // ProfileUpdateAPI handles POST /api/profile
@@ -251,6 +307,27 @@ func ProfileUpdateAPI(w http.ResponseWriter, r *http.Request) {
 	if req.CaliperProfile != "" {
 		updates = append(updates, "caliper_profile = ?")
 		args = append(args, req.CaliperProfile)
+	}
+
+	// Location fields
+	locationUpdated := false
+	if req.Latitude != nil {
+		updates = append(updates, "latitude = ?")
+		args = append(args, *req.Latitude)
+		locationUpdated = true
+	}
+	if req.Longitude != nil {
+		updates = append(updates, "longitude = ?")
+		args = append(args, *req.Longitude)
+		locationUpdated = true
+	}
+	if req.Location != "" {
+		updates = append(updates, "location = ?")
+		args = append(args, req.Location)
+	}
+	// Update location_updated_at when location coordinates are updated
+	if locationUpdated {
+		updates = append(updates, "location_updated_at = CURRENT_TIMESTAMP")
 	}
 
 	// Always update updated_at
@@ -469,6 +546,285 @@ func ChangePasswordAPI(w http.ResponseWriter, r *http.Request) {
 
 	SendSuccess(w, map[string]interface{}{
 		"message": "Password updated successfully",
+	})
+}
+
+// UploadImageAPI handles POST /api/profile/upload-image
+func UploadImageAPI(w http.ResponseWriter, r *http.Request) {
+	// Ensure we always return JSON, even on panic
+	defer func() {
+		if rec := recover(); rec != nil {
+			log.Printf("Panic in UploadImageAPI: %v", rec)
+			SendError(w, http.StatusInternalServerError, "Internal server error")
+		}
+	}()
+
+	// Get user ID from token
+	userID, err := getUserIDFromRequest(r)
+	if err != nil {
+		SendError(w, http.StatusUnauthorized, "Invalid or missing authentication token")
+		return
+	}
+
+	// Parse multipart form (max 10MB)
+	err = r.ParseMultipartForm(10 << 20) // 10MB
+	if err != nil {
+		SendError(w, http.StatusBadRequest, "Failed to parse form data")
+		return
+	}
+
+	// Get file from form
+	file, handler, err := r.FormFile("image")
+	if err != nil {
+		SendError(w, http.StatusBadRequest, "No image file provided")
+		return
+	}
+	defer file.Close()
+
+	// Get slot and is_profile from form
+	slotStr := r.FormValue("slot")
+	slot, err := strconv.Atoi(slotStr)
+	if err != nil || slot < 0 || slot >= 5 {
+		SendError(w, http.StatusBadRequest, "Invalid slot number (must be 0-4)")
+		return
+	}
+
+	isProfileStr := r.FormValue("is_profile")
+	isProfile := isProfileStr == "1"
+
+	// Validate file type
+	ext := strings.ToLower(filepath.Ext(handler.Filename))
+	allowedExts := []string{".jpg", ".jpeg", ".png", ".gif", ".webp"}
+	validExt := false
+	for _, allowedExt := range allowedExts {
+		if ext == allowedExt {
+			validExt = true
+			break
+		}
+	}
+	if !validExt {
+		SendError(w, http.StatusBadRequest, "Invalid file type. Only JPG, PNG, GIF, and WebP are allowed")
+		return
+	}
+
+	// Validate file size (max 10MB)
+	if handler.Size > 10<<20 {
+		SendError(w, http.StatusBadRequest, "File size exceeds 10MB limit")
+		return
+	}
+
+	// Create organized directory structure: uploads/user_id/
+	userUploadDir := filepath.Join("uploads", fmt.Sprintf("%d", userID))
+	err = os.MkdirAll(userUploadDir, 0755)
+	if err != nil {
+		log.Printf("Error creating user upload directory: %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to create upload directory")
+		return
+	}
+
+	// Generate unique filename using random bytes + timestamp + slot
+	// Format: {random_hex}_{timestamp}_{slot}{ext}
+	randomBytes := make([]byte, 8)
+	if _, err := rand.Read(randomBytes); err != nil {
+		log.Printf("Error generating random bytes: %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to generate filename")
+		return
+	}
+	randomHex := hex.EncodeToString(randomBytes)
+	timestamp := time.Now().Unix()
+	filename := fmt.Sprintf("%s_%d_%d%s", randomHex, timestamp, slot, ext)
+	filePath := filepath.Join(userUploadDir, filename)
+
+	// Save file
+	dst, err := os.Create(filePath)
+	if err != nil {
+		log.Printf("Error creating file: %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to save file")
+		return
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, file)
+	if err != nil {
+		log.Printf("Error copying file: %v", err)
+		os.Remove(filePath) // Clean up on error
+		SendError(w, http.StatusInternalServerError, "Failed to save file")
+		return
+	}
+
+	// Get relative path for database: /uploads/user_id/filename
+	relativePath := fmt.Sprintf("/uploads/%d/%s", userID, filename)
+
+	// Check if image already exists at this slot
+	var existingID int64
+	var existingFilePath string
+	err = database.DB.QueryRow(`
+		SELECT id, file_path FROM user_pictures 
+		WHERE user_id = ? AND order_index = ?
+	`, userID, slot).Scan(&existingID, &existingFilePath)
+
+	if err == nil {
+		// Update existing image
+		_, err = database.DB.Exec(`
+			UPDATE user_pictures 
+			SET file_path = ?, is_profile = ?
+			WHERE id = ?
+		`, relativePath, isProfile, existingID)
+		if err != nil {
+			log.Printf("Error updating image: %v", err)
+			SendError(w, http.StatusInternalServerError, "Failed to update image")
+			return
+		}
+
+		// Delete old file if it exists
+		if existingFilePath != "" && !strings.HasPrefix(existingFilePath, "http") {
+			// Remove leading /uploads/ to get relative path
+			oldPath := strings.TrimPrefix(existingFilePath, "/uploads/")
+			if oldPath != "" {
+				fullOldPath := filepath.Join("uploads", oldPath)
+				if err := os.Remove(fullOldPath); err != nil && !os.IsNotExist(err) {
+					log.Printf("Warning: Failed to delete old file %s: %v", fullOldPath, err)
+				}
+			}
+		}
+	} else {
+		// Insert new image
+		_, err = database.DB.Exec(`
+			INSERT INTO user_pictures (user_id, file_path, is_profile, order_index, created_at)
+			VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+		`, userID, relativePath, isProfile, slot)
+		if err != nil {
+			log.Printf("Error inserting image: %v", err)
+			SendError(w, http.StatusInternalServerError, "Failed to save image record")
+			return
+		}
+	}
+
+	// If this is the profile image, update user's profile_picture_id
+	if isProfile {
+		var pictureID int64
+		err = database.DB.QueryRow(`
+			SELECT id FROM user_pictures 
+			WHERE user_id = ? AND order_index = 0
+		`, userID).Scan(&pictureID)
+		if err == nil {
+			_, err = database.DB.Exec(`
+				UPDATE users SET profile_picture_id = ? WHERE id = ?
+			`, pictureID, userID)
+			if err != nil {
+				log.Printf("Error updating profile_picture_id: %v", err)
+			}
+		}
+	}
+
+	SendSuccess(w, map[string]interface{}{
+		"message":   "Image uploaded successfully",
+		"file_path": relativePath,
+	})
+}
+
+// ReorderImagesRequest represents image reorder request
+type ReorderImagesRequest struct {
+	Slot1 int `json:"slot1"`
+	Slot2 int `json:"slot2"`
+}
+
+// ReorderImagesAPI handles POST /api/profile/reorder-images
+func ReorderImagesAPI(w http.ResponseWriter, r *http.Request) {
+	// Get user ID from token
+	userID, err := getUserIDFromRequest(r)
+	if err != nil {
+		SendError(w, http.StatusUnauthorized, "Invalid or missing authentication token")
+		return
+	}
+
+	// Parse request body
+	var req ReorderImagesRequest
+	if err := ParseJSONBody(r, &req); err != nil {
+		SendError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate slots
+	if req.Slot1 < 0 || req.Slot1 >= 5 || req.Slot2 < 0 || req.Slot2 >= 5 {
+		SendError(w, http.StatusBadRequest, "Invalid slot numbers (must be 0-4)")
+		return
+	}
+
+	if req.Slot1 == req.Slot2 {
+		SendError(w, http.StatusBadRequest, "Slots must be different")
+		return
+	}
+
+	// Get images at both slots
+	var id1, id2 int64
+	var filePath1, filePath2 string
+	var isProfile1, isProfile2 int
+
+	_ = database.DB.QueryRow(`
+		SELECT id, file_path, is_profile FROM user_pictures 
+		WHERE user_id = ? AND order_index = ?
+	`, userID, req.Slot1).Scan(&id1, &filePath1, &isProfile1)
+
+	_ = database.DB.QueryRow(`
+		SELECT id, file_path, is_profile FROM user_pictures 
+		WHERE user_id = ? AND order_index = ?
+	`, userID, req.Slot2).Scan(&id2, &filePath2, &isProfile2)
+
+	// Swap the order_index values
+	// Use a temporary value to avoid conflicts
+	_, err = database.DB.Exec(`
+		UPDATE user_pictures 
+		SET order_index = ? 
+		WHERE user_id = ? AND order_index = ?
+	`, -1, userID, req.Slot1)
+	if err != nil {
+		log.Printf("Error updating slot1: %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to reorder images")
+		return
+	}
+
+	_, err = database.DB.Exec(`
+		UPDATE user_pictures 
+		SET order_index = ? 
+		WHERE user_id = ? AND order_index = ?
+	`, req.Slot1, userID, req.Slot2)
+	if err != nil {
+		log.Printf("Error updating slot2: %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to reorder images")
+		return
+	}
+
+	_, err = database.DB.Exec(`
+		UPDATE user_pictures 
+		SET order_index = ? 
+		WHERE user_id = ? AND order_index = ?
+	`, req.Slot2, userID, -1)
+	if err != nil {
+		log.Printf("Error finalizing swap: %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to reorder images")
+		return
+	}
+
+	// If slot 0 (profile image) changed, update profile_picture_id
+	if req.Slot1 == 0 || req.Slot2 == 0 {
+		var pictureID int64
+		err = database.DB.QueryRow(`
+			SELECT id FROM user_pictures 
+			WHERE user_id = ? AND order_index = 0
+		`, userID).Scan(&pictureID)
+		if err == nil {
+			_, err = database.DB.Exec(`
+				UPDATE users SET profile_picture_id = ? WHERE id = ?
+			`, pictureID, userID)
+			if err != nil {
+				log.Printf("Error updating profile_picture_id: %v", err)
+			}
+		}
+	}
+
+	SendSuccess(w, map[string]interface{}{
+		"message": "Images reordered successfully",
 	})
 }
 
