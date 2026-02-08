@@ -5,7 +5,14 @@ import { useRadio } from "@heroui/radio";
 import { VisuallyHidden } from "@react-aria/visually-hidden";
 import clsx from "clsx";
 
-const CustomRadio = (props: any) => {
+interface CustomRadioProps {
+  value: string;
+  description?: string;
+  className?: string;
+  children?: React.ReactNode;
+}
+
+const CustomRadio = (props: CustomRadioProps) => {
   const {
     Component,
     children,

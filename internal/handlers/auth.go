@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"matcha/internal/config"
+	"matcha/internal/database"
 	"matcha/internal/services"
 )
 
@@ -121,6 +122,13 @@ func LoginAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set user as online and update last_seen
+	_, err = database.DB.Exec("UPDATE users SET is_online = 1, last_seen = CURRENT_TIMESTAMP WHERE id = ?", user.ID)
+	if err != nil {
+		log.Printf("Error setting user online: %v", err)
+		// Don't fail login if online status update fails
+	}
+
 	SendSuccess(w, map[string]interface{}{
 		"token": token,
 		"user": map[string]interface{}{
@@ -184,6 +192,17 @@ func VerifyEmailAPI(w http.ResponseWriter, r *http.Request) {
 
 // LogoutAPI handles logout API endpoint
 func LogoutAPI(w http.ResponseWriter, r *http.Request) {
+	// Get user ID from token to update online status
+	userID, err := getUserIDFromRequest(r)
+	if err == nil && userID > 0 {
+		// Set user as offline and update last_seen
+		_, err = database.DB.Exec("UPDATE users SET is_online = 0, last_seen = CURRENT_TIMESTAMP WHERE id = ?", userID)
+		if err != nil {
+			log.Printf("Error setting user offline: %v", err)
+			// Don't fail logout if online status update fails
+		}
+	}
+
 	// JWT tokens are stateless, so logout is handled client-side by removing the token
 	SendSuccess(w, map[string]interface{}{
 		"message": "Logged out successfully",

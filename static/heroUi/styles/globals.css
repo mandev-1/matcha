@@ -10,3 +10,105 @@
     --font-sans: "font", sans-serif;
     --font-mono: "monospace", monospace;
 }
+
+/* Animated rainbow glow for level 100+ profile cards – tight, no black */
+@keyframes rainbow-glow-shift {
+    0%, 100% {
+        box-shadow:
+            0 0 8px rgba(255, 0, 0, 0.45),
+            0 0 16px rgba(255, 165, 0, 0.35),
+            0 0 24px rgba(255, 255, 0, 0.25),
+            0 0 32px rgba(0, 255, 0, 0.3),
+            0 0 40px rgba(0, 0, 255, 0.25),
+            0 0 48px rgba(75, 0, 130, 0.3),
+            0 0 56px rgba(238, 130, 238, 0.35);
+    }
+    25% {
+        box-shadow:
+            0 0 8px rgba(0, 255, 0, 0.35),
+            0 0 16px rgba(0, 0, 255, 0.45),
+            0 0 24px rgba(75, 0, 130, 0.35),
+            0 0 32px rgba(238, 130, 238, 0.45),
+            0 0 40px rgba(255, 0, 0, 0.35),
+            0 0 48px rgba(255, 165, 0, 0.3),
+            0 0 56px rgba(255, 255, 0, 0.3);
+    }
+    50% {
+        box-shadow:
+            0 0 8px rgba(238, 130, 238, 0.45),
+            0 0 16px rgba(255, 0, 0, 0.35),
+            0 0 24px rgba(255, 165, 0, 0.35),
+            0 0 32px rgba(255, 255, 0, 0.3),
+            0 0 40px rgba(0, 255, 0, 0.35),
+            0 0 48px rgba(0, 0, 255, 0.4),
+            0 0 56px rgba(75, 0, 130, 0.35);
+    }
+    75% {
+        box-shadow:
+            0 0 8px rgba(0, 0, 255, 0.4),
+            0 0 16px rgba(75, 0, 130, 0.35),
+            0 0 24px rgba(238, 130, 238, 0.45),
+            0 0 32px rgba(255, 0, 0, 0.35),
+            0 0 40px rgba(255, 165, 0, 0.3),
+            0 0 48px rgba(255, 255, 0, 0.35),
+            0 0 56px rgba(0, 255, 0, 0.3);
+    }
+}
+
+.animate-rainbow-glow {
+    animation: rainbow-glow-shift 4s ease-in-out infinite;
+}
+
+/* Chat icon “dance” when there are unread messages */
+@keyframes chat-dance {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+    15% {
+        transform: scale(1.1) rotate(-8deg);
+    }
+    30% {
+        transform: scale(1.05) rotate(8deg);
+    }
+    45% {
+        transform: scale(1.1) rotate(-6deg);
+    }
+    60% {
+        transform: scale(1.05) rotate(6deg);
+    }
+    75% {
+        transform: scale(1.08) rotate(-3deg);
+    }
+}
+
+/* Beep beep: two quick red flashes on the chat icon when unread */
+@keyframes chat-beep-beep {
+    0%, 100% {
+        color: inherit;
+        filter: none;
+    }
+    12% {
+        color: rgb(239 68 68);
+        filter: drop-shadow(0 0 6px rgb(239 68 68 / 0.8));
+    }
+    25% {
+        color: inherit;
+        filter: none;
+    }
+    37% {
+        color: rgb(239 68 68);
+        filter: drop-shadow(0 0 6px rgb(239 68 68 / 0.8));
+    }
+    50%, 100% {
+        color: inherit;
+        filter: none;
+    }
+}
+
+.animate-chat-dance {
+    animation: chat-dance 1.2s ease-in-out infinite;
+}
+
+.animate-chat-beep-beep {
+    animation: chat-beep-beep 2s ease-in-out infinite;
+}

@@ -14,6 +14,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isInitialized: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
   checkAuth: () => Promise<void>;
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const login = (newToken: string, userData: User) => {
     setToken(newToken);
@@ -72,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!userData.username) {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
+          setIsInitialized(true);
           return;
         }
         setToken(storedToken);
@@ -84,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("user");
       }
     }
+    setIsInitialized(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -93,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         token,
         isAuthenticated: !!user && !!token,
+        isInitialized,
         login,
         logout,
         checkAuth,

@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { title } from "@/components/primitives";
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // Only redirect if we're actually on the root path
+    if (pathname === "/" && isAuthenticated) {
       // If logged in but not set up, go to runway
       if (user && !user.is_setup) {
         router.push("/runway");
@@ -19,7 +21,7 @@ export default function Home() {
         router.push("/matcha");
       }
     }
-  }, [isAuthenticated, user, router]);
+  }, [pathname, isAuthenticated, user, router]);
 
   return (
     <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">

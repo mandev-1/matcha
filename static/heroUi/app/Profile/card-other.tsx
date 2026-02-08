@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Image } from "@heroui/image";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/toast";
-import LocationMap from "@/components/LocationMap";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
+import LocationMap, { LocationMapRef } from "@/components/LocationMap";
 
 interface CardOtherProps {
   latitude: number | null;
@@ -31,6 +32,74 @@ export default function CardOther({
   onLocationModalOpen,
   onResetModalOpen,
 }: CardOtherProps) {
+  const mapRef = useRef<LocationMapRef>(null);
+  const [hasMoved, setHasMoved] = React.useState(false);
+  const [isUpdating, setIsUpdating] = React.useState(false);
+  const { isOpen: isAbortModalOpen, onOpen: onAbortModalOpen, onOpenChange: onAbortModalOpenChange } = useDisclosure();
+
+  // Handle beforeunload to warn user if they're leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasMoved && !isUpdating) {
+        e.preventDefault();
+        e.returnValue = "You were moving your real location, do you wanna abort?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasMoved, isUpdating]);
+
+  const handleUpdateLocation = async () => {
+    if (!mapRef.current) return;
+
+    setIsUpdating(true);
+    try {
+      const { lat, lng, location: locName } = await mapRef.current.getCurrentCenter();
+      
+      setLatitude(lat);
+      setLongitude(lng);
+      setLocation(locName);
+
+      // Save to backend
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          latitude: lat,
+          longitude: lng,
+          location: locName,
+        }),
+      });
+
+      if (response.ok) {
+        setHasMoved(false);
+        addToast({
+          title: "Location updated",
+          description: "Your location has been updated successfully.",
+          color: "success",
+        });
+      } else {
+        throw new Error("Failed to update location");
+      }
+    } catch (error) {
+      addToast({
+        title: "Error",
+        description: "Failed to update location. Please try again.",
+        color: "danger",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-2 md:px-4">
       {/* Location Preview */}
@@ -48,26 +117,11 @@ export default function CardOther({
                 </div>
                 <div className="w-full h-[250px] rounded-lg overflow-hidden border border-default-200 bg-default-100 relative">
                   <LocationMap 
+                    ref={mapRef}
                     latitude={latitude} 
                     longitude={longitude}
-                    onLocationUpdate={(lat, lng, loc) => {
-                      setLatitude(lat);
-                      setLongitude(lng);
-                      setLocation(loc);
-                      // Save to backend
-                      const token = localStorage.getItem("token");
-                      fetch("/api/profile", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                          Authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify({
-                          latitude: lat,
-                          longitude: lng,
-                          location: loc,
-                        }),
-                      });
+                    onMapCenterChange={(moved) => {
+                      setHasMoved(moved);
                     }}
                   />
                 </div>
@@ -89,8 +143,10 @@ export default function CardOther({
                   color="primary"
                   variant="flat"
                   size="sm"
-                  onPress={onLocationModalOpen}
-                  startContent={<Icon icon="solar:map-point-add-linear" />}
+                  isDisabled={!hasMoved}
+                  isLoading={isUpdating}
+                  onPress={handleUpdateLocation}
+                  startContent={!isUpdating ? <Icon icon="solar:map-point-add-linear" /> : undefined}
                 >
                   Update Location
                 </Button>
@@ -211,6 +267,44 @@ export default function CardOther({
           </CardFooter>
         </Card>
       </div>
+
+      {/* Abort Dialog */}
+      <Modal 
+        isOpen={isAbortModalOpen} 
+        onOpenChange={onAbortModalOpenChange}
+        isDismissable={false}
+        hideCloseButton
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <h2 className="text-xl font-bold">Unsaved Location Changes</h2>
+          </ModalHeader>
+          <ModalBody>
+            <p>You were moving your real location, do you wanna abort?</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              color="default"
+              variant="flat"
+              onPress={() => {
+                setHasMoved(false);
+                onAbortModalOpenChange();
+              }}
+            >
+              Abort
+            </Button>
+            <Button
+              color="primary"
+              onPress={() => {
+                onAbortModalOpenChange();
+                handleUpdateLocation();
+              }}
+            >
+              Save Changes
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -26,6 +28,10 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 		SendError(w, http.StatusUnauthorized, "Invalid or missing authentication token")
 		return
 	}
+
+	// Ensure user is online and update last_seen sporadically
+	ensureUserIsOnline(userID)
+	updateLastSeenSporadically(userID)
 
 	// Load user profile from database
 	var user struct {
@@ -53,6 +59,7 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 		MBTI              *string
 		CaliperProfile    *string
 		LastSeen          *string
+		CreatedAt         *string
 	}
 
 	err = database.DB.QueryRow(`
@@ -61,7 +68,7 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 			gender, sexual_preference, biography, birth_date,
 			location, latitude, longitude, location_updated_at, fame_rating, is_setup,
 			openness, conscientiousness, extraversion, agreeableness, neuroticism,
-			siblings, mbti, caliper_profile, last_seen
+			siblings, mbti, caliper_profile, last_seen, created_at
 		FROM users 
 		WHERE id = ?
 	`, userID).Scan(
@@ -69,7 +76,7 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 		&user.Gender, &user.SexualPreference, &user.Biography, &user.BirthDate,
 		&user.Location, &user.Latitude, &user.Longitude, &user.LocationUpdatedAt, &user.FameRating, &user.IsSetup,
 		&user.Openness, &user.Conscientiousness, &user.Extraversion, &user.Agreeableness, &user.Neuroticism,
-		&user.Siblings, &user.MBTI, &user.CaliperProfile, &user.LastSeen,
+		&user.Siblings, &user.MBTI, &user.CaliperProfile, &user.LastSeen, &user.CreatedAt,
 	)
 
 	if err != nil {
@@ -80,13 +87,13 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 
 	// Build response
 	response := map[string]interface{}{
-		"id":         user.ID,
-		"username":   user.Username,
-		"email":      user.Email,
-		"first_name": user.FirstName,
-		"last_name":  user.LastName,
+		"id":          user.ID,
+		"username":    user.Username,
+		"email":       user.Email,
+		"first_name":  user.FirstName,
+		"last_name":   user.LastName,
 		"fame_rating": user.FameRating,
-		"is_setup":   user.IsSetup,
+		"is_setup":    user.IsSetup,
 	}
 
 	// Add nullable fields if they exist
@@ -116,6 +123,9 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	if user.LastSeen != nil {
 		response["last_seen"] = *user.LastSeen
+	}
+	if user.CreatedAt != nil {
+		response["created_at"] = *user.CreatedAt
 	}
 
 	// Add Big Five personality traits
@@ -198,20 +208,20 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 
 // ProfileUpdateRequest represents profile update request
 type ProfileUpdateRequest struct {
-	FirstName         string            `json:"first_name"`
-	LastName          string            `json:"last_name"`
-	Email             string            `json:"email"`
-	Gender            string            `json:"gender"`
-	SexualPreference  string            `json:"sexual_preference"`
-	Biography         string            `json:"biography"`
-	BigFive           map[string]string `json:"big_five"`
-	Siblings          string            `json:"siblings"`
-	MBTI              string            `json:"mbti"`
-	CaliperProfile    string            `json:"caliper_profile"`
-	Tags              []string          `json:"tags"`
-	Latitude          *float64          `json:"latitude"`
-	Longitude         *float64          `json:"longitude"`
-	Location          string            `json:"location"`
+	FirstName        string            `json:"first_name"`
+	LastName         string            `json:"last_name"`
+	Email            string            `json:"email"`
+	Gender           string            `json:"gender"`
+	SexualPreference string            `json:"sexual_preference"`
+	Biography        string            `json:"biography"`
+	BigFive          map[string]string `json:"big_five"`
+	Siblings         string            `json:"siblings"`
+	MBTI             string            `json:"mbti"`
+	CaliperProfile   string            `json:"caliper_profile"`
+	Tags             []string          `json:"tags"`
+	Latitude         *float64          `json:"latitude"`
+	Longitude        *float64          `json:"longitude"`
+	Location         string            `json:"location"`
 }
 
 // ProfileUpdateAPI handles POST /api/profile
@@ -337,7 +347,7 @@ func ProfileUpdateAPI(w http.ResponseWriter, r *http.Request) {
 	if len(updates) > 0 {
 		args = append(args, userID)
 		query := "UPDATE users SET " + strings.Join(updates, ", ") + " WHERE id = ?"
-		
+
 		_, err := database.DB.Exec(query, args...)
 		if err != nil {
 			log.Printf("Error updating profile: %v", err)
@@ -353,14 +363,14 @@ func ProfileUpdateAPI(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error deleting tags: %v", err)
 	} else {
-		// Insert new tags if any are provided
+		// Insert new tags if any are provided (using queue for concurrent safety)
 		if req.Tags != nil && len(req.Tags) > 0 {
 			for _, tag := range req.Tags {
 				tag = strings.TrimSpace(tag)
 				if tag != "" {
-					_, err := database.DB.Exec("INSERT INTO user_tags (user_id, tag) VALUES (?, ?)", userID, tag)
-					if err != nil {
-						log.Printf("Error inserting tag '%s': %v", tag, err)
+					result := database.GetWriteQueue().Enqueue("INSERT INTO user_tags (user_id, tag) VALUES (?, ?)", userID, tag)
+					if result.Error != nil {
+						log.Printf("Error inserting tag '%s': %v", tag, result.Error)
 					} else {
 						log.Printf("Successfully inserted tag '%s' for user %d", tag, userID)
 					}
@@ -429,7 +439,7 @@ func SetupCompleteAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	SendSuccess(w, map[string]interface{}{
-		"message": "Profile setup completed successfully",
+		"message":  "Profile setup completed successfully",
 		"is_setup": true,
 	})
 }
@@ -717,6 +727,13 @@ func UploadImageAPI(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Update fame rating for picture upload (async)
+	go func() {
+		if err := services.UpdateFameRating(userID); err != nil {
+			log.Printf("Error updating fame rating for user %d: %v", userID, err)
+		}
+	}()
+
 	SendSuccess(w, map[string]interface{}{
 		"message":   "Image uploaded successfully",
 		"file_path": relativePath,
@@ -828,4 +845,150 @@ func ReorderImagesAPI(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ProfileVisitorsAPI handles GET /api/profile/visitors
+func ProfileVisitorsAPI(w http.ResponseWriter, r *http.Request) {
+	// Get user ID from token
+	userID, err := getUserIDFromRequest(r)
+	if err != nil {
+		SendError(w, http.StatusUnauthorized, "Invalid or missing authentication token")
+		return
+	}
 
+	// Get current user's location for distance calculation
+	var userLat, userLng sql.NullFloat64
+	database.DB.QueryRow("SELECT latitude, longitude FROM users WHERE id = ?", userID).Scan(&userLat, &userLng)
+
+	// Get visitors (people who viewed this profile) - only first time for each
+	rows, err := database.DB.Query(`
+		SELECT 
+			v.viewer_id,
+			v.created_at as viewed_at,
+			u.first_name,
+			u.last_name,
+			u.username,
+			u.latitude,
+			u.longitude,
+			u.location,
+			(SELECT file_path FROM user_pictures WHERE user_id = u.id AND is_profile = 1 AND order_index = 0 LIMIT 1) as profile_picture
+		FROM views v
+		INNER JOIN users u ON v.viewer_id = u.id
+		INNER JOIN (
+			SELECT viewer_id, MIN(created_at) as first_viewed_at
+			FROM views
+			WHERE viewed_id = ?
+			GROUP BY viewer_id
+		) first_views ON v.viewer_id = first_views.viewer_id AND v.created_at = first_views.first_viewed_at
+		WHERE v.viewed_id = ?
+		ORDER BY v.created_at DESC
+		LIMIT 50
+	`, userID, userID)
+
+	if err != nil {
+		log.Printf("Error querying visitors: %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to load visitors")
+		return
+	}
+	defer rows.Close()
+
+	visitors := []map[string]interface{}{}
+	for rows.Next() {
+		var visitor struct {
+			ViewerID       int64
+			ViewedAt       string
+			FirstName      string
+			LastName       string
+			Username       string
+			Latitude       sql.NullFloat64
+			Longitude      sql.NullFloat64
+			Location       sql.NullString
+			ProfilePicture sql.NullString
+		}
+
+		err := rows.Scan(
+			&visitor.ViewerID, &visitor.ViewedAt,
+			&visitor.FirstName, &visitor.LastName, &visitor.Username,
+			&visitor.Latitude, &visitor.Longitude, &visitor.Location,
+			&visitor.ProfilePicture,
+		)
+		if err != nil {
+			log.Printf("Error scanning visitor: %v", err)
+			continue
+		}
+
+		// Calculate distance if both users have coordinates
+		distance := -1.0
+		if userLat.Valid && userLng.Valid && visitor.Latitude.Valid && visitor.Longitude.Valid {
+			distance = calculateDistance(
+				userLat.Float64, userLng.Float64,
+				visitor.Latitude.Float64, visitor.Longitude.Float64,
+			)
+		}
+
+		// Check if visitor liked current user
+		var visitorLikedID int64
+		var visitorLikedAt sql.NullString
+		visitorLikedErr := database.DB.QueryRow(`
+			SELECT l.id, l.created_at
+			FROM likes l
+			WHERE l.from_user_id = ? AND l.to_user_id = ?
+		`, visitor.ViewerID, userID).Scan(&visitorLikedID, &visitorLikedAt)
+		visitorLikedMe := (visitorLikedErr == nil)
+
+		// Check if current user liked visitor back (mutual like = connected)
+		var currentUserLikedID int64
+		currentUserLikedErr := database.DB.QueryRow(`
+			SELECT l.id
+			FROM likes l
+			WHERE l.from_user_id = ? AND l.to_user_id = ?
+		`, userID, visitor.ViewerID).Scan(&currentUserLikedID)
+		currentUserLikedThem := (currentUserLikedErr == nil)
+
+		// Connected only if both liked each other
+		isConnected := visitorLikedMe && currentUserLikedThem
+
+		visitorData := map[string]interface{}{
+			"viewer_id":       visitor.ViewerID,
+			"first_name":      visitor.FirstName,
+			"last_name":       visitor.LastName,
+			"username":        visitor.Username,
+			"viewed_at":       visitor.ViewedAt,
+			"profile_picture": visitor.ProfilePicture.String,
+			"distance":        distance,
+			"is_connected":    isConnected,
+			"gave_like":       visitorLikedMe && !currentUserLikedThem, // They liked me but I didn't like them back
+		}
+
+		if visitor.Location.Valid {
+			visitorData["location"] = visitor.Location.String
+		}
+		if isConnected && visitorLikedAt.Valid {
+			visitorData["connected_at"] = visitorLikedAt.String
+		}
+
+		visitors = append(visitors, visitorData)
+	}
+
+	SendSuccess(w, map[string]interface{}{
+		"visitors": visitors,
+	})
+}
+
+// calculateDistance calculates distance between two coordinates in kilometers using Haversine formula
+func calculateDistance(lat1, lon1, lat2, lon2 float64) float64 {
+	const earthRadiusKm = 6371.0
+
+	// Convert to radians
+	dLat := (lat2 - lat1) * (3.14159265359 / 180.0)
+	dLon := (lon2 - lon1) * (3.14159265359 / 180.0)
+
+	lat1Rad := lat1 * (3.14159265359 / 180.0)
+	lat2Rad := lat2 * (3.14159265359 / 180.0)
+
+	// Haversine formula
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
+		math.Sin(dLon/2)*math.Sin(dLon/2)*
+			math.Cos(lat1Rad)*math.Cos(lat2Rad)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+
+	return earthRadiusKm * c
+}

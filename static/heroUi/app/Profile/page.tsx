@@ -17,6 +17,8 @@ import { Select, SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
 import { Spacer } from "@heroui/spacer";
 import { Divider } from "@heroui/divider";
+import { Skeleton } from "@heroui/skeleton";
+import { Spinner } from "@heroui/spinner";
 import { addToast } from "@heroui/toast";
 import clsx from "clsx";
 import { useAuth } from "@/contexts/AuthContext";
@@ -124,10 +126,16 @@ export default function Component() {
   const [mbti, setMbti] = React.useState<string>("");
   const [caliper, setCaliper] = React.useState<string>("");
 
+  // Reset loading state immediately when component mounts or route changes
+  React.useEffect(() => {
+    setIsLoading(true);
+  }, []); // Only on mount/route change
+
   // Load profile data
   React.useEffect(() => {
     const loadProfile = async () => {
       try {
+        setIsLoading(true);
         const token = localStorage.getItem("token");
         const response = await fetch("/api/profile", {
           headers: {
@@ -145,7 +153,9 @@ export default function Component() {
             setSelectedGender(profile.gender || "");
             setSelectedPreference(profile.sexual_preference || "");
             setBio(profile.biography || "");
-            setTags(profile.tags || []);
+            // Normalize tags to ensure they all have hashtags
+            const normalizedTags = (profile.tags || []).map((tag: string) => normalizeTag(tag));
+            setTags(normalizedTags);
             setLatitude(profile.latitude || null);
             setLongitude(profile.longitude || null);
             setLocation(profile.location || "");
@@ -204,6 +214,20 @@ export default function Component() {
     loadProfile();
   }, []);
 
+  // Helper function to normalize tag (ensure it starts with #)
+  const normalizeTag = (tag: string): string => {
+    const trimmed = tag.trim();
+    if (!trimmed) return trimmed;
+    return trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+  };
+
+  // Helper function to compare tags (without hashtag)
+  const tagsMatch = (tag1: string, tag2: string): boolean => {
+    const t1 = tag1.replace(/^#/, "").toLowerCase();
+    const t2 = tag2.replace(/^#/, "").toLowerCase();
+    return t1 === t2;
+  };
+
   const addTag = () => {
     if (tags.length >= 5) {
       addToast({
@@ -213,9 +237,21 @@ export default function Component() {
       });
       return;
     }
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
-      setTagInput("");
+    const trimmedInput = tagInput.trim();
+    if (trimmedInput) {
+      const normalizedTag = normalizeTag(trimmedInput);
+      // Check if tag already exists (comparing without hashtag)
+      const tagExists = tags.some(tag => tagsMatch(tag, normalizedTag));
+      if (!tagExists) {
+        setTags([...tags, normalizedTag]);
+        setTagInput("");
+      } else {
+        addToast({
+          title: "Tag already exists",
+          description: "This tag has already been added.",
+          color: "warning",
+        });
+      }
     }
   };
 
@@ -252,7 +288,7 @@ export default function Component() {
           siblings: siblings,
           mbti: mbti,
           caliper_profile: caliper,
-          tags: tags,
+          tags: tags.map(tag => normalizeTag(tag)), // Ensure all tags have hashtags when saving
         }),
       });
 
@@ -267,6 +303,8 @@ export default function Component() {
         description: "Your profile has been saved.",
         color: "primary",
       });
+      // Switch to My Card tab after successful save
+      setSelectedTab("card-preview");
     } catch (error) {
       console.error("Error saving profile:", error);
       addToast({
@@ -398,6 +436,13 @@ export default function Component() {
             Help
           </Button>
         </div>
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Spinner size="lg" />
+            <p className="mt-4 text-default-500">Loading profile...</p>
+          </div>
+        ) : (
+          <>
         {selectedTab === "card-preview" && (
           <CardProfile
             userImages={userImages}
@@ -462,7 +507,8 @@ export default function Component() {
             onResetModalOpen={onResetModalOpen}
           />
         )}
-
+          </>
+        )}
 
       </div>
       <Drawer
@@ -666,103 +712,47 @@ export default function Component() {
                       </div>
                     </div>
                     <div className="flex flex-col mt-4 gap-3 items-start">
-                      <span className="text-medium font-medium">About the event</span>
+                      <span className="text-medium font-medium">Developer resources:</span>
                       <div className="text-medium text-default-500 flex flex-col gap-2">
-                        <p>
-                          Hey Bay Area! We are excited to announce our next meetup on Tuesday,
-                          November 19th.
-                        </p>
-                        <p>
-                          Join us for an evening of insightful discussions and hands-on workshops
-                          focused on the latest developments in web development and design. Our
-                          featured speakers will share their experiences with modern frontend
-                          frameworks, responsive design patterns, and emerging web technologies.
-                          You&apos;ll have the opportunity to network with fellow developers and
-                          designers while enjoying refreshments and snacks.
-                        </p>
-                        <p>
-                          During the main session, we&apos;ll dive deep into practical examples of
-                          building scalable applications, exploring best practices for component
-                          architecture, and understanding advanced state management techniques. Our
-                          interactive workshop portion will let you apply these concepts directly,
-                          with experienced mentors available to provide guidance and answer your
-                          questions. Whether you&apos;re a seasoned developer or just starting your
-                          journey, you&apos;ll find valuable takeaways from this session.
-                        </p>
-
-                        <p className="mt-4">
-                          Brought to you by the{" "}
-                          <Link className="text-default-700" href="https://heroui.com">
-                            HeroUI team
+                        <div className="flex flex-col gap-2 mb-2">
+                          <Link className="text-default-700 hover:text-primary" href="/bot-activity">
+                            View Bot Activity Log →
                           </Link>
-                          .
+                          <Link className="text-default-700 hover:text-primary" href="/ranking">
+                            View Ranking →
+                          </Link>
+                        </div>
+                        <ol className="list-decimal list-inside space-y-2">
+                          <li>
+                            <Link className="text-default-700 hover:text-primary" href="/help/frequent_Questions">
+                              FAQ
+                            </Link>
+                          </li>
+                          <li>
+                            <Link className="text-default-700 hover:text-primary" href="/help/golang_simulation">
+                              Simulating Activity
+                            </Link>
+                          </li>
+                          <li>
+                            <Link className="text-default-700 hover:text-primary" href="/help/mafia">
+                              Fame Rating system
+                            </Link>
+                          </li>
+                          <li>
+                            <Link className="text-default-700 hover:text-primary" href="/help/api_explanation">
+                              API
+                            </Link>
+                          </li>
+                        </ol>
+                        <p className="mt-4 text-default-400 italic">
+                          Thanks for all the fish!
                         </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col mt-4 gap-3 items-start">
-                      <span className="text-small text-default-500">Hosted By</span>
-                      <div className="flex gap-2 items-center">
-                        <Avatar
-                          name="HeroUI"
-                          size="sm"
-                          src="https://heroui.com/android-chrome-192x192.png"
-                        />
-                        <span className="text-small text-default-500">HeroUI Team</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col mt-4 gap-3 items-start">
-                      <span className="text-small text-default-500">105 Going</span>
-                      <div className="flex gap-2 items-center">
-                        <AvatarGroup
-                          isBordered
-                          classNames={{
-                            base: "pl-2",
-                            count: "text-default-500 text-tiny bg-default-100",
-                          }}
-                          size="sm"
-                          total={101}
-                        >
-                          <Tooltip content="Alex">
-                            <Avatar
-                              className="data-[hover=true]:translate-x-0!"
-                              name="Alex"
-                              src="https://i.pravatar.cc/150?u=a04258114e29026708c"
-                            />
-                          </Tooltip>
-                          <Tooltip content="Joe">
-                            <Avatar
-                              className="data-[hover=true]:translate-x-0!"
-                              name="Joe"
-                              src="https://i.pravatar.cc/150?u=a04258114e290267084"
-                            />
-                          </Tooltip>
-                          <Tooltip content="John">
-                            <Avatar
-                              className="data-[hover=true]:translate-x-0!"
-                              name="John"
-                              src="https://i.pravatar.cc/150?u=a04258a2462d826712d"
-                            />
-                          </Tooltip>
-                          <Tooltip content="Jane">
-                            <Avatar
-                              className="data-[hover=true]:translate-x-0!"
-                              name="Jane"
-                              src="https://i.pravatar.cc/150?u=a04258114e29026702d"
-                            />
-                          </Tooltip>
-                        </AvatarGroup>
                       </div>
                     </div>
                   </div>
                 </div>
               </DrawerBody>
-              <DrawerFooter className="flex flex-col gap-1">
-                <Link className="text-default-400" href="mailto:hello@heroui.com" size="sm">
-                  Contact the host
-                </Link>
-                <Link className="text-default-400" href="mailto:hello@heroui.com" size="sm">
-                  Report event
-                </Link>
+              <DrawerFooter>
               </DrawerFooter>
             </>
           )}

@@ -4,6 +4,12 @@
 
 This project aims to create a dating website. We set out to develop an application that facilitates connections between two potential kindred spirits, covering their entire life-changing entwinement from registration on our platform to the final meeting.
 
+- [ ] Fun Ideas I had today:
+   - [ ] Developer Matcha - get other devs star your repo -- or learn lang together -- start project together
+   - [ ] No Profile - match based on favourite art or moodboard, screenshots (alternative)
+   - [ ] Use other people as deck
+   - [ ] Replace people until you have only 5 you like (higher / lower)
+
 Users of Matcha can:
 - Register
 - Log in

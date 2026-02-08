@@ -97,10 +97,10 @@ func CreateUser(username, email, password, firstName, lastName string) (*models.
 		return nil, "", fmt.Errorf("failed to generate token: %v", err)
 	}
 
-	// Insert user
+	// Insert user with initial fame rating of 1.0 (Level 1)
 	result, err := database.DB.Exec(
-		`INSERT INTO users (username, email, password_hash, first_name, last_name, email_verification_token, is_setup, is_email_verified, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+		`INSERT INTO users (username, email, password_hash, first_name, last_name, email_verification_token, is_setup, is_email_verified, fame_rating, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, 0, 0, 1.0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 		username, email, passwordHash, firstName, lastName, token,
 	)
 	if err != nil {

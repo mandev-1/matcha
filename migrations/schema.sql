@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     message TEXT NOT NULL,
     is_read INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    related_user_id INTEGER,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

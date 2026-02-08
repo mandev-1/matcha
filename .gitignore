@@ -66,3 +66,8 @@ static/heroUi/node_modules/
 
 # Logs
 *.log
+
+# Images
+*.png
+*.jpg
+*.jpeg

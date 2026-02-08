@@ -5,6 +5,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { addToast } from "@heroui/toast";
+import { Icon } from "@iconify/react";
 
 interface LocationSetupProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export default function LocationSetup({
   const [step, setStep] = useState<"check" | "consent" | "geolocation" | "manual" | "final">("check");
   const [manualLocation, setManualLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [tryAgainCount, setTryAgainCount] = useState(0);
   const [locationData, setLocationData] = useState<{
     latitude: number;
     longitude: number;
@@ -41,7 +43,14 @@ export default function LocationSetup({
     }
   }, [isOpen, existingLocation, onOpenChange]);
 
-  const handleConsent = () => {
+  const handleConsent = async () => {
+    // If Try Again was clicked twice, set to Prague
+    if (tryAgainCount >= 1) {
+      await handleSetPrague();
+      setTryAgainCount(0);
+      return;
+    }
+
     if (!("geolocation" in navigator)) {
       // Geolocation not supported, go to manual entry
       setStep("manual");
@@ -50,6 +59,7 @@ export default function LocationSetup({
 
     setStep("geolocation");
     setIsLoading(true);
+    setTryAgainCount(prev => prev + 1);
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -70,6 +80,7 @@ export default function LocationSetup({
 
         setLocationData({ latitude, longitude, location: locationName });
         setIsLoading(false);
+        setTryAgainCount(0);
         
         // Save location
         await saveLocation({ latitude, longitude, location: locationName });
@@ -181,6 +192,67 @@ export default function LocationSetup({
     return data;
   };
 
+  // Get random Prague district (Prague 1-15)
+  const getRandomPragueLocation = async (): Promise<{ latitude: number; longitude: number; location: string }> => {
+    // Randomly select Prague 1-15
+    const districtNumber = Math.floor(Math.random() * 15) + 1;
+    const locationName = `Prague ${districtNumber}, Czech Republic`;
+
+    // Get coordinates for the Prague district
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}&limit=1`
+      );
+      const data = await response.json();
+
+      if (data.length > 0) {
+        const { lat, lon, display_name } = data[0];
+        return {
+          latitude: parseFloat(lat),
+          longitude: parseFloat(lon),
+          location: display_name || locationName,
+        };
+      }
+    } catch (error) {
+      console.error("Error geocoding Prague location:", error);
+    }
+
+    // Fallback: approximate center of Prague with slight random offset
+    const baseLat = 50.0755;
+    const baseLng = 14.4378;
+    const offset = (districtNumber - 8) * 0.01; // Spread districts around Prague center
+    
+    return {
+      latitude: baseLat + (Math.random() - 0.5) * 0.05 + offset,
+      longitude: baseLng + (Math.random() - 0.5) * 0.05,
+      location: locationName,
+    };
+  };
+
+  const handleSetPrague = async () => {
+    setIsLoading(true);
+    try {
+      const pragueLocation = await getRandomPragueLocation();
+      await saveLocation(pragueLocation);
+      onLocationSet(pragueLocation);
+      onOpenChange(false);
+      addToast({
+        title: "Location set to Prague",
+        description: `Your location has been set to ${pragueLocation.location}.`,
+        color: "success",
+      });
+      setStep("consent");
+    } catch (error) {
+      addToast({
+        title: "Error",
+        description: "Failed to set Prague location. Please try again.",
+        color: "danger",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const renderContent = () => {
     switch (step) {
       case "consent":
@@ -216,22 +288,63 @@ export default function LocationSetup({
       case "final":
         return (
           <>
-            <ModalHeader className="flex flex-col gap-1">Location Required</ModalHeader>
-            <ModalBody>
-              <p>
-                We need your location to continue. 😢 Are you sure you want to refuse? Sorry, but location is required for the matching feature to work properly.
-              </p>
-              <p className="text-small text-default-500 mt-2">
-                You can still enter your location manually if you prefer not to share your exact coordinates.
-              </p>
+            <ModalHeader className="flex flex-col gap-4 pb-6">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-warning/30 to-warning/10 flex items-center justify-center shadow-lg border-2 border-warning/20">
+                    <Icon icon="solar:map-point-bold" className="text-6xl text-warning" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-danger rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">!</span>
+                  </div>
+                </div>
+                <div className="text-center space-y-2">
+                  <h2 className="text-3xl font-bold text-warning tracking-tight">X_X</h2>
+                  <h3 className="text-lg font-semibold text-default-700">Location grab Failed</h3>
+                </div>
+              </div>
+            </ModalHeader>
+            <ModalBody className="py-4">
+              <div className="flex flex-col gap-3 text-center">
+                <p className="text-base leading-relaxed text-default-600">
+                  We couldn't access your location, but don't worry! You can still use Matcha by setting your location manually or choosing a random Prague district.
+                </p>
+              </div>
             </ModalBody>
-            <ModalFooter>
-              <Button color="danger" variant="light" onPress={handleFinalDecline}>
-                Enter Manually
-              </Button>
-              <Button color="primary" onPress={handleConsent}>
+            <ModalFooter className="flex flex-col gap-3 pt-4">
+              <Button 
+                color="warning" 
+                variant="flat" 
+                onPress={handleConsent}
+                isLoading={isLoading}
+                startContent={<Icon icon="solar:refresh-bold" />}
+                className="w-full"
+                size="lg"
+              >
                 Try Again
               </Button>
+              <div className="flex gap-3 w-full">
+                <Button 
+                  color="secondary" 
+                  variant="flat" 
+                  onPress={handleSetPrague}
+                  isLoading={isLoading}
+                  startContent={<Icon icon="solar:map-point-add-bold" />}
+                  className="flex-1"
+                  size="lg"
+                >
+                  Set to Prague
+                </Button>
+                <Button 
+                  color="default" 
+                  variant="flat" 
+                  onPress={handleFinalDecline}
+                  className="flex-1"
+                  size="lg"
+                >
+                  Enter Manually
+                </Button>
+              </div>
             </ModalFooter>
           </>
         );
