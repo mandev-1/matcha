@@ -203,6 +203,14 @@ func ProfileAPI(w http.ResponseWriter, r *http.Request) {
 		response["images"] = []map[string]interface{}{}
 	}
 
+	// Likes received (for profile display)
+	var likesReceived int64
+	if err := database.DB.QueryRow("SELECT COUNT(*) FROM likes WHERE to_user_id = ?", userID).Scan(&likesReceived); err == nil {
+		response["likes_received_count"] = likesReceived
+	} else {
+		response["likes_received_count"] = int64(0)
+	}
+
 	SendSuccess(w, response)
 }
 
@@ -277,6 +285,10 @@ func ProfileUpdateAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Biography != "" {
+		if len(req.Biography) > MaxBiographyLength {
+			SendError(w, http.StatusBadRequest, "Biography too long")
+			return
+		}
 		updates = append(updates, "biography = ?")
 		args = append(args, req.Biography)
 	}
@@ -356,24 +368,21 @@ func ProfileUpdateAPI(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Update tags if provided
-	// Always update tags (even if empty array, to clear them)
-	// Delete existing tags first
+	// Update tags if provided (sync so refetch after save sees them). Parameterized queries only (SQL injection protection).
 	_, err = database.DB.Exec("DELETE FROM user_tags WHERE user_id = ?", userID)
 	if err != nil {
 		log.Printf("Error deleting tags: %v", err)
-	} else {
-		// Insert new tags if any are provided (using queue for concurrent safety)
-		if req.Tags != nil && len(req.Tags) > 0 {
-			for _, tag := range req.Tags {
-				tag = strings.TrimSpace(tag)
-				if tag != "" {
-					result := database.GetWriteQueue().Enqueue("INSERT INTO user_tags (user_id, tag) VALUES (?, ?)", userID, tag)
-					if result.Error != nil {
-						log.Printf("Error inserting tag '%s': %v", tag, result.Error)
-					} else {
-						log.Printf("Successfully inserted tag '%s' for user %d", tag, userID)
-					}
+	} else if len(req.Tags) > 0 {
+		for _, tag := range req.Tags {
+			tag = strings.TrimSpace(tag)
+			if tag != "" {
+				if len(tag) > MaxTagLength {
+					SendError(w, http.StatusBadRequest, "Tag too long")
+					return
+				}
+				_, err = database.DB.Exec("INSERT INTO user_tags (user_id, tag) VALUES (?, ?)", userID, tag)
+				if err != nil {
+					log.Printf("Error inserting tag '%s': %v", tag, err)
 				}
 			}
 		}

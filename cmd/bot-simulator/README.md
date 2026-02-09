@@ -52,16 +52,18 @@ go run ./cmd/bot-simulator/main.go \
 ## How It Works
 
 1. **Loads bot users** from the database (users with `is_bot = 1`)
-2. **Authenticates each bot** using the default password (`test123`)
-3. **Starts simulation** - Each bot runs in its own goroutine
-4. **Performs random actions** at configured intervals:
-   - 40% chance: Browse profiles
-   - 20% chance: View a random profile
-   - 25% chance: Like a random profile
-   - 10% chance: Change tags
-   - 5% chance: Send message (if connected)
-
-5. **Updates online status** - Bots periodically access their profile to update `last_seen`
+2. **Session-based loop** – Each bot runs in its own goroutine and cycles through **sessions** and **offline** periods so that over time **all bot users "flip through"** (every bot gets turns to be active, then goes offline).
+3. **Staggered start** – Bots don’t all start at once; first session is delayed by a staggered amount so activity is spread out.
+4. **Session types** (micro-behavioral patterns):
+   - **Quick Check-In** (2–4 min) – Busy break: view 2 profiles, like each, then leave. Very short session.
+   - **Casual** (8–14 min) – Balanced mix of browse, view, like, message, with medium delays (2–8s).
+   - **Rapid Fire** (5–10 min) – High volume, quick decisions; short delays (0.5–2s) between actions.
+   - **Deep Dive** (15–25 min) – Longer session with “considered” delays (5–30s) between actions.
+   - **Deliberate** (10–18 min) – Careful, bio-focused style; slower, considered delays.
+5. **Time-based realism** – Bots do **not** run sessions between **2 AM and 7 AM UTC** (offline hours); the simulator sleeps until 7 AM when in that window.
+6. **After each session** – Bot goes offline, then sleeps 5–20 minutes (random) before the next session, so not everyone is online at once.
+7. **Messaging** – ~25% non-response rate: bots sometimes skip sending a message when they would have (realistic “saw but didn’t reply”).
+8. **View-before-like** – Likes only happen on profiles the bot has viewed (in that session), with optional short delay to mimic “considered” swipe.
 
 ## Action Details
 

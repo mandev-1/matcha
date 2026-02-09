@@ -24,24 +24,36 @@ type BotConfig struct {
 	Concurrency    int
 }
 
-// BotBehaviorPattern defines different types of bot behaviors
+// BotBehaviorPattern defines different types of bot behaviors (used during long sessions)
 type BotBehaviorPattern int
 
 const (
-	PatternExplorer BotBehaviorPattern = iota // Likes to browse and view profiles
-	PatternLiker                              // Likes many profiles
-	PatternSocial                             // Focuses on messaging and connections
-	PatternCasual                             // Balanced, casual activity
-	PatternActive                             // Very active, does everything frequently
+	PatternExplorer BotBehaviorPattern = iota
+	PatternLiker
+	PatternSocial
+	PatternCasual
+	PatternActive
+)
+
+// SessionType defines micro-behavioral session flows (human-like sessions)
+type SessionType int
+
+const (
+	SessionQuickCheckIn SessionType = iota // 2-4 min: view 2, like 2, leave (busy break)
+	SessionDeepDive                       // 15-25 min: thorough exploration
+	SessionRapidFire                      // 5-10 min: high volume, quick decisions
+	SessionDeliberate                     // 10-18 min: careful, bio-focused (slower actions)
+	SessionCasual                         // 8-14 min: balanced mix
 )
 
 type Bot struct {
-	ID       int64
-	Username string
-	Token    string
-	Client   *http.Client
-	Pattern  BotBehaviorPattern
-	DB       *sql.DB
+	ID          int64
+	Username    string
+	Token       string
+	Client      *http.Client
+	Pattern     BotBehaviorPattern
+	DB          *sql.DB
+	IsNightShift bool // mostly active 2-7 AM UTC; runs during night when others sleep
 	// Track recently viewed profiles for view-before-like logic
 	recentlyViewed map[int64]time.Time
 	viewMutex      sync.RWMutex
@@ -128,21 +140,28 @@ func main() {
 		log.Fatal("No bot users found. Run 'make 500' first to create bot accounts.")
 	}
 
-	log.Printf("Loaded %d bot users", len(bots))
+	nightShiftCount := 0
+	for i := range bots {
+		if bots[i].IsNightShift {
+			nightShiftCount++
+		}
+	}
+	log.Printf("Loaded %d bot users (%d night shift, active 2-7 AM UTC)", len(bots), nightShiftCount)
 
-	// Start bot simulation
+	// Start bot simulation: each bot runs session-based loop so all bots "flip through" over time
 	var wg sync.WaitGroup
 	semaphore := make(chan struct{}, config.Concurrency)
 
-	for _, bot := range bots {
+	for i, bot := range bots {
 		wg.Add(1)
+		botIndex := i
 		go func(b Bot) {
 			defer wg.Done()
-			simulateBot(b, config, semaphore)
+			simulateBot(b, config, semaphore, botIndex, len(bots))
 		}(bot)
 	}
 
-	// Wait for all bots
+	// Wait for all bots (they run forever with session/offline cycles)
 	wg.Wait()
 }
 
@@ -171,6 +190,8 @@ func loadBots(db *sql.DB, config BotConfig) ([]Bot, error) {
 		bot.Pattern = patterns[patternIdx%len(patterns)] // Distribute patterns
 		bot.DB = db
 		bot.recentlyViewed = make(map[int64]time.Time)
+		// ~15% of bots are night shift: mostly active 2-7 AM UTC
+		bot.IsNightShift = (patternIdx % 7) == 0 // every 7th bot
 		bots = append(bots, bot)
 		patternIdx++
 	}
@@ -228,148 +249,255 @@ func logBotActivity(db *sql.DB, botID int64, botUsername, actionType string, tar
 	}()
 }
 
-func simulateBot(bot Bot, config BotConfig, semaphore chan struct{}) {
-	// Authenticate bot
-	if err := authenticateBot(&bot, config); err != nil {
-		log.Printf("Bot %s (%d) failed to authenticate: %v", bot.Username, bot.ID, err)
-		return
+// Variable delays for human-like micro-behaviors (quick swipe vs considered)
+func quickDelay()  { time.Sleep(time.Duration(500+rand.Intn(1500)) * time.Millisecond) }   // 0.5-2s
+func mediumDelay() { time.Sleep(time.Duration(2+rand.Intn(6)) * time.Second) }               // 2-8s
+func considerDelay() { time.Sleep(time.Duration(5+rand.Intn(26)) * time.Second) }           // 5-30s
+
+// Offline 2-7 AM: no sessions during low-activity hours
+func isOfflineHours() bool {
+	h := time.Now().UTC().Hour()
+	return h >= 2 && h < 7
+}
+
+func sleepUntil7AM() {
+	now := time.Now().UTC()
+	next7 := time.Date(now.Year(), now.Month(), now.Day(), 7, 0, 0, 0, time.UTC)
+	if now.Hour() >= 7 {
+		next7 = next7.Add(24 * time.Hour)
 	}
-
-	log.Printf("Bot %s (%d) authenticated successfully (Pattern: %d)", bot.Username, bot.ID, bot.Pattern)
-
-	// Set bot as online
-	_, err := bot.DB.Exec("UPDATE users SET is_online = 1, last_seen = CURRENT_TIMESTAMP WHERE id = ?", bot.ID)
-	if err != nil {
-		log.Printf("Failed to set bot %s online: %v", bot.Username, err)
-	}
-
-	// Update online status and last_seen periodically
-	go updateOnlineStatus(bot, config)
-
-	// Cleanup: Set offline when bot stops
-	defer func() {
-		_, err := bot.DB.Exec("UPDATE users SET is_online = 0, last_seen = CURRENT_TIMESTAMP WHERE id = ?", bot.ID)
-		if err != nil {
-			log.Printf("Failed to set bot %s offline: %v", bot.Username, err)
-		}
-	}()
-
-	// Perform actions based on pattern
-	ticker := time.NewTicker(config.ActionInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			semaphore <- struct{}{} // Acquire semaphore
-			performActionByPattern(bot, config)
-			<-semaphore // Release semaphore
-		}
+	d := time.Until(next7)
+	if d > 0 {
+		log.Printf("Bot simulator: offline hours (2-7 AM UTC), sleeping until 7 AM UTC (%v)", d.Round(time.Second))
+		time.Sleep(d)
 	}
 }
 
-func updateOnlineStatus(bot Bot, config BotConfig) {
-	// Update last_seen sporadically (every 30-60 seconds) to not overload database
-	// Keep is_online = 1 (set once when bot starts)
-	ticker := time.NewTicker(45 * time.Second) // Update every 45 seconds
-	defer ticker.Stop()
+func sessionTypeName(s SessionType) string {
+	switch s {
+	case SessionQuickCheckIn:
+		return "QuickCheckIn"
+	case SessionCasual:
+		return "Casual"
+	case SessionRapidFire:
+		return "RapidFire"
+	case SessionDeepDive:
+		return "DeepDive"
+	case SessionDeliberate:
+		return "Deliberate"
+	default:
+		return "Unknown"
+	}
+}
+
+func pickSessionType() SessionType {
+	r := rand.Float32()
+	// Weight so Quick Check-In and short sessions appear often (busy users)
+	switch {
+	case r < 0.35:
+		return SessionQuickCheckIn
+	case r < 0.55:
+		return SessionCasual
+	case r < 0.72:
+		return SessionRapidFire
+	case r < 0.85:
+		return SessionDeepDive
+	default:
+		return SessionDeliberate
+	}
+}
+
+func setBotOnline(db *sql.DB, botID int64) {
+	if db != nil {
+		db.Exec("UPDATE users SET is_online = 1, last_seen = CURRENT_TIMESTAMP WHERE id = ?", botID)
+	}
+}
+
+func setBotOffline(db *sql.DB, botID int64) {
+	if db != nil {
+		db.Exec("UPDATE users SET is_online = 0, last_seen = CURRENT_TIMESTAMP WHERE id = ?", botID)
+	}
+}
+
+func simulateBot(bot Bot, config BotConfig, semaphore chan struct{}, botIndex, totalBots int) {
+	// Stagger first session so not all bots start at once; ensures all bots "flip through" over time
+	stagger := time.Duration(botIndex*(60/ max(1, totalBots))+rand.Intn(30)) * time.Second
+	if stagger > 0 {
+		time.Sleep(stagger)
+	}
 
 	for {
-		select {
-		case <-ticker.C:
-			// Update last_seen sporadically
-			_, err := bot.DB.Exec("UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = ?", bot.ID)
-			if err != nil {
-				log.Printf("Failed to update last_seen for bot %s: %v", bot.Username, err)
+		// Offline 2-7 AM UTC for regular bots; night-shift bots are active during this window
+		if isOfflineHours() {
+			if !bot.IsNightShift {
+				sleepUntil7AM()
+				continue
 			}
+			// Night shift: run session during night (no sleep)
 		}
+
+		// Re-auth each session (token may expire after long offline)
+		if err := authenticateBot(&bot, config); err != nil {
+			log.Printf("Bot %s (%d) failed to authenticate: %v", bot.Username, bot.ID, err)
+			time.Sleep(2 * time.Minute)
+			continue
+		}
+
+		sessionType := pickSessionType()
+		if bot.IsNightShift && isOfflineHours() {
+			log.Printf("Bot %s (%d) [night shift] authenticated, starting %s session", bot.Username, bot.ID, sessionTypeName(sessionType))
+		} else {
+			log.Printf("Bot %s (%d) authenticated, starting %s session", bot.Username, bot.ID, sessionTypeName(sessionType))
+		}
+		semaphore <- struct{}{}
+		runSession(&bot, config, sessionType, semaphore)
+		<-semaphore
+
+		// Go offline after session (human leaves)
+		setBotOffline(bot.DB, bot.ID)
+
+		// Offline duration: night-shift bots sleep longer during day so they're "mostly" active at night
+		var offlineDur time.Duration
+		if bot.IsNightShift && !isOfflineHours() {
+			offlineDur = time.Duration(15+rand.Intn(26)) * time.Minute // 15-40 min during day
+		} else {
+			offlineDur = time.Duration(5+rand.Intn(16)) * time.Minute  // 5-20 min normal
+		}
+		time.Sleep(offlineDur)
 	}
 }
 
-func performActionByPattern(bot Bot, config BotConfig) {
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// runSession runs one human-like session then returns (caller sets bot offline).
+func runSession(bot *Bot, config BotConfig, sessionType SessionType, semaphore chan struct{}) {
+	setBotOnline(bot.DB, bot.ID)
+
+	switch sessionType {
+	case SessionQuickCheckIn:
+		// 2-4 min: view 2 profiles, like each, leave (busy professional on break)
+		runQuickCheckIn(bot, config)
+	case SessionDeepDive:
+		runTimedSession(bot, config, 15+rand.Intn(11), considerDelay, semaphore) // 15-25 min
+	case SessionRapidFire:
+		runTimedSession(bot, config, 5+rand.Intn(6), quickDelay, semaphore) // 5-10 min
+	case SessionDeliberate:
+		runTimedSession(bot, config, 10+rand.Intn(9), considerDelay, semaphore) // 10-18 min
+	default:
+		runTimedSession(bot, config, 8+rand.Intn(7), mediumDelay, semaphore) // 8-14 min
+	}
+}
+
+// runQuickCheckIn: view profile → pause → like, view profile → pause → like, then done.
+func runQuickCheckIn(bot *Bot, config BotConfig) {
+	log.Printf("Bot %s starting Quick Check-In (view 2, like 2, leave)", bot.Username)
+	visitProfilePtr(bot, config)
+	mediumDelay()
+	likeRandomProfilePtr(bot, config)
+	mediumDelay()
+	visitProfilePtr(bot, config)
+	mediumDelay()
+	likeRandomProfilePtr(bot, config)
+	log.Printf("Bot %s finished Quick Check-In", bot.Username)
+}
+
+type delayFunc func()
+
+// runTimedSession runs actions for durationMinutes, with delay between actions.
+func runTimedSession(bot *Bot, config BotConfig, durationMinutes int, delay delayFunc, semaphore chan struct{}) {
+	end := time.Now().Add(time.Duration(durationMinutes) * time.Minute)
+	for time.Now().Before(end) {
+		performActionByPattern(bot, config)
+		delay()
+	}
+}
+
+func performActionByPattern(bot *Bot, config BotConfig) {
 	randVal := rand.Float32()
 
 	switch bot.Pattern {
 	case PatternExplorer:
-		// Explorer: 48% view, 28% browse, 14% like, 8% disconnect, 2% other
 		switch {
 		case randVal < 0.48:
 			visitProfile(bot, config)
 		case randVal < 0.76:
-			browseProfiles(bot, config)
+			browseProfiles(*bot, config)
 		case randVal < 0.90:
 			likeRandomProfile(bot, config)
 		case randVal < 0.98:
-			disconnectFromRandomConnection(bot, config)
+			disconnectFromRandomConnection(*bot, config)
 		default:
-			changeTags(bot, config)
+			changeTags(*bot, config)
 		}
 	case PatternLiker:
-		// Liker: 48% like, 28% view, 14% browse, 8% disconnect, 2% other
 		switch {
 		case randVal < 0.48:
 			likeRandomProfile(bot, config)
 		case randVal < 0.76:
 			visitProfile(bot, config)
 		case randVal < 0.90:
-			browseProfiles(bot, config)
+			browseProfiles(*bot, config)
 		case randVal < 0.98:
-			disconnectFromRandomConnection(bot, config)
+			disconnectFromRandomConnection(*bot, config)
 		default:
-			changeTags(bot, config)
+			changeTags(*bot, config)
 		}
 	case PatternSocial:
-		// Social: 35% message, 27% like, 18% view, 12% disconnect, 8% other
 		switch {
 		case randVal < 0.35:
-			sendMessageIfConnected(bot, config)
+			sendMessageIfConnected(*bot, config)
 		case randVal < 0.62:
 			likeRandomProfile(bot, config)
 		case randVal < 0.80:
 			visitProfile(bot, config)
 		case randVal < 0.92:
-			disconnectFromRandomConnection(bot, config)
+			disconnectFromRandomConnection(*bot, config)
 		default:
-			changeTags(bot, config)
+			changeTags(*bot, config)
 		}
 	case PatternActive:
-		// Active: 22% like, 20% view, 18% browse, 18% message, 14% disconnect, 8% other
 		switch {
 		case randVal < 0.22:
 			likeRandomProfile(bot, config)
 		case randVal < 0.42:
 			visitProfile(bot, config)
 		case randVal < 0.60:
-			browseProfiles(bot, config)
+			browseProfiles(*bot, config)
 		case randVal < 0.78:
-			sendMessageIfConnected(bot, config)
+			sendMessageIfConnected(*bot, config)
 		case randVal < 0.92:
-			disconnectFromRandomConnection(bot, config)
+			disconnectFromRandomConnection(*bot, config)
 		default:
-			changeTags(bot, config)
+			changeTags(*bot, config)
 		}
 	default: // PatternCasual
-		// Casual: 32% browse, 22% visit, 20% like, 12% disconnect, 8% message, 6% other
 		switch {
 		case randVal < 0.32:
-			browseProfiles(bot, config)
+			browseProfiles(*bot, config)
 		case randVal < 0.54:
 			visitProfile(bot, config)
 		case randVal < 0.74:
 			likeRandomProfile(bot, config)
 		case randVal < 0.86:
-			disconnectFromRandomConnection(bot, config)
+			disconnectFromRandomConnection(*bot, config)
 		case randVal < 0.94:
-			sendMessageIfConnected(bot, config)
+			sendMessageIfConnected(*bot, config)
 		default:
-			changeTags(bot, config)
+			changeTags(*bot, config)
 		}
 	}
 }
 
-// visitProfile - explicitly visits a profile (separate from viewing)
-func visitProfile(bot Bot, config BotConfig) {
-	profiles, err := browseProfilesWithBias(bot, config)
+// visitProfile - visits a profile and tracks view (uses *Bot so session shares state)
+func visitProfilePtr(bot *Bot, config BotConfig) { visitProfile(bot, config) }
+
+func visitProfile(bot *Bot, config BotConfig) {
+	profiles, err := browseProfilesWithBias(*bot, config)
 	if err != nil || len(profiles) == 0 {
 		return
 	}
@@ -379,7 +507,6 @@ func visitProfile(bot Bot, config BotConfig) {
 		return
 	}
 
-	// Visit the profile (GET /api/user/:id)
 	req, _ := http.NewRequest("GET",
 		fmt.Sprintf("%s/api/user/%d", config.ServerURL, targetID), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", bot.Token))
@@ -391,21 +518,19 @@ func visitProfile(bot Bot, config BotConfig) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
-		// Get target username for logging
 		var targetUsername string
 		bot.DB.QueryRow("SELECT username FROM users WHERE id = ?", targetID).Scan(&targetUsername)
-		
-		// Track this view for view-before-like logic (valid for 5 minutes)
 		bot.viewMutex.Lock()
+		if bot.recentlyViewed == nil {
+			bot.recentlyViewed = make(map[int64]time.Time)
+		}
 		bot.recentlyViewed[targetID] = time.Now()
-		// Clean up old views (older than 5 minutes)
 		for profileID, viewTime := range bot.recentlyViewed {
 			if time.Since(viewTime) > 5*time.Minute {
 				delete(bot.recentlyViewed, profileID)
 			}
 		}
 		bot.viewMutex.Unlock()
-		
 		logBotActivity(bot.DB, bot.ID, bot.Username, "visit_profile", &targetID, targetUsername, "")
 		log.Printf("✅ Bot %s successfully visited profile %d (%s)", bot.Username, targetID, targetUsername)
 	} else {
@@ -413,13 +538,14 @@ func visitProfile(bot Bot, config BotConfig) {
 	}
 }
 
-func likeRandomProfile(bot Bot, config BotConfig) {
-	profiles, err := browseProfilesWithBias(bot, config)
+func likeRandomProfilePtr(bot *Bot, config BotConfig) { likeRandomProfile(bot, config) }
+
+func likeRandomProfile(bot *Bot, config BotConfig) {
+	profiles, err := browseProfilesWithBias(*bot, config)
 	if err != nil || len(profiles) == 0 {
 		return
 	}
 
-	// Filter to only profiles that were viewed recently (within last 5 minutes)
 	bot.viewMutex.RLock()
 	viewableProfiles := []Profile{}
 	for _, profile := range profiles {
@@ -434,13 +560,9 @@ func likeRandomProfile(bot Bot, config BotConfig) {
 	}
 	bot.viewMutex.RUnlock()
 
-	// If no recently viewed profiles, view one first
 	if len(viewableProfiles) == 0 {
-		// View a profile first, then like it
 		visitProfile(bot, config)
-		// Wait a bit before liking
 		time.Sleep(2 * time.Second)
-		// Try again with updated view list
 		bot.viewMutex.RLock()
 		for _, profile := range profiles {
 			if profile.ID == bot.ID {
@@ -460,10 +582,8 @@ func likeRandomProfile(bot Bot, config BotConfig) {
 		return
 	}
 
-	// Pick a random profile from recently viewed ones
 	targetID := viewableProfiles[rand.Intn(len(viewableProfiles))].ID
 
-	// Like the profile
 	req, _ := http.NewRequest("POST",
 		fmt.Sprintf("%s/api/like/%d", config.ServerURL, targetID), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", bot.Token))
@@ -527,7 +647,7 @@ func viewRandomProfile(bot Bot, config BotConfig) {
 	}
 }
 
-// browseProfilesWithBias - gets profiles with bias toward non-bot users and higher fame rating
+// browseProfilesWithBias - gets profiles with bias toward non-bot users; selection slightly favours lower fame rating
 func browseProfilesWithBias(bot Bot, config BotConfig) ([]Profile, error) {
 	profiles, err := browseProfiles(bot, config)
 	if err != nil {
@@ -584,33 +704,42 @@ func browseProfilesWithBias(bot Bot, config BotConfig) ([]Profile, error) {
 	return result, nil
 }
 
-// selectWithFameBias selects a profile with higher probability for higher fame rating
-// Uses weighted random selection where higher fame = higher probability
+// selectWithFameBias selects profiles with a slight bias toward lower fame rating
+// (gives less popular users a bit more visibility from bots)
 func selectWithFameBias(profiles []Profile) []Profile {
 	if len(profiles) == 0 {
 		return profiles
 	}
 
-	// Calculate weights based on fame rating (minimum weight of 1.0)
+	maxFame := profiles[0].FameRating // profiles sorted high-first
+	// Weight: higher for lower fame (1.0 + scaled gap), so lower-fame profiles get picked more often
 	weights := make([]float64, len(profiles))
 	totalWeight := 0.0
 	for i, profile := range profiles {
-		// Weight = 1.0 + fame_rating (so even 0 fame gets weight 1.0)
-		weights[i] = 1.0 + profile.FameRating
-		totalWeight += weights[i]
-	}
-
-	// Weighted random selection - pick top 50% with 80% probability
-	if rand.Float32() < 0.8 && len(profiles) > 1 {
-		// Return top 50% (higher fame rating)
-		topCount := len(profiles) / 2
-		if topCount < 1 {
-			topCount = 1
+		// Slight favour: weight = 1.0 + 0.4*(maxFame - fame), min 0.5
+		delta := maxFame - profile.FameRating
+		if delta < 0 {
+			delta = 0
 		}
-		return profiles[:topCount]
+		w := 1.0 + 0.4*delta
+		if w < 0.5 {
+			w = 0.5
+		}
+		weights[i] = w
+		totalWeight += w
 	}
 
-	// 20% chance to pick from all profiles (weighted)
+	// 70% pick one at random from bottom 50% (lower fame), 30% weighted random over all
+	if rand.Float32() < 0.7 && len(profiles) > 1 {
+		half := len(profiles) / 2
+		if half < 1 {
+			half = 1
+		}
+		// profiles sorted high-first, so bottom half = indices [half..len-1]
+		idx := half + rand.Intn(len(profiles)-half)
+		return []Profile{profiles[idx]}
+	}
+
 	randVal := rand.Float64() * totalWeight
 	currentWeight := 0.0
 	for i, weight := range weights {
@@ -619,9 +748,7 @@ func selectWithFameBias(profiles []Profile) []Profile {
 			return []Profile{profiles[i]}
 		}
 	}
-
-	// Fallback to first profile
-	return []Profile{profiles[0]}
+	return []Profile{profiles[len(profiles)-1]}
 }
 
 func changeTags(bot Bot, config BotConfig) {
@@ -727,6 +854,10 @@ func disconnectFromRandomConnection(bot Bot, config BotConfig) {
 }
 
 func sendMessageIfConnected(bot Bot, config BotConfig) {
+	// 20-30% non-response rate (realism: user sees message but doesn't reply)
+	if rand.Float32() < 0.25 {
+		return
+	}
 	connections, err := getConnections(bot, config)
 	if err != nil || len(connections) == 0 {
 		return

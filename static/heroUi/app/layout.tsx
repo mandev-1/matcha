@@ -15,6 +15,10 @@ import { ToastProvider } from "@heroui/toast";
 import { LocationMiddleware } from "@/components/LocationMiddleware";
 import { HelpDrawer } from "@/components/HelpDrawer";
 import { ServerStatusProvider } from "@/contexts/ServerStatusContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import { ChatHintProvider } from "@/contexts/ChatHintContext";
+import { NotificationPanel } from "@/components/NotificationPanel";
+import { NewMessageToaster } from "@/components/NewMessageToaster";
 
 export const metadata: Metadata = {
   title: {
@@ -48,13 +52,16 @@ export default function RootLayout({
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <ToastProvider />
           <ServerStatusProvider>
+            <NotificationProvider>
+            <ChatHintProvider>
+            <NewMessageToaster />
             <LocationMiddleware>
-            <div className="relative flex flex-row h-full">
+            <div className="relative flex flex-row h-full min-w-0">
               <Sidebar />
-              <div className="flex-1 flex flex-col ml-20 h-full">
+              <div className="flex-1 flex flex-col ml-0 md:ml-20 h-full min-w-0 pb-20 md:pb-0">
                 <Navbar />
                 <ScrollShadow className="flex-1 overflow-y-auto" size={100}>
-                  <main className="container mx-auto max-w-7xl px-1 md:px-6 h-full">
+                  <main className="container mx-auto max-w-7xl px-3 sm:px-4 md:px-6 h-full min-h-0">
                     {children}
                   </main>
                 </ScrollShadow>
@@ -66,13 +73,13 @@ export default function RootLayout({
                   </div>
                 </footer>
               </div>
-              <div className="fixed bottom-4 left-24 z-50">
-                <ThemeSwitch />
-              </div>
+              <NotificationPanel />
               <LoginStatus />
               <HelpDrawer />
             </div>
           </LocationMiddleware>
+            </ChatHintProvider>
+          </NotificationProvider>
           </ServerStatusProvider>
         </Providers>
       </body>

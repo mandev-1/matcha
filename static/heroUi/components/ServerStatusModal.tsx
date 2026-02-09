@@ -19,6 +19,7 @@ export function ServerStatusModal({ isOpen, onRetry }: ServerStatusModalProps) {
       hideCloseButton={true}
       size="md"
       placement="center"
+      classNames={{ wrapper: "z-[9999]" }}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1 items-center">

@@ -11,6 +11,27 @@
     --font-mono: "monospace", monospace;
 }
 
+/* Dark mode: off-black background instead of pure black (#121214 = zinc-950-ish) */
+.dark body,
+.dark.bg-background,
+.dark .bg-background {
+    background-color: #121214;
+}
+
+/* Desktop: match 67% zoom at 100% — scale layout so it looks like 67% zoom without zooming */
+@media (min-width: 768px) {
+    html {
+        font-size: 67%;
+    }
+}
+
+/* Profile page at 100%: counter the desktop 67% root so the Profile card displays at full size */
+@media (min-width: 768px) {
+    .profile-page-100 {
+        font-size: 149.25%; /* 1/0.67 so rem = 100% of 16px */
+    }
+}
+
 /* Animated rainbow glow for level 100+ profile cards – tight, no black */
 @keyframes rainbow-glow-shift {
     0%, 100% {
@@ -62,46 +83,44 @@
 /* Chat icon “dance” when there are unread messages */
 @keyframes chat-dance {
     0%, 100% {
-        transform: scale(1) rotate(0deg);
+        transform: scale(1) rotate(0deg) translateY(0);
     }
     15% {
-        transform: scale(1.1) rotate(-8deg);
+        transform: scale(1.1) rotate(-8deg) translateY(-4px);
     }
     30% {
-        transform: scale(1.05) rotate(8deg);
+        transform: scale(1.05) rotate(8deg) translateY(0);
     }
     45% {
-        transform: scale(1.1) rotate(-6deg);
+        transform: scale(1.1) rotate(-6deg) translateY(-4px);
     }
     60% {
-        transform: scale(1.05) rotate(6deg);
+        transform: scale(1.05) rotate(6deg) translateY(0);
     }
     75% {
-        transform: scale(1.08) rotate(-3deg);
+        transform: scale(1.08) rotate(-3deg) translateY(-2px);
     }
 }
 
-/* Beep beep: two quick red flashes on the chat icon when unread */
+/* Abrupt flash-flash (icon color only), then 6–8s delay */
 @keyframes chat-beep-beep {
-    0%, 100% {
+    0% {
         color: inherit;
-        filter: none;
     }
-    12% {
+    1.5% {
         color: rgb(239 68 68);
-        filter: drop-shadow(0 0 6px rgb(239 68 68 / 0.8));
     }
-    25% {
+    3% {
         color: inherit;
-        filter: none;
     }
-    37% {
+    4.5% {
         color: rgb(239 68 68);
-        filter: drop-shadow(0 0 6px rgb(239 68 68 / 0.8));
     }
-    50%, 100% {
+    6% {
         color: inherit;
-        filter: none;
+    }
+    100% {
+        color: inherit;
     }
 }
 
@@ -110,5 +129,25 @@
 }
 
 .animate-chat-beep-beep {
-    animation: chat-beep-beep 2s ease-in-out infinite;
+    animation: chat-beep-beep 8s ease-in-out infinite;
+}
+
+/* Zap: quick scale + opacity exit for chat hint */
+@keyframes zap-out {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+}
+
+.animate-zap-out {
+    animation: zap-out 0.4s ease-out forwards;
 }

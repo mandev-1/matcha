@@ -5,6 +5,13 @@ import (
 	"net/http"
 )
 
+// Input length limits for SQL injection / DoS protection (all DB writes use parameterized queries only).
+const (
+	MaxMessageContentLength = 4096   // chat message
+	MaxBiographyLength      = 2000  // profile bio
+	MaxTagLength            = 64    // single tag (e.g. #hiking)
+)
+
 // JSONResponse is a helper for JSON responses
 type JSONResponse struct {
 	Success bool        `json:"success"`
@@ -38,5 +45,16 @@ func SendError(w http.ResponseWriter, status int, message string) {
 // ParseJSONBody parses JSON from request body
 func ParseJSONBody(r *http.Request, v interface{}) error {
 	return json.NewDecoder(r.Body).Decode(v)
+}
+
+// HealthAPI handles GET /api/health - no auth required, returns 200 when server is up
+func HealthAPI(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(JSONResponse{Success: true, Data: map[string]string{"status": "ok"}})
 }
 

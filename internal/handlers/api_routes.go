@@ -11,6 +11,9 @@ import (
 
 // SetupAPIRoutes configures all API routes (JSON responses)
 func SetupAPIRoutes(mux *goji.Mux) {
+	// Health check (no auth) - for server status / devtools
+	mux.HandleFunc(pat.Get("/api/health"), HealthAPI)
+
 	// Authentication API
 	mux.HandleFunc(pat.Post("/api/register"), RegisterAPI)
 	mux.HandleFunc(pat.Post("/api/login"), LoginAPI)
@@ -51,8 +54,9 @@ func SetupAPIRoutes(mux *goji.Mux) {
 	mux.HandleFunc(pat.Get("/api/messages/:id"), MessagesAPI)
 	mux.HandleFunc(pat.Post("/api/messages/:id"), SendMessageAPI)
 
-	// Notifications API
+	// Notifications API (mark-all-read is literal; :id/read is parameterized)
 	mux.HandleFunc(pat.Get("/api/notifications"), NotificationsAPI)
+	mux.HandleFunc(pat.Post("/api/notifications/mark-all-read"), MarkAllNotificationsReadAPI)
 	mux.HandleFunc(pat.Post("/api/notifications/:id/read"), MarkNotificationReadAPI)
 
 	// Tags API
@@ -60,6 +64,9 @@ func SetupAPIRoutes(mux *goji.Mux) {
 	mux.HandleFunc(pat.Get("/api/tags/user-match"), UserTagMatchAPI)
 	mux.HandleFunc(pat.Post("/api/tags/add"), AddTagAPI)
 	mux.HandleFunc(pat.Post("/api/tags/remove"), RemoveTagAPI)
+
+	// Trends API (popular tags, personality, gender, orientation)
+	mux.HandleFunc(pat.Get("/api/trends"), TrendsAPI)
 
 	// Bot Activity API
 	mux.HandleFunc(pat.Get("/api/bot-activity"), BotActivityLogAPI)

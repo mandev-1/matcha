@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { ServerStatusModal } from "@/components/ServerStatusModal";
 
 interface ServerStatusContextType {
@@ -16,33 +16,37 @@ export function ServerStatusProvider({ children }: { children: React.ReactNode }
 
   const checkServerStatus = useCallback(async () => {
     try {
-      // Try a simple API call to check server status
-      const response = await fetch("/api/profile", {
+      const response = await fetch("/api/health", {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
-
-      if (response.ok || response.status === 401) {
-        // Server is online (401 is OK - just means not authenticated)
+      if (response.ok) {
         setIsServerOffline(false);
       } else if (response.status >= 500) {
-        // Server error
         setIsServerOffline(true);
       } else {
-        // Other errors might be client-side, don't mark as offline
+        // 404 or other client error: don't show offline modal
         setIsServerOffline(false);
       }
-    } catch (error) {
-      // Network error - server is likely offline
+    } catch {
       setIsServerOffline(true);
     }
-  }, [setIsServerOffline]);
+  }, []);
 
   const handleRetry = useCallback(async () => {
     setIsServerOffline(false);
     await checkServerStatus();
+  }, [checkServerStatus]);
+
+  // Check server on mount and when window regains focus so the modal shows on all pages
+  useEffect(() => {
+    checkServerStatus();
+  }, [checkServerStatus]);
+
+  useEffect(() => {
+    const onFocus = () => checkServerStatus();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [checkServerStatus]);
 
   return (

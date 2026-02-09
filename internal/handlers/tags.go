@@ -67,7 +67,7 @@ func AddTagAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Normalize tag (ensure it starts with #)
+	// Normalize tag (ensure it starts with #); length limit for safety (parameterized query only — SQL injection protection)
 	tag := strings.TrimSpace(req.Tag)
 	if tag == "" {
 		SendError(w, http.StatusBadRequest, "Tag cannot be empty")
@@ -75,6 +75,10 @@ func AddTagAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	if !strings.HasPrefix(tag, "#") {
 		tag = "#" + tag
+	}
+	if len(tag) > MaxTagLength {
+		SendError(w, http.StatusBadRequest, "Tag too long")
+		return
 	}
 
 	// Check if user already has 5 tags
@@ -129,7 +133,7 @@ func AddTagAPI(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// RemoveTagAPI handles POST /api/tags/remove
+// RemoveTagAPI handles POST /api/tags/remove (parameterized query only — SQL injection protection).
 func RemoveTagAPI(w http.ResponseWriter, r *http.Request) {
 	// Get current user ID from authentication token
 	currentUserID, err := getUserIDFromRequest(r)
@@ -147,7 +151,7 @@ func RemoveTagAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Normalize tag (ensure it starts with #)
+	// Normalize tag (ensure it starts with #); length limit for safety
 	tag := strings.TrimSpace(req.Tag)
 	if tag == "" {
 		SendError(w, http.StatusBadRequest, "Tag cannot be empty")
@@ -155,6 +159,10 @@ func RemoveTagAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	if !strings.HasPrefix(tag, "#") {
 		tag = "#" + tag
+	}
+	if len(tag) > MaxTagLength {
+		SendError(w, http.StatusBadRequest, "Tag too long")
+		return
 	}
 
 	// Delete tag

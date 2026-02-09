@@ -78,30 +78,77 @@ export default function RunwayPage() {
       return;
     }
 
+    if (pictures.length === 0) {
+      addToast({
+        title: "At least one photo required",
+        description: "Please add at least one photo before publishing your profile.",
+        color: "danger",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // First, save the profile data (gender, sexual preference, bio, etc.)
+      // Save profile (gender, preference, bio, tags with same sanitization as Profile, plus personality fields)
+      const tagsToSave = tags.slice(0, 5).map((t) => normalizeTag(t)).filter(Boolean);
+      const profilePayload: Record<string, unknown> = {
+        gender: selectedGender,
+        sexual_preference: selectedPreference,
+        biography: bio,
+        tags: tagsToSave,
+      };
+      if (bigFive.openness || bigFive.conscientiousness || bigFive.extraversion || bigFive.agreeableness || bigFive.neuroticism) {
+        profilePayload.big_five = bigFive;
+      }
+      if (mbti) profilePayload.mbti = mbti;
+      if (caliper) profilePayload.caliper_profile = caliper;
+      if (siblings) profilePayload.siblings = siblings;
+
       const profileResponse = await fetch("/api/profile", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          gender: selectedGender,
-          sexual_preference: selectedPreference,
-          biography: bio,
-        }),
+        body: JSON.stringify(profilePayload),
       });
 
       if (!profileResponse.ok) {
         const errorData = await profileResponse.json();
-        console.error("Failed to save profile:", errorData.error);
+        addToast({
+          title: "Failed to save profile",
+          description: errorData.error || "Please try again",
+          color: "danger",
+        });
         setLoading(false);
         return;
       }
 
-      // Then, mark setup as complete
+      // Upload photos (at least one required)
+      for (let i = 0; i < pictures.length; i++) {
+        const file = pictures[i];
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("slot", i.toString());
+        formData.append("is_profile", i === 0 ? "1" : "0");
+        const uploadRes = await fetch("/api/profile/upload-image", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json().catch(() => ({}));
+          addToast({
+            title: "Upload failed",
+            description: errData.error || `Failed to upload photo ${i + 1}`,
+            color: "danger",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Mark setup as complete
       const response = await fetch("/api/profile/setup-complete", {
         method: "POST",
         headers: {
@@ -113,19 +160,24 @@ export default function RunwayPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Update user in context
         if (user && token) {
-          login(token, {
-            ...user,
-            is_setup: true,
-          });
+          login(token, { ...user, is_setup: true });
         }
         router.push("/matcha");
       } else {
-        console.error("Failed to complete setup:", data.error);
+        addToast({
+          title: "Setup failed",
+          description: data.error || "Could not complete setup",
+          color: "danger",
+        });
       }
     } catch (err) {
       console.error("Error completing setup:", err);
+      addToast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Something went wrong",
+        color: "danger",
+      });
     } finally {
       setLoading(false);
     }
@@ -149,15 +201,26 @@ export default function RunwayPage() {
   const [siblings, setSiblings] = React.useState<string>("");
   const [pictures, setPictures] = React.useState<File[]>([]);
 
+  // Same sanitization as Profile / discover: trim, optional # prefix, max 5 tags
+  const normalizeTag = (tag: string): string => {
+    const trimmed = tag.trim();
+    if (!trimmed) return trimmed;
+    return trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+  };
+
   const addTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
+    const trimmed = tagInput.trim();
+    if (!trimmed || tags.length >= 5) return;
+    const normalized = normalizeTag(trimmed);
+    const exists = tags.some((t) => normalizeTag(t).toLowerCase() === normalized.toLowerCase());
+    if (!exists) {
+      setTags([...tags, normalized]);
       setTagInput("");
     }
   };
 
   const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const handlePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -333,7 +396,9 @@ export default function RunwayPage() {
                           variant="bordered"
                           className="flex-1"
                         />
-                        <Button onPress={addTag} variant="flat">Add</Button>
+                        <Button onPress={addTag} variant="flat" isDisabled={tags.length >= 5 || !tagInput.trim()}>
+                          Add
+                        </Button>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {tags.map((tag) => (
@@ -574,21 +639,30 @@ export default function RunwayPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 mt-6">
-                    <Button
-                      variant="bordered"
-                      className="flex-1"
-                      onPress={() => setCurrentStep(1)}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      className="flex-1 bg-pink-500 text-white hover:bg-pink-600"
-                      onPress={handleFinalStep}
-                      isLoading={loading}
-                    >
-                      Who will I find on Matcha?
-                    </Button>
+                  <div className="flex flex-col gap-2 mt-6">
+                    <div className="flex gap-3">
+                      <Button
+                        variant="bordered"
+                        className="flex-1"
+                        onPress={() => setCurrentStep(1)}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        className="flex-1 bg-pink-500 text-white hover:bg-pink-600"
+                        onPress={handleFinalStep}
+                        isLoading={loading}
+                        isDisabled={pictures.length === 0}
+                        title={pictures.length === 0 ? "Add at least one photo to continue" : undefined}
+                      >
+                        Who will I find on Matcha?
+                      </Button>
+                    </div>
+                    {pictures.length === 0 && (
+                      <p className="text-sm text-warning text-center">
+                        Add at least one photo to publish your profile.
+                      </p>
+                    )}
                   </div>
                 </ScrollShadow>
               </CardBody>

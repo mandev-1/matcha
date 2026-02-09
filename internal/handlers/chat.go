@@ -285,14 +285,18 @@ func SendMessageAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Trim and validate content
+	// Trim and validate content (length limit for safety; SQL injection prevented by parameterized query only)
 	req.Content = strings.TrimSpace(req.Content)
 	if req.Content == "" {
 		SendError(w, http.StatusBadRequest, "Message content cannot be empty")
 		return
 	}
+	if len(req.Content) > MaxMessageContentLength {
+		SendError(w, http.StatusBadRequest, "Message too long")
+		return
+	}
 
-	// Insert message using write queue for concurrent safety
+	// Insert message using write queue — parameterized query only (SQL injection protection)
 	writeResult := database.GetWriteQueue().Enqueue(`
 		INSERT INTO messages (from_user_id, to_user_id, content, is_read, created_at)
 		VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP)

@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { addToast } from "@heroui/toast";
-import { ServerStatusModal } from "@/components/ServerStatusModal";
+import { useServerStatus } from "@/contexts/ServerStatusContext";
 
 interface UserProfile {
   id: number;
@@ -66,7 +66,7 @@ export default function DiscoverPage() {
   const [popularTags, setPopularTags] = React.useState<PopularTag[]>([]);
   const [currentUserTags, setCurrentUserTags] = React.useState<string[]>([]);
   const [isLoadingTags, setIsLoadingTags] = React.useState(false);
-  const [isServerOffline, setIsServerOffline] = React.useState(false);
+  const { isServerOffline, setIsServerOffline } = useServerStatus();
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
   const [showTagAlert, setShowTagAlert] = React.useState(true);
   const [addedTags, setAddedTags] = React.useState<Set<string>>(new Set());
@@ -462,70 +462,17 @@ export default function DiscoverPage() {
     }
   }, [tagMatchStatus, isPopoverOpen]);
 
-  const handleRetryConnection = async () => {
-    setIsServerOffline(false);
-    
-    // Temporarily suppress console.error for retry attempts
-    const originalConsoleError = console.error;
-    const suppressedErrors: any[] = [];
-    console.error = (...args: any[]) => {
-      // Suppress errors during retry
-      suppressedErrors.push(args);
-    };
-    
-    try {
-      await loadProfiles(0);
-      
-      // Reload tag info if server came back online
-      if (token) {
-        try {
-          const matchResponse = await fetch("/api/tags/user-match", {
-            headers: { Authorization: `Bearer ${token}` },
-          }).catch(() => {
-            setIsServerOffline(true);
-            return null;
-          });
-          
-          if (matchResponse && matchResponse.ok) {
-            const matchData = await matchResponse.json();
-            if (matchData.success && matchData.data) {
-              setTagMatchStatus(matchData.data);
-            }
-          }
-
-          const popularResponse = await fetch("/api/tags/popular", {
-            headers: { Authorization: `Bearer ${token}` },
-          }).catch(() => {
-            setIsServerOffline(true);
-            return null;
-          });
-          
-          if (popularResponse && popularResponse.ok) {
-            const popularData = await popularResponse.json();
-            if (popularData.success && popularData.data) {
-              setPopularTags(popularData.data.popular_tags || []);
-            }
-          }
-        } catch (error) {
-          // Silently handle errors - server might still be offline
-          setIsServerOffline(true);
-        }
-      }
-    } catch (error) {
-      // Silently handle any unexpected errors - server is still offline
-      setIsServerOffline(true);
-    } finally {
-      // Restore console.error
-      console.error = originalConsoleError;
+  // Refetch discover when server comes back online (e.g. after Retry in global modal)
+  const wasOfflineRef = React.useRef(false);
+  React.useEffect(() => {
+    if (wasOfflineRef.current && !isServerOffline) {
+      loadProfiles(0);
     }
-  };
+    wasOfflineRef.current = isServerOffline;
+  }, [isServerOffline, loadProfiles]);
 
   return (
     <ProtectedRoute requireAuth={true} requireSetup={true}>
-      <ServerStatusModal 
-        isOpen={isServerOffline} 
-        onRetry={handleRetryConnection}
-      />
       <div className="flex flex-col gap-6 max-w-7xl mx-auto w-full px-2 md:px-4 py-8">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <h1 
@@ -628,7 +575,7 @@ export default function DiscoverPage() {
 
 
         {isLoading && profiles.length === 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {[...Array(8)].map((_, i) => (
               <Card key={i} className="w-full">
                 <Skeleton className="rounded-lg">
@@ -655,7 +602,7 @@ export default function DiscoverPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               {profiles.map((profile) => {
                 const isMafiaBoss = Math.floor(profile.fame_rating) >= MAFIA_BOSS_LEVEL;
                 const card = (

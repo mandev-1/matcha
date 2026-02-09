@@ -517,14 +517,14 @@ export default function UserProfilePage() {
             </div>
           </div>
           <CardFooter className="justify-between before:bg-white/10 border-white/20 border-1 overflow-hidden py-1 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
-            <p className="text-tiny text-white font-semibold drop-shadow-lg">
+            <p className="text-tiny text-blue-800 dark:text-blue-300 font-semibold drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
               Level {Math.floor(profile.fame_rating)} |{" "}
               {profile.is_liked ? (
                 profile.is_connected ? (
                   <>
                     Start chatting with{" "}
                     <span 
-                      className="underline cursor-pointer hover:text-white"
+                      className="underline cursor-pointer hover:text-blue-600 dark:hover:text-blue-200"
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push("/chats");

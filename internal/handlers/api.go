@@ -55,11 +55,17 @@ func NotificationsAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get limit parameter (default 50)
-	limit := 50
+	// Get limit parameter (default 20 for "top recent")
+	limit := 20
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
 			limit = l
+		}
+	}
+	offset := 0
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			offset = o
 		}
 	}
 
@@ -75,8 +81,8 @@ func NotificationsAPI(w http.ResponseWriter, r *http.Request) {
 		FROM notifications
 		WHERE user_id = ?
 		ORDER BY created_at DESC
-		LIMIT ?
-	`, userID, limit)
+		LIMIT ? OFFSET ?
+	`, userID, limit, offset)
 
 	if err != nil {
 		log.Printf("Error querying notifications: %v", err)
@@ -87,6 +93,11 @@ func NotificationsAPI(w http.ResponseWriter, r *http.Request) {
 
 	notifications := []map[string]interface{}{}
 	unreadCount := 0
+
+	// Total unread count (for badge)
+	var totalUnread int
+	_ = database.DB.QueryRow(`SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0`, userID).Scan(&totalUnread)
+	unreadCount = totalUnread
 
 	for rows.Next() {
 		var notification struct {
@@ -112,9 +123,6 @@ func NotificationsAPI(w http.ResponseWriter, r *http.Request) {
 		}
 
 		isRead := notification.IsRead == 1
-		if !isRead {
-			unreadCount++
-		}
 
 		out := map[string]interface{}{
 			"id":         notification.ID,
@@ -197,6 +205,24 @@ func MarkNotificationReadAPI(w http.ResponseWriter, r *http.Request) {
 	SendSuccess(w, map[string]interface{}{
 		"message": "Notification marked as read",
 	})
+}
+
+// MarkAllNotificationsReadAPI handles POST /api/notifications/mark-all-read
+func MarkAllNotificationsReadAPI(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserIDFromRequest(r)
+	if err != nil {
+		SendError(w, http.StatusUnauthorized, "Invalid or missing authentication token")
+		return
+	}
+	_, err = database.DB.Exec(`
+		UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0
+	`, userID)
+	if err != nil {
+		log.Printf("Error marking all notifications read: %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to mark all as read")
+		return
+	}
+	SendSuccess(w, map[string]interface{}{"message": "All notifications marked as read"})
 }
 
 

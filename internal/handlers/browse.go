@@ -207,33 +207,38 @@ func BrowseAPI(w http.ResponseWriter, r *http.Request) {
 		args = append(args, currentUserID, currentUserID)
 	}
 
-	// Orientation filtering
-	// If user has not specified orientation, treat as bisexual (show all)
-	// Logic:
-	// - If current user wants "male": show profiles with gender="male" AND (they want "female" OR "both" OR NULL)
-	// - If current user wants "female": show profiles with gender="female" AND (they want "male" OR "both" OR NULL)
-	// - If current user wants "both" or NULL: show all profiles where they want current user's gender OR "both" OR NULL
-	if currentUserID > 0 && currentUserGender.Valid {
+	// Orientation filtering: limit results by current user's sexual preference (and optionally gender) from profile
+	// - If current user wants "male": show profiles with gender="male" AND (they want current user's gender OR "both" OR NULL)
+	// - If current user wants "female": show profiles with gender="female" AND (they want current user's gender OR "both" OR NULL)
+	// - If current user wants "both" or NULL: show profiles that want current user's gender OR "both" OR NULL (requires current user gender)
+	// If only sexual_preference is set (no gender): still filter by preferred gender so /matcha and discover respect preference.
+	if currentUserID > 0 {
 		currentUserPref := strings.ToLower(strings.TrimSpace(currentUserSexualPreference.String))
-		currentUserGen := strings.ToLower(strings.TrimSpace(currentUserGender.String))
-
-		// Default to "both" (bisexual) if preference is empty
+		currentUserGen := ""
+		if currentUserGender.Valid {
+			currentUserGen = strings.ToLower(strings.TrimSpace(currentUserGender.String))
+		}
 		if currentUserPref == "" {
 			currentUserPref = "both"
 		}
 
 		if currentUserPref == "male" {
-			// Current user wants males - show male profiles that want current user's gender or both
-			query += " AND u.gender = 'male' AND (u.sexual_preference = ? OR u.sexual_preference = 'both' OR u.sexual_preference IS NULL OR u.sexual_preference = '')"
-			args = append(args, currentUserGen)
+			query += " AND u.gender = 'male'"
+			if currentUserGen != "" {
+				query += " AND (u.sexual_preference = ? OR u.sexual_preference = 'both' OR u.sexual_preference IS NULL OR u.sexual_preference = '')"
+				args = append(args, currentUserGen)
+			}
 		} else if currentUserPref == "female" {
-			// Current user wants females - show female profiles that want current user's gender or both
-			query += " AND u.gender = 'female' AND (u.sexual_preference = ? OR u.sexual_preference = 'both' OR u.sexual_preference IS NULL OR u.sexual_preference = '')"
-			args = append(args, currentUserGen)
+			query += " AND u.gender = 'female'"
+			if currentUserGen != "" {
+				query += " AND (u.sexual_preference = ? OR u.sexual_preference = 'both' OR u.sexual_preference IS NULL OR u.sexual_preference = '')"
+				args = append(args, currentUserGen)
+			}
 		} else {
-			// Current user is bisexual (both or empty) - show profiles that want current user's gender or both or empty
-			query += " AND (u.sexual_preference = ? OR u.sexual_preference = 'both' OR u.sexual_preference IS NULL OR u.sexual_preference = '')"
-			args = append(args, currentUserGen)
+			if currentUserGen != "" {
+				query += " AND (u.sexual_preference = ? OR u.sexual_preference = 'both' OR u.sexual_preference IS NULL OR u.sexual_preference = '')"
+				args = append(args, currentUserGen)
+			}
 		}
 	}
 

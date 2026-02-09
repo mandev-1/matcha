@@ -101,6 +101,7 @@ export default function Component() {
   const [location, setLocation] = React.useState<string>("");
   const [locationUpdatedAt, setLocationUpdatedAt] = React.useState<string | null>(null);
   const [lastSeen, setLastSeen] = React.useState<string | null>(null);
+  const [likesReceivedCount, setLikesReceivedCount] = React.useState<number>(0);
   
   // Image state
   const [userImages, setUserImages] = React.useState<(string | null)[]>(Array(5).fill(null));
@@ -131,36 +132,35 @@ export default function Component() {
     setIsLoading(true);
   }, []); // Only on mount/route change
 
-  // Load profile data
-  React.useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        setIsLoading(true);
-        const token = localStorage.getItem("token");
-        const response = await fetch("/api/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+  const loadProfile = React.useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.data) {
-            const profile = data.data;
-            setFirstName(profile.first_name || "");
-            setLastName(profile.last_name || "");
-            setEmail(profile.email || "");
-            setSelectedGender(profile.gender || "");
-            setSelectedPreference(profile.sexual_preference || "");
-            setBio(profile.biography || "");
-            // Normalize tags to ensure they all have hashtags
-            const normalizedTags = (profile.tags || []).map((tag: string) => normalizeTag(tag));
-            setTags(normalizedTags);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data) {
+          const profile = data.data;
+          setFirstName(profile.first_name || "");
+          setLastName(profile.last_name || "");
+          setEmail(profile.email || "");
+          setSelectedGender(profile.gender || "");
+          setSelectedPreference(profile.sexual_preference || "");
+          setBio(profile.biography || "");
+          // Normalize tags from server so they persist and don't reset
+          const normalizedTags = (profile.tags || []).map((tag: string) => normalizeTag(tag));
+          setTags(normalizedTags);
             setLatitude(profile.latitude || null);
             setLongitude(profile.longitude || null);
             setLocation(profile.location || "");
             setLocationUpdatedAt(profile.location_updated_at || null);
             setLastSeen(profile.last_seen || null);
+            setLikesReceivedCount(typeof profile.likes_received_count === "number" ? profile.likes_received_count : 0);
             
             // Check if location is missing and show modal
             if (!profile.latitude || !profile.longitude) {
@@ -209,10 +209,11 @@ export default function Component() {
       } finally {
         setIsLoading(false);
       }
-    };
-
-    loadProfile();
   }, []);
+
+  React.useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   // Helper function to normalize tag (ensure it starts with #)
   const normalizeTag = (tag: string): string => {
@@ -303,7 +304,8 @@ export default function Component() {
         description: "Your profile has been saved.",
         color: "primary",
       });
-      // Switch to My Card tab after successful save
+      // Refetch profile so tags and all fields stay in sync with server (prevents tags resetting)
+      await loadProfile();
       setSelectedTab("card-preview");
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -420,8 +422,7 @@ export default function Component() {
 
   return (
     <>
-
-      <div className="flex h-dvh w-full max-w-full flex-col gap-8">
+      <div className="profile-page-100 flex h-dvh w-full max-w-full flex-col gap-8">
         <div className="flex items-center justify-center gap-2">
           <Tabs 
             className="flex-1 justify-center"
@@ -455,6 +456,7 @@ export default function Component() {
             selectedPreference={selectedPreference}
             mbti={mbti}
             lastSeen={lastSeen}
+            likesReceivedCount={likesReceivedCount}
             onImageUploadModalOpen={onImageUploadModalOpen}
             onEditClick={() => setSelectedTab("basics")}
           />

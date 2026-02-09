@@ -1,4 +1,4 @@
-.PHONY: build run test clean hero docker-build docker-up docker-down frontend-install frontend-build frontend-dev bot-simulator bot-simulator-custom mailhog mailhog-stop mailhog-ports mailhog-kill-ports
+.PHONY: build run test clean hero docker-build docker-up docker-down frontend-install frontend-build frontend-dev bot-simulator bot-simulator-custom mailhog mailhog-stop mailhog-ports mailhog-kill-ports init-db migrate-notifications
 
 # Build the application
 build:
@@ -44,6 +44,12 @@ docker-logs:
 init-db:
 	mkdir -p data
 	sqlite3 data/matcha.db < migrations/schema.sql
+
+# Add related_user_id to notifications (run once if you see "table notifications has no column named related_user_id")
+migrate-notifications:
+	@mkdir -p data
+	@sqlite3 data/matcha.db < migrations/add_notifications_related_user_id.sql
+	@echo "Migration applied: notifications.related_user_id"
 
 # Frontend commands (Next.js)
 frontend-install:

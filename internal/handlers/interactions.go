@@ -174,6 +174,13 @@ func UnlikeAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if they were connected (mutual like) before we delete — if so, notify the other user
+	var dummy int
+	err = database.DB.QueryRow(`
+		SELECT 1 FROM likes WHERE from_user_id = ? AND to_user_id = ?
+	`, targetUserID, currentUserID).Scan(&dummy)
+	wasConnected := (err == nil)
+
 	// Delete the like
 	result, err := database.DB.Exec(`
 		DELETE FROM likes 
@@ -197,6 +204,11 @@ func UnlikeAPI(w http.ResponseWriter, r *http.Request) {
 			"user_id": targetUserID,
 		})
 		return
+	}
+
+	// Notify the user who was unliked (only when they were connected — IV.7)
+	if wasConnected {
+		insertNotificationSync(targetUserID, "unlike", getDisplayName(currentUserID)+" is no longer connected with you", currentUserID)
 	}
 
 	SendSuccess(w, map[string]interface{}{
