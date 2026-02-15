@@ -6,6 +6,7 @@ import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Image } from "@heroui/image";
 import { Skeleton } from "@heroui/skeleton";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Icon } from "@iconify/react";
 import { useRouter, useParams } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -41,6 +42,7 @@ export default function ChatPage() {
   const [isSending, setIsSending] = React.useState(false);
   const [messageText, setMessageText] = React.useState("");
   const [currentTime, setCurrentTime] = React.useState(new Date());
+  const [showBlockDialog, setShowBlockDialog] = React.useState(false);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   // Load chat user info first (quick)
@@ -59,13 +61,19 @@ export default function ChatPage() {
         if (userResponse.ok) {
           const userData = await userResponse.json();
           if (userData.success && userData.data) {
+            const data = userData.data;
             setChatUser({
-              id: userData.data.id,
-              first_name: userData.data.first_name,
-              last_name: userData.data.last_name,
-              profile_picture: userData.data.profile_picture || userData.data.images?.[0] || "",
-              is_online: userData.data.is_online || false,
+              id: data.id,
+              first_name: data.first_name,
+              last_name: data.last_name,
+              profile_picture: data.profile_picture || data.images?.[0] || "",
+              is_online: data.is_online || false,
             });
+            const iBlockThem = !!data.is_blocked;
+            const theyBlockMe = !!data.they_block_me;
+            if (iBlockThem || theyBlockMe) {
+              setShowBlockDialog(true);
+            }
           } else {
             router.push("/chats");
           }
@@ -301,6 +309,43 @@ export default function ChatPage() {
 
   return (
     <ProtectedRoute requireAuth={true} requireSetup={true}>
+      {/* Blocking yellow dialog: you're blocking them or they're blocking you */}
+      <Modal
+        isOpen={showBlockDialog}
+        onClose={() => {}}
+        isDismissable={false}
+        hideCloseButton
+        placement="center"
+        classNames={{
+          base: "border-2 border-warning bg-warning-50 dark:bg-warning-100/10",
+          header: "border-b border-warning-200",
+          body: "py-6",
+          footer: "border-t border-warning-200",
+        }}
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1 text-warning-700 dark:text-warning-600">
+            Blocked
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-default-700 dark:text-default-300">
+              You are blocking this person right now (or they blocked you lmao). 😂 Be cool bro,
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              color="warning"
+              onPress={() => {
+                setShowBlockDialog(false);
+                router.push("/matcha");
+              }}
+            >
+              OK
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <div className="flex flex-col h-[calc(100vh-200px)] max-w-4xl mx-auto w-full px-2 md:px-4 py-8">
         <Card className="flex flex-col h-full">
           {/* Chat Header */}

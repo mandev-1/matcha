@@ -652,9 +652,7 @@ func UploadImageAPI(w http.ResponseWriter, r *http.Request) {
 	randomHex := hex.EncodeToString(randomBytes)
 	timestamp := time.Now().Unix()
 	filename := fmt.Sprintf("%s_%d_%d%s", randomHex, timestamp, slot, ext)
-	filePath := filepath.Join(userUploadDir, filename)
-
-	// Save file
+	filePath := filepath.Join(userUploadDir, filename)	// Save file
 	dst, err := os.Create(filePath)
 	if err != nil {
 		log.Printf("Error creating file: %v", err)

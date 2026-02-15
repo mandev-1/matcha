@@ -548,7 +548,10 @@ export default function UserProfilePage() {
               )}
             </p>
             <Button
-              className="text-tiny text-white bg-black/20"
+              className={profile.is_liked
+                ? "text-tiny text-white bg-black/20"
+                : "text-tiny bg-pink-500 text-white/95 font-semibold drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] hover:bg-pink-600 active:bg-pink-700 md:bg-black/20 md:text-white md:font-normal md:drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] md:hover:bg-black/20"
+              }
               color={profile.is_liked ? "danger" : "default"}
               radius="lg"
               size="sm"
@@ -556,7 +559,7 @@ export default function UserProfilePage() {
               onPress={handleLike}
               isLoading={isLiking}
               isDisabled={profile.is_blocked}
-              startContent={<Icon icon={profile.is_liked ? "solar:heart-bold" : "solar:heart-linear"} />}
+              startContent={<Icon icon={profile.is_liked ? "solar:heart-bold" : "solar:heart-linear"} className={!profile.is_liked ? "drop-shadow-[0_0_6px_rgba(255,255,255,0.6)] md:drop-shadow-none" : undefined} />}
             >
               {profile.is_liked ? "I don't like anymore" : "Like"}
             </Button>

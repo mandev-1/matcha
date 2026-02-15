@@ -16,6 +16,8 @@ import { ScrollShadow } from "@heroui/scroll-shadow";
 import { Chip } from "@heroui/chip";
 import { Select, SelectItem } from "@heroui/select";
 import { addToast, ToastProvider } from "@heroui/toast";
+import { Image } from "@heroui/image";
+import { Icon } from "@iconify/react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import RowSteps from "@/components/row-steps";
@@ -78,10 +80,10 @@ export default function RunwayPage() {
       return;
     }
 
-    if (pictures.length === 0) {
+    if (!hasAtLeastOnePhoto) {
       addToast({
         title: "At least one photo required",
-        description: "Please add at least one photo before publishing your profile.",
+        description: "Please add a profile picture (first card) before publishing your profile.",
         color: "danger",
       });
       return;
@@ -124,9 +126,10 @@ export default function RunwayPage() {
         return;
       }
 
-      // Upload photos (at least one required)
-      for (let i = 0; i < pictures.length; i++) {
-        const file = pictures[i];
+      // Upload photos slot by slot (only slots that have a file)
+      for (let i = 0; i < 5; i++) {
+        const file = pictureSlots[i];
+        if (!file) continue;
         const formData = new FormData();
         formData.append("image", file);
         formData.append("slot", i.toString());
@@ -199,7 +202,8 @@ export default function RunwayPage() {
   const [mbti, setMbti] = React.useState<string>("");
   const [caliper, setCaliper] = React.useState<string>("");
   const [siblings, setSiblings] = React.useState<string>("");
-  const [pictures, setPictures] = React.useState<File[]>([]);
+  // 5 slots: index 0 = profile picture, 1–4 = additional photos
+  const [pictureSlots, setPictureSlots] = React.useState<(File | null)[]>(() => Array(5).fill(null));
 
   // Same sanitization as Profile / discover: trim, optional # prefix, max 5 tags
   const normalizeTag = (tag: string): string => {
@@ -223,12 +227,29 @@ export default function RunwayPage() {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const handlePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files).slice(0, 5);
-      setPictures(files);
-    }
+  const setPictureSlot = (index: number, file: File | null) => {
+    setPictureSlots((prev) => {
+      const next = [...prev];
+      next[index] = file;
+      return next;
+    });
   };
+
+  const hasAtLeastOnePhoto = pictureSlots.some((f) => f != null);
+  const profilePictureSet = pictureSlots[0] != null;
+
+  // Preview URLs for display; revoke when slots change or unmount to avoid leaks
+  const [previewUrls, setPreviewUrls] = React.useState<(string | null)[]>(() => Array(5).fill(null));
+  const previewUrlRef = React.useRef<(string | null)[]>([]);
+  React.useEffect(() => {
+    const urls = pictureSlots.map((f) => (f ? URL.createObjectURL(f) : null));
+    previewUrlRef.current.forEach((u) => u && URL.revokeObjectURL(u));
+    previewUrlRef.current = urls;
+    setPreviewUrls(urls);
+    return () => {
+      previewUrlRef.current.forEach((u) => u && URL.revokeObjectURL(u));
+    };
+  }, [pictureSlots]);
 
   const validateBio = (bioText: string) => {
     const newErrors: string[] = [];
@@ -597,45 +618,77 @@ export default function RunwayPage() {
                   </p>
 
                   <div className="space-y-6">
-                    {/* Photo Upload Section */}
+                    {/* 5 photo slots: first = profile picture, then 4 more */}
                     <div>
-                      <h3 className="text-lg font-semibold mb-3">Upload Photos (Up to 5)</h3>
+                      <h3 className="text-lg font-semibold mb-3">Upload Photos</h3>
                       <p className="text-sm text-default-500 mb-4">
-                        Add up to 5 photos of yourself. At least one photo is required.
+                        First card is your profile picture. Add up to 5 photos by clicking each card. At least one required.
                       </p>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handlePictureUpload}
-                        className="hidden"
-                        id="picture-upload"
-                      />
-                      <label htmlFor="picture-upload">
-                        <Button
-                          as="span"
-                          variant="bordered"
-                          className="w-full"
-                          onPress={() => document.getElementById("picture-upload")?.click()}
-                        >
-                          {pictures.length > 0 ? `Selected ${pictures.length} photo(s)` : "Choose Photos"}
-                        </Button>
-                      </label>
-                      {pictures.length > 0 && (
-                        <div className="mt-4 grid grid-cols-3 gap-2">
-                          {pictures.map((file, index) => (
-                            <div key={index} className="relative aspect-square bg-default-200 rounded-lg flex items-center justify-center">
-                              <span className="text-xs text-default-500">{file.name || `Photo ${index + 1}`}</span>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {[0, 1, 2, 3, 4].map((index) => {
+                          const file = pictureSlots[index];
+                          const previewUrl = previewUrls[index] ?? null;
+                          return (
+                            <div key={index} className="relative aspect-square rounded-lg overflow-hidden border-2 border-default-200 bg-default-100">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                id={`picture-upload-${index}`}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) setPictureSlot(index, f);
+                                  e.target.value = "";
+                                }}
+                              />
                               <button
-                                onClick={() => setPictures(pictures.filter((_, i) => i !== index))}
-                                className="absolute top-1 right-1 bg-danger text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                                type="button"
+                                className="absolute inset-0 w-full h-full flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary rounded-lg"
+                                onClick={() => document.getElementById(`picture-upload-${index}`)?.click()}
                               >
-                                ×
+                                {file && previewUrl ? (
+                                  <>
+                                    <Image
+                                      alt={index === 0 ? "Profile" : `Photo ${index + 1}`}
+                                      src={previewUrl}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <Icon icon="solar:camera-add-linear" className="text-2xl text-white" />
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="flex flex-col items-center justify-center text-default-400">
+                                    <Icon icon="solar:gallery-add-linear" className="text-3xl mb-1" />
+                                    <span className="text-xs">Click to upload</span>
+                                  </div>
+                                )}
                               </button>
+                              {index === 0 && (
+                                <div className="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-0.5 rounded">
+                                  Profile
+                                </div>
+                              )}
+                              {file && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPictureSlot(index, null);
+                                  }}
+                                  className="absolute top-1 right-1 bg-danger text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-danger-600"
+                                  aria-label="Remove photo"
+                                >
+                                  ×
+                                </button>
+                              )}
+                              <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded">
+                                {index + 1}
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -652,15 +705,15 @@ export default function RunwayPage() {
                         className="flex-1 bg-pink-500 text-white hover:bg-pink-600"
                         onPress={handleFinalStep}
                         isLoading={loading}
-                        isDisabled={pictures.length === 0}
-                        title={pictures.length === 0 ? "Add at least one photo to continue" : undefined}
+isDisabled={!hasAtLeastOnePhoto}
+                      title={!hasAtLeastOnePhoto ? "Add at least one photo to continue" : undefined}
                       >
                         Who will I find on Matcha?
                       </Button>
                     </div>
-                    {pictures.length === 0 && (
+                    {!hasAtLeastOnePhoto && (
                       <p className="text-sm text-warning text-center">
-                        Add at least one photo to publish your profile.
+                        Add at least one photo (e.g. profile picture in the first card) to publish.
                       </p>
                     )}
                   </div>

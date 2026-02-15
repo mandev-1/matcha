@@ -489,9 +489,7 @@ function ConnectionsTable() {
         </CardBody>
       </Card>
     );
-  }
-
-  return (
+  }  return (
     <Card className="w-full" radius="lg">
       <CardBody className="flex flex-col gap-4 p-4 md:p-6">
         <div className="flex items-center justify-between">

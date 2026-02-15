@@ -792,7 +792,7 @@ func UserProfileAPI(w http.ResponseWriter, r *http.Request) {
 		`, userID, currentUserID).Scan(&viewID)
 		hasViewedYourProfile = (err == nil)
 
-		// Check if current user has blocked this profile
+		// Check if current user has blocked this profile (I block them)
 		var blockCreatedAt sql.NullString
 		err = database.DB.QueryRow(`
 			SELECT created_at FROM blocks 
@@ -804,6 +804,17 @@ func UserProfileAPI(w http.ResponseWriter, r *http.Request) {
 				blockedAt = blockCreatedAt.String
 			}
 		}
+	}
+
+	// Check if this profile user has blocked the current user (they block me)
+	theyBlockMe := false
+	if currentUserID > 0 && currentUserID != userID {
+		var blockID int64
+		err = database.DB.QueryRow(`
+			SELECT id FROM blocks 
+			WHERE blocker_id = ? AND blocked_id = ?
+		`, userID, currentUserID).Scan(&blockID)
+		theyBlockMe = (err == nil)
 	}
 
 	// Record view (if current user is viewing)
@@ -854,6 +865,7 @@ func UserProfileAPI(w http.ResponseWriter, r *http.Request) {
 		"is_connected":            isConnected,
 		"has_viewed_your_profile": hasViewedYourProfile,
 		"is_blocked":              isBlocked,
+		"they_block_me":           theyBlockMe,
 	}
 
 	if blockedAt != "" {
