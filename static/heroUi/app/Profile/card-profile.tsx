@@ -11,6 +11,7 @@ import { Spinner } from "@heroui/spinner";
 import { Progress } from "@heroui/progress";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl, getUploadUrl } from "@/lib/apiUrl";
 
 interface CardProfileProps {
   userImages: (string | null)[];
@@ -70,7 +71,7 @@ export default function CardProfile({
               <Image
                 alt="Main profile image"
                 className="object-contain w-full h-full rounded-lg"
-                src={userImages[0] || "https://heroui.com/images/hero-card.jpeg"}
+                src={userImages[0] && userImages[0] !== "-" ? getUploadUrl(userImages[0]) : "https://heroui.com/images/hero-card.jpeg"}
               />
             </div>
             {/* 4 smaller images on the right - 3 columns each, 2 rows (slots 2-5) */}
@@ -79,28 +80,28 @@ export default function CardProfile({
                 <Image
                   alt="Profile image 2"
                   className="object-contain w-full h-full rounded-lg"
-                  src={userImages[1] || "https://heroui.com/images/hero-card.jpeg"}
+                  src={userImages[1] && userImages[1] !== "-" ? getUploadUrl(userImages[1]) : "https://heroui.com/images/hero-card.jpeg"}
                 />
               </div>
               <div className="h-full min-h-0 flex items-center justify-center bg-default-100 rounded-lg overflow-hidden">
                 <Image
                   alt="Profile image 3"
                   className="object-contain w-full h-full rounded-lg"
-                  src={userImages[2] || "https://heroui.com/images/hero-card.jpeg"}
+                  src={userImages[2] && userImages[2] !== "-" ? getUploadUrl(userImages[2]) : "https://heroui.com/images/hero-card.jpeg"}
                 />
               </div>
               <div className="h-full min-h-0 flex items-center justify-center bg-default-100 rounded-lg overflow-hidden">
                 <Image
                   alt="Profile image 4"
                   className="object-contain w-full h-full rounded-lg"
-                  src={userImages[3] || "https://heroui.com/images/hero-card.jpeg"}
+                  src={userImages[3] && userImages[3] !== "-" ? getUploadUrl(userImages[3]) : "https://heroui.com/images/hero-card.jpeg"}
                 />
               </div>
               <div className="h-full min-h-0 flex items-center justify-center bg-default-100 rounded-lg overflow-hidden">
                 <Image
                   alt="Profile image 5"
                   className="object-contain w-full h-full rounded-lg"
-                  src={userImages[4] || "https://heroui.com/images/hero-card.jpeg"}
+                  src={userImages[4] && userImages[4] !== "-" ? getUploadUrl(userImages[4]) : "https://heroui.com/images/hero-card.jpeg"}
                 />
               </div>
             </div>
@@ -233,7 +234,7 @@ function ProfileVisitorsCard() {
     const loadVisitors = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("/api/profile/visitors", {
+        const response = await fetch(getApiUrl("/api/profile/visitors"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -322,7 +323,7 @@ function ProfileVisitorsCard() {
               <Image
                 alt={visitor.first_name}
                 className="w-12 h-12 rounded-full object-cover"
-                src={visitor.profile_picture || "https://heroui.com/images/hero-card.jpeg"}
+                src={visitor.profile_picture && visitor.profile_picture !== "-" ? getUploadUrl(visitor.profile_picture) : "https://heroui.com/images/hero-card.jpeg"}
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -400,7 +401,7 @@ function ConnectionsTable() {
       try {
         setIsLoading(true);
         const token = localStorage.getItem("token");
-        const response = await fetch("/api/connections", {
+        const response = await fetch(getApiUrl("/api/connections"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -529,7 +530,7 @@ function ConnectionsTable() {
                     <Image
                       alt={connection.first_name}
                       className="w-10 h-10 rounded-full object-cover"
-                      src={connection.profile_picture || "https://heroui.com/images/hero-card.jpeg"}
+                      src={connection.profile_picture && connection.profile_picture !== "-" ? getUploadUrl(connection.profile_picture) : "https://heroui.com/images/hero-card.jpeg"}
                     />
                     <div>
                       <p className="font-semibold">
@@ -585,7 +586,7 @@ function FameRatingEvolutionCard() {
     const loadFameRating = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("/api/profile", {
+        const response = await fetch(getApiUrl("/api/profile"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -769,7 +770,7 @@ function JoinDateMessage() {
     const loadJoinDate = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("/api/profile", {
+        const response = await fetch(getApiUrl("/api/profile"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },

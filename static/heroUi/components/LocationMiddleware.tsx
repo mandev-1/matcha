@@ -8,6 +8,7 @@ import { addToast } from "@heroui/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
+import { getApiUrl } from "@/lib/apiUrl";
 
 interface LocationMiddlewareProps {
   children: React.ReactNode;
@@ -40,7 +41,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
 
     const checkLocation = async () => {
       try {
-        const response = await fetch("/api/profile", {
+        const response = await fetch(getApiUrl("/api/profile"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -241,7 +242,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
 
   const saveLocation = async (location: { latitude: number; longitude: number; location: string }) => {
     const token = localStorage.getItem("token");
-    const response = await fetch("/api/profile", {
+    const response = await fetch(getApiUrl("/api/profile"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

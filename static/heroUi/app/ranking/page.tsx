@@ -8,6 +8,7 @@ import { Link } from "@heroui/link";
 import { Chip } from "@heroui/chip";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { getApiUrl } from "@/lib/apiUrl";
 
 // Helper function to get value from object by key
 function getKeyValue<T extends Record<string, any>>(item: T, key: string): any {
@@ -50,7 +51,7 @@ function RankingPageContent() {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch(`/api/ranking?page=${pageNum}&limit=50`, {
+      const response = await fetch(getApiUrl(`/api/ranking?page=${pageNum}&limit=50`), {
         headers,
       });
 

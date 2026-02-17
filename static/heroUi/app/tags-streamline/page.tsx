@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { addToast } from "@heroui/toast";
+import { getApiUrl } from "@/lib/apiUrl";
 
 export default function TagsStreamlinePage() {
   const { token } = useAuth();
@@ -28,7 +29,7 @@ export default function TagsStreamlinePage() {
         setIsLoading(true);
 
         // Load user's tags
-        const profileResponse = await fetch("/api/profile", {
+        const profileResponse = await fetch(getApiUrl("/api/profile"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -42,7 +43,7 @@ export default function TagsStreamlinePage() {
         }
 
         // Load popular tags
-        const popularResponse = await fetch("/api/tags/popular", {
+        const popularResponse = await fetch(getApiUrl("/api/tags/popular"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -69,7 +70,7 @@ export default function TagsStreamlinePage() {
 
     setIsRemoving(tag);
     try {
-      const response = await fetch("/api/tags/remove", {
+      const response = await fetch(getApiUrl("/api/tags/remove"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -122,7 +123,7 @@ export default function TagsStreamlinePage() {
 
     setIsAdding(tag);
     try {
-      const response = await fetch("/api/tags/add", {
+      const response = await fetch(getApiUrl("/api/tags/add"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

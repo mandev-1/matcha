@@ -7,6 +7,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChatHint } from "@/contexts/ChatHintContext";
+import { getApiUrl } from "@/lib/apiUrl";
 import clsx from "clsx";
 
 interface NavItem {
@@ -71,7 +72,7 @@ export function Sidebar() {
 
     const checkUnreadChat = async () => {
       try {
-        const response = await fetch("/api/chat", {
+        const response = await fetch(getApiUrl("/api/chat"), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {

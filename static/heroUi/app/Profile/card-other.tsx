@@ -8,6 +8,7 @@ import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/toast";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import LocationMap, { LocationMapRef } from "@/components/LocationMap";
+import { getApiUrl } from "@/lib/apiUrl";
 
 interface CardOtherProps {
   latitude: number | null;
@@ -66,7 +67,7 @@ export default function CardOther({
 
       // Save to backend
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/profile", {
+      const response = await fetch(getApiUrl("/api/profile"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -186,7 +187,7 @@ export default function CardOther({
 
                         // Save to backend
                         const token = localStorage.getItem("token");
-                        const response = await fetch("/api/profile", {
+                        const response = await fetch(getApiUrl("/api/profile"), {
                           method: "POST",
                           headers: {
                             "Content-Type": "application/json",

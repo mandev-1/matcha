@@ -8,6 +8,7 @@ import { Checkbox } from "@heroui/checkbox";
 import { Link } from "@heroui/link";
 import { Icon } from "@iconify/react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { getApiUrl } from "@/lib/apiUrl";
 
 const MailIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -98,7 +99,7 @@ export default function Component() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/register", {
+      const response = await fetch(getApiUrl("/api/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

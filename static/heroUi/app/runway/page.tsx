@@ -18,6 +18,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { addToast, ToastProvider } from "@heroui/toast";
 import { Image } from "@heroui/image";
 import { Icon } from "@iconify/react";
+import { getApiUrl } from "@/lib/apiUrl";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import RowSteps from "@/components/row-steps";
@@ -106,7 +107,7 @@ export default function RunwayPage() {
       if (caliper) profilePayload.caliper_profile = caliper;
       if (siblings) profilePayload.siblings = siblings;
 
-      const profileResponse = await fetch("/api/profile", {
+      const profileResponse = await fetch(getApiUrl("/api/profile"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -134,7 +135,7 @@ export default function RunwayPage() {
         formData.append("image", file);
         formData.append("slot", i.toString());
         formData.append("is_profile", i === 0 ? "1" : "0");
-        const uploadRes = await fetch("/api/profile/upload-image", {
+        const uploadRes = await fetch(getApiUrl("/api/profile/upload-image"), {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
@@ -152,7 +153,7 @@ export default function RunwayPage() {
       }
 
       // Mark setup as complete
-      const response = await fetch("/api/profile/setup-complete", {
+      const response = await fetch(getApiUrl("/api/profile/setup-complete"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

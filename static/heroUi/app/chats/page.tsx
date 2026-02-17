@@ -11,6 +11,7 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl, getUploadUrl } from "@/lib/apiUrl";
 
 interface ConnectedUser {
   id: number;
@@ -50,7 +51,7 @@ export default function ChatsPage() {
           headers.Authorization = `Bearer ${token}`;
         }
 
-        const response = await fetch(`/api/connections`, {
+        const response = await fetch(getApiUrl(`/api/connections`), {
           headers,
         });
 
@@ -131,7 +132,7 @@ export default function ChatsPage() {
                   <Image
                     alt={connection.first_name}
                     className="object-cover w-full h-full"
-                    src={connection.profile_picture || "https://heroui.com/images/hero-card.jpeg"}
+                    src={connection.profile_picture && connection.profile_picture !== "-" ? getUploadUrl(connection.profile_picture) : "https://heroui.com/images/hero-card.jpeg"}
                   />
                   {connection.is_online && (
                     <div className="absolute top-2 right-2">

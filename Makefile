@@ -27,10 +27,6 @@ clean-frontend:
 # Clean everything (backend + frontend)
 clean-all: clean clean-frontend
 
-# Helper scripts
-install-hero:
-	@./scripts/install-hero.sh
-
 fix-deps:
 	@./scripts/fix-deps.sh
 

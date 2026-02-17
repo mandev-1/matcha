@@ -13,6 +13,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { addToast } from "@heroui/toast";
 import { ScrollShadow } from "@heroui/scroll-shadow";
+import { getApiUrl, getUploadUrl } from "@/lib/apiUrl";
 
 interface Message {
   id: number;
@@ -52,7 +53,7 @@ export default function ChatPage() {
     const loadUser = async () => {
       try {
         setIsLoadingUser(true);
-        const userResponse = await fetch(`/api/user/${chatId}`, {
+        const userResponse = await fetch(getApiUrl(`/api/user/${chatId}`), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -66,7 +67,11 @@ export default function ChatPage() {
               id: data.id,
               first_name: data.first_name,
               last_name: data.last_name,
-              profile_picture: data.profile_picture || data.images?.[0] || "",
+              profile_picture: data.profile_picture && data.profile_picture !== "-" 
+                ? getUploadUrl(data.profile_picture) 
+                : data.images?.[0] && data.images[0] !== "-"
+                ? getUploadUrl(data.images[0])
+                : "",
               is_online: data.is_online || false,
             });
             const iBlockThem = !!data.is_blocked;
@@ -99,7 +104,7 @@ export default function ChatPage() {
       if (showLoading) {
         setIsLoadingMessages(true);
       }
-      const messagesResponse = await fetch(`/api/messages/${chatId}`, {
+      const messagesResponse = await fetch(getApiUrl(`/api/messages/${chatId}`), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -242,7 +247,7 @@ export default function ChatPage() {
 
     setIsSending(true);
     try {
-      const response = await fetch(`/api/messages/${chatId}`, {
+      const response = await fetch(getApiUrl(`/api/messages/${chatId}`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -364,7 +369,7 @@ export default function ChatPage() {
                 <Image
                   alt={chatUser.first_name}
                   className="w-10 h-10 rounded-full object-cover"
-                  src={chatUser.profile_picture || "https://heroui.com/images/hero-card.jpeg"}
+                  src={chatUser.profile_picture && chatUser.profile_picture !== "-" ? getUploadUrl(chatUser.profile_picture) : "https://heroui.com/images/hero-card.jpeg"}
                 />
                 {chatUser.is_online && (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />

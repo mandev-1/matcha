@@ -6,6 +6,7 @@ import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { addToast } from "@heroui/toast";
 import { Icon } from "@iconify/react";
+import { getApiUrl } from "@/lib/apiUrl";
 
 interface LocationSetupProps {
   isOpen: boolean;
@@ -170,7 +171,7 @@ export default function LocationSetup({
 
   const saveLocation = async (location: { latitude: number; longitude: number; location: string }) => {
     const token = localStorage.getItem("token");
-    const response = await fetch("/api/profile", {
+    const response = await fetch(getApiUrl("/api/profile"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

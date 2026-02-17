@@ -12,6 +12,7 @@ import { useRouter, useParams } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { addToast } from "@heroui/toast";
+import { getApiUrl, getUploadUrl } from "@/lib/apiUrl";
 
 interface UserProfile {
   id: number;
@@ -62,7 +63,7 @@ export default function UserProfilePage() {
   React.useEffect(() => {
     const loadCurrentUserTags = async () => {
       try {
-        const response = await fetch("/api/profile", {
+        const response = await fetch(getApiUrl("/api/profile"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -89,7 +90,7 @@ export default function UserProfilePage() {
 
     const loadProfile = async () => {
       try {
-        const response = await fetch(`/api/user/${userId}`, {
+        const response = await fetch(getApiUrl(`/api/user/${userId}`), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -130,7 +131,7 @@ export default function UserProfilePage() {
     setIsLiking(true);
     try {
       const endpoint = profile.is_liked ? `/api/unlike/${userId}` : `/api/like/${userId}`;
-      const response = await fetch(endpoint, {
+      const response = await fetch(getApiUrl(endpoint), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -201,16 +202,16 @@ export default function UserProfilePage() {
   }
 
   const userImages = profile.images && profile.images.length > 0
-    ? profile.images
-    : profile.profile_picture
-    ? [profile.profile_picture]
+    ? profile.images.map((img: string) => img && img !== "-" ? getUploadUrl(img) : null)
+    : profile.profile_picture && profile.profile_picture !== "-"
+    ? [getUploadUrl(profile.profile_picture)]
     : Array(5).fill(null);
 
   const handleBlock = async () => {
     if (!profile) return;
 
     try {
-      const response = await fetch(`/api/block/${userId}`, {
+      const response = await fetch(getApiUrl(`/api/block/${userId}`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

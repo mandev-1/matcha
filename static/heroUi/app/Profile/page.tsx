@@ -27,6 +27,7 @@ import LocationMap from "@/components/LocationMap";
 import CardProfile from "./card-profile";
 import CardBasics from "./card-basics";
 import CardOther from "./card-other";
+import { getApiUrl, getUploadUrl } from "@/lib/apiUrl";
 
 const LockIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -136,7 +137,7 @@ export default function Component() {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/profile", {
+      const response = await fetch(getApiUrl("/api/profile"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -192,11 +193,9 @@ export default function Component() {
               profile.images.forEach((img: { file_path: string; order_index: number }) => {
                 if (img.order_index >= 0 && img.order_index < 5) {
                   // Convert relative path to full URL if needed
-                  const imageUrl = img.file_path.startsWith("http") 
-                    ? img.file_path 
-                    : img.file_path.startsWith("/") 
-                    ? img.file_path 
-                    : `/${img.file_path}`;
+                  const imageUrl = img.file_path && img.file_path !== "-" 
+                    ? getUploadUrl(img.file_path)
+                    : null;
                   imagesArray[img.order_index] = imageUrl;
                 }
               });
@@ -266,7 +265,7 @@ export default function Component() {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/profile", {
+      const response = await fetch(getApiUrl("/api/profile"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -356,7 +355,7 @@ export default function Component() {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/profile/change-password", {
+      const response = await fetch(getApiUrl("/api/profile/change-password"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -394,7 +393,7 @@ export default function Component() {
     setIsResetting(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/profile/reset", {
+      const response = await fetch(getApiUrl("/api/profile/reset"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -979,7 +978,7 @@ export default function Component() {
                               formData.append("is_profile", index === 0 ? "1" : "0");
 
                               const token = localStorage.getItem("token");
-                              const response = await fetch("/api/profile/upload-image", {
+                              const response = await fetch(getApiUrl("/api/profile/upload-image"), {
                                 method: "POST",
                                 headers: {
                                   Authorization: `Bearer ${token}`,
@@ -1075,7 +1074,7 @@ export default function Component() {
                             // Update backend
                             try {
                               const token = localStorage.getItem("token");
-                              const response = await fetch("/api/profile/reorder-images", {
+                              const response = await fetch(getApiUrl("/api/profile/reorder-images"), {
                                 method: "POST",
                                 headers: {
                                   "Content-Type": "application/json",

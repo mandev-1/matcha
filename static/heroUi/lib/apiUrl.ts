@@ -23,3 +23,19 @@ export function getApiUrl(path: string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return baseUrl ? `${baseUrl}${normalizedPath}` : normalizedPath;
 }
+
+/**
+ * Constructs a full URL for uploads/images
+ * @param path - Upload path (e.g., "/uploads/123/image.jpg" or "uploads/123/image.jpg")
+ * @returns Full URL or relative path depending on environment
+ */
+export function getUploadUrl(path: string): string {
+  // If path is empty, invalid, or already a full URL, return as-is
+  if (!path || path === "-" || path.startsWith("http")) {
+    return path;
+  }
+  const baseUrl = getApiBaseUrl();
+  // Ensure path starts with /
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return baseUrl ? `${baseUrl}${normalizedPath}` : normalizedPath;
+}

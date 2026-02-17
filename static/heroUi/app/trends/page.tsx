@@ -5,6 +5,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Skeleton } from "@heroui/skeleton";
 import { Icon } from "@iconify/react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { getApiUrl } from "@/lib/apiUrl";
 
 interface PopularTag {
   tag: string;
@@ -58,7 +59,7 @@ function TrendsContent() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetch("/api/trends")
+    fetch(getApiUrl("/api/trends"))
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load trends");
         return res.json();

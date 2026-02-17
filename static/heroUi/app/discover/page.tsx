@@ -20,7 +20,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { addToast } from "@heroui/toast";
 import { useServerStatus } from "@/contexts/ServerStatusContext";
-import { getApiUrl } from "@/lib/apiUrl";
+import { getApiUrl, getUploadUrl } from "@/lib/apiUrl";
 
 interface UserProfile {
   id: number;
@@ -628,7 +628,7 @@ export default function DiscoverPage() {
                     <Image
                       alt={profile.first_name}
                       className="object-cover w-full h-full"
-                      src={profile.profile_picture || "https://heroui.com/images/hero-card.jpeg"}
+                      src={profile.profile_picture && profile.profile_picture !== "-" ? getUploadUrl(profile.profile_picture) : "https://heroui.com/images/hero-card.jpeg"}
                     />
                     {profile.is_online && (
                       <div className="absolute top-2 right-2">

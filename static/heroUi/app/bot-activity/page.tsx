@@ -7,6 +7,7 @@ import { Spinner } from "@heroui/spinner";
 import { Link } from "@heroui/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { getApiUrl } from "@/lib/apiUrl";
 
 // Helper function to get value from object by key
 function getKeyValue<T extends Record<string, any>>(item: T, key: string): any {
@@ -51,7 +52,7 @@ function BotActivityPageContent() {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch(`/api/bot-activity?page=${pageNum}&limit=20`, {
+      const response = await fetch(getApiUrl(`/api/bot-activity?page=${pageNum}&limit=20`), {
         headers,
       });
 
