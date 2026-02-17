@@ -1,4 +1,4 @@
-.PHONY: build run test clean clean-frontend clean-all hero docker-build docker-up docker-down docker-compose-all docker-clean frontend-install frontend-build frontend-dev bot-simulator bot-simulator-custom mailhog mailhog-stop mailhog-ports mailhog-kill-ports init-db migrate-notifications run-migrations
+.PHONY: build run test clean clean-frontend clean-all hero docker-build docker-up docker-up-build docker-down docker-logs docker-restart docker-shell docker-all docker-compose-all docker-clean podman-build podman-up podman-up-build podman-down podman-logs podman-restart podman-shell podman-all podman-compose-all podman-clean frontend-install frontend-build frontend-dev bot-simulator bot-simulator-custom mailhog mailhog-stop mailhog-podman mailhog-stop-podman mailhog-ports mailhog-kill-ports init-db migrate-notifications run-migrations
 
 # Build the application
 build:
@@ -52,6 +52,28 @@ docker-restart:
 docker-shell:
 	docker-compose exec app sh
 
+# Podman commands (equivalent to Docker commands)
+podman-build:
+	podman compose build
+
+podman-up:
+	podman compose up -d
+
+podman-up-build:
+	podman compose up --build -d
+
+podman-down:
+	podman compose down
+
+podman-logs:
+	podman compose logs -f app
+
+podman-restart:
+	podman compose restart app
+
+podman-shell:
+	podman compose exec app sh
+
 # Build and run everything with Docker Compose
 docker-all: docker-up-build
 	@echo "Application is starting..."
@@ -59,6 +81,14 @@ docker-all: docker-up-build
 	@echo "Backend API: http://localhost:8080"
 	@echo "MailHog UI: http://localhost:8025"
 	@echo "View logs: make docker-logs"
+
+# Build and run everything with Podman Compose
+podman-all: podman-up-build
+	@echo "Application is starting..."
+	@echo "Frontend: http://localhost:3000"
+	@echo "Backend API: http://localhost:8080"
+	@echo "MailHog UI: http://localhost:8025"
+	@echo "View logs: make podman-logs"
 
 # Stop, remove, rebuild, and start everything (complete reset)
 docker-compose-all:
@@ -73,6 +103,19 @@ docker-compose-all:
 	@echo "MailHog UI: http://localhost:8025"
 	@echo "View logs: make docker-logs"
 
+# Stop, remove, rebuild, and start everything with Podman (complete reset)
+podman-compose-all:
+	@echo "Stopping and removing existing containers..."
+	@podman compose down -v || true
+	@echo "Building and starting everything..."
+	@podman compose up --build -d
+	@echo ""
+	@echo "Application is starting..."
+	@echo "Frontend: http://localhost:3000"
+	@echo "Backend API: http://localhost:8080"
+	@echo "MailHog UI: http://localhost:8025"
+	@echo "View logs: make podman-logs"
+
 # Clean Docker resources (containers, volumes, images)
 docker-clean:
 	@echo "Stopping containers..."
@@ -80,6 +123,14 @@ docker-clean:
 	@echo "Removing Docker images..."
 	@docker rmi matcha-app:latest 2>/dev/null || true
 	@echo "Docker cleanup complete."
+
+# Clean Podman resources (containers, volumes, images)
+podman-clean:
+	@echo "Stopping containers..."
+	@podman compose down -v || true
+	@echo "Removing Podman images..."
+	@podman rmi matcha-app:latest 2>/dev/null || true
+	@echo "Podman cleanup complete."
 
 # Initialize database (schema only)
 init-db:
@@ -124,7 +175,7 @@ build-all: frontend-build build
 # Run in development mode (backend + frontend)
 dev: frontend-dev
 
-# Start MailHog for local development
+# Start MailHog for local development (Docker)
 mailhog:
 	@echo "Checking for existing MailHog container..."
 	@docker stop mailhog 2>/dev/null || true
@@ -143,14 +194,26 @@ mailhog:
 		echo "MailHog started successfully! Web UI: http://localhost:8025" || \
 		(echo "Failed to start MailHog. Check if Docker is running and ports are available."; exit 1)
 
-# Start MailHog for local development
+# Start MailHog for local development (Podman)
 mailhog-podman:
+	@echo "Checking for existing MailHog container..."
 	@podman stop mailhog 2>/dev/null || true
 	@podman rm mailhog 2>/dev/null || true
-	@podman run -d -p 1025:1025 -p 8025:8025 --name mailhog mailhog/mailhog || \
-		(echo "Failed to start MailHog. Port may be in use or Podman may not be running.")
+	@echo "Checking if ports 1025 or 8025 are in use..."
+	@if lsof -ti:1025 >/dev/null 2>&1; then \
+		echo "Port 1025 is in use. Run 'make mailhog-ports' to see what's using it, or 'make mailhog-kill-ports' to free it."; \
+		exit 1; \
+	fi
+	@if lsof -ti:8025 >/dev/null 2>&1; then \
+		echo "Port 8025 is in use. Run 'make mailhog-ports' to see what's using it, or 'make mailhog-kill-ports' to free it."; \
+		exit 1; \
+	fi
+	@echo "Starting MailHog..."
+	@podman run -d -p 1025:1025 -p 8025:8025 --name mailhog mailhog/mailhog && \
+		echo "MailHog started successfully! Web UI: http://localhost:8025" || \
+		(echo "Failed to start MailHog. Check if Podman is running and ports are available."; exit 1)
 
-# Stop MailHog
+# Stop MailHog (Docker)
 mailhog-stop:
 	@echo "Stopping MailHog..."
 	@docker stop mailhog 2>/dev/null || true
@@ -172,8 +235,10 @@ mailhog-kill-ports:
 
 # Stop MailHog (Podman)
 mailhog-stop-podman:
-	podman stop mailhog || true
-	podman rm mailhog || true
+	@echo "Stopping MailHog..."
+	@podman stop mailhog 2>/dev/null || true
+	@podman rm mailhog 2>/dev/null || true
+	@echo "MailHog stopped."
 
 # Install Python deps for bot placeholder image (needed when data/extracted_images has no images)
 install-placeholder-deps:

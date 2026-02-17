@@ -4,6 +4,7 @@ import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
+import { getApiUrl } from "@/lib/apiUrl";
 
 function VerifyEmailContent() {
   const router = useRouter();
@@ -21,7 +22,7 @@ function VerifyEmailContent() {
 
     const verifyEmail = async () => {
       try {
-        const response = await fetch(`/api/verify-email?token=${token}`);
+        const response = await fetch(getApiUrl(`/api/verify-email?token=${token}`));
         const data = await response.json();
 
         if (response.ok) {
