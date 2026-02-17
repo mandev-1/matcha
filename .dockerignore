@@ -1,45 +1,65 @@
 # Git
 .git
 .gitignore
+.gitattributes
 
 # Documentation
-docs/
-README.md
-
-# Scripts
-scripts/
-
-# Development files
 *.md
-.env
-.env.local
-
-# Frontend node_modules (will be installed in Docker)
-web/node_modules/
-web/dist/
-
-# Data
-data/
-*.db
-
-# Build artifacts
-matcha
-*.exe
-*.test
+docs/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
 
+# Build artifacts
+matcha
+matcha.exe
+*.test
+*.out
+
+# Frontend build artifacts (will be built in Docker)
+static/heroUi/.next/
+static/heroUi/node_modules/
+static/heroUi/.turbo/
+static/dist/
+
+# Data and uploads (mounted as volumes)
+data/
+uploads/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
 # Logs
 *.log
 
-# Node (frontend will be built in Docker)
-node_modules/
+# Test files
+*_test.go
+test/
+tests/
 
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Python (for placeholder script)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+
+# Local only
+LOCAL_ONLY/

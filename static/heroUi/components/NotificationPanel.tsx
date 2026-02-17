@@ -6,7 +6,8 @@ import { Button } from "@heroui/button";
 import { Spinner } from "@heroui/spinner";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, m, LazyMotion, domAnimation } from "framer-motion";
-import { useNotifications, type Notification } from "@/contexts/NotificationContext";
+import { useNotifications } from "@/contexts/NotificationContext";
+import { Notification } from "@/types";
 
 function formatTimeAgo(dateStr: string): string {
   const date = new Date(dateStr);

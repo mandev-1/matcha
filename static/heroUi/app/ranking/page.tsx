@@ -175,7 +175,7 @@ function RankingPageContent() {
                     </TableCell>
                   );
                 }
-                return <TableCell>{getKeyValue(item, columnKey)}</TableCell>;
+                return <TableCell>{getKeyValue(item, String(columnKey))}</TableCell>;
               }}
             </TableRow>
           )}

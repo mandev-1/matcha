@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -99,6 +100,29 @@ func getAvailableImages(imageDir string) ([]string, error) {
 	return images, err
 }
 
+// ensurePlaceholderImages runs the Python script to generate a 500x500 black JPEG
+// with a bot silhouette in imageDir when no images are available. Returns the
+// same directory path so the caller can re-scan.
+func ensurePlaceholderImages(imageDir string) error {
+	scriptPath := "scripts/generate_bot_placeholder.py"
+	if _, err := os.Stat(scriptPath); os.IsNotExist(err) {
+		return fmt.Errorf("placeholder script not found: %s", scriptPath)
+	}
+	outPath := filepath.Join(imageDir, "placeholder_bot.jpg")
+	if err := os.MkdirAll(imageDir, 0755); err != nil {
+		return fmt.Errorf("failed to create image dir: %w", err)
+	}
+	cmd := exec.Command("python3", scriptPath, "-o", outPath)
+	if err := cmd.Run(); err != nil {
+		// try "python" as fallback
+		cmd = exec.Command("python", scriptPath, "-o", outPath)
+		if err = cmd.Run(); err != nil {
+			return fmt.Errorf("running placeholder script: %w", err)
+		}
+	}
+	return nil
+}
+
 func copyImage(srcPath, destPath string) error {
 	// Create destination directory if it doesn't exist
 	destDir := filepath.Dir(destPath)
@@ -134,14 +158,24 @@ func main() {
 		log.Fatal("First names or last names list is empty")
 	}
 
-	// Get available images
+	// Get available images; if none, generate placeholder(s) via Python script
 	imageDir := "./data/extracted_images"
+	if err := os.MkdirAll(imageDir, 0755); err != nil {
+		log.Fatalf("Failed to create images directory: %v", err)
+	}
 	availableImages, err := getAvailableImages(imageDir)
 	if err != nil {
 		log.Fatalf("Failed to read images directory: %v", err)
 	}
 	if len(availableImages) == 0 {
-		log.Fatal("No images found in data/extracted_images directory")
+		log.Printf("No images in %s; generating placeholder bot silhouette JPEG...", imageDir)
+		if err := ensurePlaceholderImages(imageDir); err != nil {
+			log.Fatalf("Failed to generate placeholder images: %v", err)
+		}
+		availableImages, err = getAvailableImages(imageDir)
+		if err != nil || len(availableImages) == 0 {
+			log.Fatalf("Failed to read images after generating placeholders: %v", err)
+		}
 	}
 	log.Printf("Found %d available images", len(availableImages))
 

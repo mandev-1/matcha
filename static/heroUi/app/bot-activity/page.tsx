@@ -151,8 +151,9 @@ function BotActivityPageContent() {
           {(item) => (
             <TableRow key={item.id}>
               {(columnKey) => {
-                const value = getKeyValue(item, columnKey);
-                if (columnKey === "bot_display_name") {
+                const key = String(columnKey);
+                const value = getKeyValue(item, key);
+                if (key === "bot_display_name") {
                   const displayName = item.bot_display_name || item.bot_username;
                   return (
                     <TableCell>
@@ -165,10 +166,10 @@ function BotActivityPageContent() {
                     </TableCell>
                   );
                 }
-                if (columnKey === "action_type") {
+                if (key === "action_type") {
                   return <TableCell>{formatActionType(value as string)}</TableCell>;
                 }
-                if (columnKey === "target_display_name") {
+                if (key === "target_display_name") {
                   const targetDisplayName = item.target_display_name || item.target_username;
                   if (item.target_user_id && targetDisplayName) {
                     return (
@@ -184,10 +185,10 @@ function BotActivityPageContent() {
                   }
                   return <TableCell>-</TableCell>;
                 }
-                if (columnKey === "created_at") {
+                if (key === "created_at") {
                   return <TableCell>{formatDateTime(value as string)}</TableCell>;
                 }
-                if (columnKey === "details") {
+                if (key === "details") {
                   return <TableCell>{value || "-"}</TableCell>;
                 }
                 return <TableCell>{value}</TableCell>;

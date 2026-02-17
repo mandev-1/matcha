@@ -263,7 +263,9 @@ export default function MarkdownRenderer({ content, onHeadingsExtracted }: Markd
       // Empty lines
       if (trimmed === "") {
         flushList();
-        if (elements.length > 0 && elements[elements.length - 1]?.type !== "br") {
+        const last = elements[elements.length - 1];
+        const isBr = React.isValidElement(last) && last.type === "br";
+        if (elements.length > 0 && !isBr) {
           elements.push(<br key={`br-${index}`} />);
         }
         return;

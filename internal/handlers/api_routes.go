@@ -77,7 +77,9 @@ func SetupAPIRoutes(mux *goji.Mux) {
 
 // SetupFrontendRoutes serves the React app (catch-all)
 func SetupFrontendRoutes(mux *goji.Mux) {
-	// Serve static assets from React build (assets are in static/dist/assets/)
+	// Serve static assets from Next.js build
+	// Try both _next/static (Next.js export) and assets (legacy) for compatibility
+	nextStaticFS := http.FileServer(http.Dir("./static/dist/_next/static"))
 	assetsFS := http.FileServer(http.Dir("./static/dist/assets"))
 
 	// Wrap the file server to ensure correct MIME types
@@ -100,9 +102,18 @@ func SetupFrontendRoutes(mux *goji.Mux) {
 		case ".woff", ".woff2":
 			w.Header().Set("Content-Type", "font/woff2")
 		}
-		http.StripPrefix("/assets/", assetsFS).ServeHTTP(w, r)
+		// Try _next/static first (Next.js export), then fallback to assets
+		if strings.HasPrefix(r.URL.Path, "/_next/static/") {
+			http.StripPrefix("/_next/static/", nextStaticFS).ServeHTTP(w, r)
+		} else if strings.HasPrefix(r.URL.Path, "/assets/") {
+			http.StripPrefix("/assets/", assetsFS).ServeHTTP(w, r)
+		} else {
+			http.NotFound(w, r)
+		}
 	}
 
+	// Serve Next.js static assets
+	mux.HandleFunc(pat.Get("/_next/static/*"), assetHandler)
 	mux.HandleFunc(pat.Get("/assets/*"), assetHandler)
 
 	// Serve index.html for all non-API routes (catch-all - must be last)
@@ -113,11 +124,11 @@ func SetupFrontendRoutes(mux *goji.Mux) {
 			return
 		}
 		// Don't serve index.html for asset requests
-		if strings.HasPrefix(r.URL.Path, "/assets") {
+		if strings.HasPrefix(r.URL.Path, "/_next") || strings.HasPrefix(r.URL.Path, "/assets") {
 			http.NotFound(w, r)
 			return
 		}
-		// Serve index.html for React Router
+		// Serve index.html for React Router/Next.js
 		http.ServeFile(w, r, "./static/dist/index.html")
 	})
 }

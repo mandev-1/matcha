@@ -378,13 +378,13 @@ You can test the API using:
 
 - **cURL** - Command-line tool
 - **Postman** - GUI API client
-- **Bot Simulator** - See [Simulating Activity](/help/golang_simulation) for details
+- **Bot Simulator** - See [Simulating Activity](/help/golang-simulation) for details
 
 ## Support
 
 For API support or questions, please refer to:
-- [FAQ](/help/frequent_Questions)
-- [Simulating Activity](/help/golang_simulation)
+- [FAQ](/help/frequent-questions)
+- [Simulating Activity](/help/golang-simulation)
 - [Fame Rating System](/help/mafia)
 `;
 

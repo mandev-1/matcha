@@ -120,7 +120,7 @@ If you need to block a user, please contact support with the user's information,
 ---
 
 **Need more help?** Check out our other help pages:
-- [Simulating Activity](/help/golang_simulation)
+- [Simulating Activity](/help/golang-simulation)
 - [Fame Rating System](/help/mafia)
 - [API Documentation](/help/api_explanation)
 `;

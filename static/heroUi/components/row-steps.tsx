@@ -9,8 +9,8 @@ import {m, LazyMotion, domAnimation} from "framer-motion";
 import clsx from "clsx";
 
 // Simple cn utility function (wrapper around clsx)
-function cn(...inputs: (string | undefined | null | boolean)[]) {
-  return clsx(inputs);
+function cn(...inputs: Parameters<typeof clsx>) {
+  return clsx(...inputs);
 }
 
 export type RowStepProps = {
@@ -161,7 +161,7 @@ const RowSteps = React.forwardRef<HTMLButtonElement, RowStepsProps>(
 
     return (
       <nav aria-label="Progress" className="-my-4 max-w-fit overflow-x-auto py-4">
-        <ol className={cn("flex flex-row flex-nowrap gap-x-3", colors, className)}>
+        <ol className={cn("flex flex-row flex-nowrap gap-x-3", colors.join(" "), className)}>
           {steps?.map((step, stepIdx) => {
             let status =
               currentStep === stepIdx ? "active" : currentStep < stepIdx ? "inactive" : "complete";

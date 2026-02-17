@@ -2,16 +2,8 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-
-export interface Notification {
-  id: number;
-  type: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-  user_id?: number;
-  related_user_id?: number;
-}
+import { Notification } from "@/types";
+import { useApi } from "@/lib/useApi";
 
 interface NotificationContextType {
   isOpen: boolean;
@@ -33,6 +25,7 @@ const LIMIT = 20;
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { token } = useAuth();
+  const api = useApi();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -48,12 +41,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (showLoading) setIsLoading(true);
       try {
         const currentOffset = append ? offset : 0;
-        const response = await fetch(
-          `/api/notifications?limit=${LIMIT}&offset=${currentOffset}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const data = await api.get<{ success: boolean; data?: { notifications?: Notification[]; unread_count?: number } }>(
+          `/api/notifications?limit=${LIMIT}&offset=${currentOffset}`
         );
-        if (!response.ok) return;
-        const data = await response.json();
         if (data.success && data.data) {
           const list = (data.data.notifications || []) as Notification[];
           setNotifications((prev) => (append ? [...prev, ...list] : list));
@@ -68,7 +58,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (showLoading) setIsLoading(false);
       }
     },
-    [token, offset]
+    [api, token, offset]
   );
 
   useEffect(() => {
@@ -99,10 +89,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     async (id: number) => {
       if (!token) return;
       try {
-        await fetch(`/api/notifications/${id}/read`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.post(`/api/notifications/${id}/read`);
         setNotifications((prev) =>
           prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
         );
@@ -111,23 +98,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         // ignore
       }
     },
-    [token]
+    [api, token]
   );
 
   const markAllAsRead = useCallback(async (): Promise<void> => {
     if (!token) return;
     try {
-      const res = await fetch("/api/notifications/mark-all-read", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
+      await api.post("/api/notifications/mark-all-read");
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       setUnreadCount(0);
     } catch {
       // ignore
     }
-  }, [token]);
+  }, [api, token]);
 
   const clearNotification = useCallback((id: number) => {
     let wasUnread = false;
@@ -138,12 +121,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     });
     if (wasUnread) setUnreadCount((c) => Math.max(0, c - 1));
     if (token) {
-      fetch(`/api/notifications/${id}/read`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
+      api.post(`/api/notifications/${id}/read`).catch(() => {});
     }
-  }, [token]);
+  }, [api, token]);
 
   const loadOlder = useCallback(() => {
     loadNotifications({ showLoading: false, append: true });

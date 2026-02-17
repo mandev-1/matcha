@@ -726,12 +726,12 @@ export default function Component() {
                         </div>
                         <ol className="list-decimal list-inside space-y-2">
                           <li>
-                            <Link className="text-default-700 hover:text-primary" href="/help/frequent_Questions">
+                            <Link className="text-default-700 hover:text-primary" href="/help/frequent-questions">
                               FAQ
                             </Link>
                           </li>
                           <li>
-                            <Link className="text-default-700 hover:text-primary" href="/help/golang_simulation">
+                            <Link className="text-default-700 hover:text-primary" href="/help/golang-simulation">
                               Simulating Activity
                             </Link>
                           </li>

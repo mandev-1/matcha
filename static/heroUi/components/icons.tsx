@@ -1,8 +1,15 @@
 import * as React from "react";
+import { ImgHTMLAttributes } from "react";
 
 import { IconSvgProps } from "@/types";
 
-export const Logo: React.FC<IconSvgProps> = ({
+interface LogoProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, "width" | "height"> {
+  size?: number;
+  width?: number | string;
+  height?: number | string;
+}
+
+export const Logo: React.FC<LogoProps> = ({
   size = 36,
   width,
   height,

@@ -74,11 +74,31 @@ func main() {
 	// This must be last to catch all non-API routes
 	handlers.SetupFrontendRoutes(mux)
 
-	// Setup server
+	// CORS middleware wrapper
+	corsHandler := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Set CORS headers for all requests
+			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+			// Handle preflight OPTIONS requests
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			// Call the next handler
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	// Setup server with CORS middleware
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	server := &http.Server{
 		Addr:    addr,
-		Handler: mux,
+		Handler: corsHandler(mux),
 	}
 
 	// Setup graceful shutdown

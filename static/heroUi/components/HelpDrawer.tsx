@@ -83,7 +83,7 @@ export function HelpDrawer() {
                   <li>
                     <Link
                       className="hover:text-primary"
-                      href="/help/frequent_Questions"
+                      href="/help/frequent-questions"
                       onClick={onClose}
                     >
                       FAQ
@@ -92,7 +92,7 @@ export function HelpDrawer() {
                   <li>
                     <Link
                       className="hover:text-primary"
-                      href="/help/golang_simulation"
+                      href="/help/golang-simulation"
                       onClick={onClose}
                     >
                       Simulating Activity

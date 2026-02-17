@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { ServerStatusModal } from "@/components/ServerStatusModal";
+import { getApiUrl } from "@/lib/apiUrl";
 
 interface ServerStatusContextType {
   isServerOffline: boolean;
@@ -16,7 +17,7 @@ export function ServerStatusProvider({ children }: { children: React.ReactNode }
 
   const checkServerStatus = useCallback(async () => {
     try {
-      const response = await fetch("/api/health", {
+      const response = await fetch(getApiUrl("/api/health"), {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });

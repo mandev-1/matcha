@@ -20,6 +20,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { addToast } from "@heroui/toast";
 import { useServerStatus } from "@/contexts/ServerStatusContext";
+import { getApiUrl } from "@/lib/apiUrl";
 
 interface UserProfile {
   id: number;
@@ -101,7 +102,7 @@ export default function DiscoverPage() {
       const fameRatingMinParam = fameRatingMin > 0 ? `&fameRatingMin=${fameRatingMin}` : "";
       
       const filterParams = `${sortParam}${minAgeParam}${maxAgeParam}${minDistanceParam}${maxDistanceParam}${onlyCommonTagsParam}${fameRatingMinParam}`;
-      const response = await fetch(`/api/browse?limit=20&offset=${currentOffset}${filterParams}`, {
+      const response = await fetch(getApiUrl(`/api/browse?limit=20&offset=${currentOffset}${filterParams}`), {
         headers,
       }).catch((error) => {
         // Network error - server is likely offline
@@ -182,7 +183,7 @@ export default function DiscoverPage() {
     const loadTagInfo = async () => {
       try {
         // Load user's current tags
-        const profileResponse = await fetch("/api/profile", {
+        const profileResponse = await fetch(getApiUrl("/api/profile"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -209,7 +210,7 @@ export default function DiscoverPage() {
         }
 
         // Load tag match status
-        const matchResponse = await fetch("/api/tags/user-match", {
+        const matchResponse = await fetch(getApiUrl("/api/tags/user-match"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -229,7 +230,7 @@ export default function DiscoverPage() {
         }
 
         // Load popular tags
-        const popularResponse = await fetch("/api/tags/popular", {
+        const popularResponse = await fetch(getApiUrl("/api/tags/popular"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -265,7 +266,7 @@ export default function DiscoverPage() {
     const normalizedTag = tag.trim().toLowerCase();
 
     try {
-      const response = await fetch("/api/tags/remove", {
+      const response = await fetch(getApiUrl("/api/tags/remove"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -294,7 +295,7 @@ export default function DiscoverPage() {
             color: "success",
           });
           // Reload tag match status
-          const matchResponse = await fetch("/api/tags/user-match", {
+          const matchResponse = await fetch(getApiUrl("/api/tags/user-match"), {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -333,7 +334,7 @@ export default function DiscoverPage() {
 
     setIsLoadingTags(true);
     try {
-      const response = await fetch("/api/tags/add", {
+      const response = await fetch(getApiUrl("/api/tags/add"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -372,7 +373,7 @@ export default function DiscoverPage() {
           });
           
           // Reload tag match status (but keep popover open and alert visible)
-          const matchResponse = await fetch("/api/tags/user-match", {
+          const matchResponse = await fetch(getApiUrl("/api/tags/user-match"), {
             headers: {
               Authorization: `Bearer ${token}`,
             },

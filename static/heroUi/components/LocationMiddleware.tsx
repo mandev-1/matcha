@@ -17,6 +17,9 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
   const { isAuthenticated, logout, token } = useAuth();
   const router = useRouter();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  // HeroUI types onOpenChange as () => void but it accepts (open: boolean) at runtime
+  const setModalOpen = (open: boolean) => (onOpenChange as (open?: boolean) => void)(open);
+  const closeModal = () => setModalOpen(false);
   const [step, setStep] = useState<"consent" | "geolocation" | "manual" | "final">("consent");
   const [manualLocation, setManualLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -131,7 +134,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
 
         // Save location
         await saveLocation({ latitude, longitude, location: locationName });
-        onOpenChange(false);
+        closeModal();
         addToast({
           title: "Location updated",
           description: "Your location has been refreshed.",
@@ -164,7 +167,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
 
   const handleFinalDecline = () => {
     // User refused to share location - log them out
-    onOpenChange(false);
+    closeModal();
     logout();
     router.push("/login");
     addToast({
@@ -182,7 +185,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
       return;
     }
     // Allow closing only if location was successfully saved (step will be reset to "consent")
-    onOpenChange(open);
+    setModalOpen(open);
   };
 
   const handleManualSubmit = async () => {
@@ -210,7 +213,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
         const longitude = parseFloat(lon);
 
         await saveLocation({ latitude, longitude, location: display_name });
-        onOpenChange(false);
+        closeModal();
         addToast({
           title: "Location saved",
           description: "Your location has been updated.",
@@ -301,7 +304,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
     try {
       const pragueLocation = await getRandomPragueLocation();
       await saveLocation(pragueLocation);
-      onOpenChange(false);
+      closeModal();
       addToast({
         title: "Location set to Prague",
         description: `Your location has been set to ${pragueLocation.location}.`,

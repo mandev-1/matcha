@@ -1,4 +1,4 @@
-.PHONY: build run test clean hero docker-build docker-up docker-down frontend-install frontend-build frontend-dev bot-simulator bot-simulator-custom mailhog mailhog-stop mailhog-ports mailhog-kill-ports init-db migrate-notifications
+.PHONY: build run test clean clean-frontend clean-all hero docker-build docker-up docker-down docker-compose-all docker-clean frontend-install frontend-build frontend-dev bot-simulator bot-simulator-custom mailhog mailhog-stop mailhog-ports mailhog-kill-ports init-db migrate-notifications run-migrations
 
 # Build the application
 build:
@@ -14,8 +14,18 @@ test:
 
 # Clean build artifacts
 clean:
-	rm -f matcha
+	rm -f matcha matcha.exe bot-simulator
 	rm -rf data/*.db
+
+
+# Clean frontend build artifacts
+clean-frontend:
+	rm -rf static/heroUi/.next
+	rm -rf static/heroUi/standalone
+	rm -rf static/heroUi/.turbo
+
+# Clean everything (backend + frontend)
+clean-all: clean clean-frontend
 
 # Helper scripts
 install-hero:
@@ -24,7 +34,7 @@ install-hero:
 fix-deps:
 	@./scripts/fix-deps.sh
 
-# Docker commands
+# Docker commands (single docker-compose setup)
 docker-build:
 	docker-compose build
 
@@ -32,7 +42,7 @@ docker-up:
 	docker-compose up -d
 
 docker-up-build:
-	docker-compose up --build
+	docker-compose up --build -d
 
 docker-down:
 	docker-compose down
@@ -40,10 +50,61 @@ docker-down:
 docker-logs:
 	docker-compose logs -f app
 
-# Initialize database
+docker-restart:
+	docker-compose restart app
+
+docker-shell:
+	docker-compose exec app sh
+
+# Build and run everything with Docker Compose
+docker-all: docker-up-build
+	@echo "Application is starting..."
+	@echo "Frontend: http://localhost:3000"
+	@echo "Backend API: http://localhost:8080"
+	@echo "MailHog UI: http://localhost:8025"
+	@echo "View logs: make docker-logs"
+
+# Stop, remove, rebuild, and start everything (complete reset)
+docker-compose-all:
+	@echo "Stopping and removing existing containers..."
+	@docker-compose down -v || true
+	@echo "Building and starting everything..."
+	@docker-compose up --build -d
+	@echo ""
+	@echo "Application is starting..."
+	@echo "Frontend: http://localhost:3000"
+	@echo "Backend API: http://localhost:8080"
+	@echo "MailHog UI: http://localhost:8025"
+	@echo "View logs: make docker-logs"
+
+# Clean Docker resources (containers, volumes, images)
+docker-clean:
+	@echo "Stopping containers..."
+	@docker-compose down -v || true
+	@echo "Removing Docker images..."
+	@docker rmi matcha-app:latest 2>/dev/null || true
+	@echo "Docker cleanup complete."
+
+# Initialize database (schema only)
 init-db:
 	mkdir -p data
 	sqlite3 data/matcha.db < migrations/schema.sql
+
+# Run all migrations in proper order (idempotent: safe to run on fresh or existing DB)
+run-migrations:
+	@mkdir -p data
+	@echo "Running migrations in order..."
+	@sqlite3 data/matcha.db < migrations/schema.sql && echo "  schema.sql"
+	@sqlite3 data/matcha.db < migrations/add_username_and_verification.sql 2>/dev/null && echo "  add_username_and_verification.sql" || true
+	@sqlite3 data/matcha.db < migrations/add_is_setup.sql 2>/dev/null && echo "  add_is_setup.sql" || true
+	@sqlite3 data/matcha.db < migrations/add_personality_fields.sql 2>/dev/null && echo "  add_personality_fields.sql" || true
+	@sqlite3 data/matcha.db < migrations/add_location_updated_at.sql 2>/dev/null && echo "  add_location_updated_at.sql" || true
+	@sqlite3 data/matcha.db < migrations/add_is_bot.sql 2>/dev/null && echo "  add_is_bot.sql" || true
+	@sqlite3 data/matcha.db < migrations/add_blocks_and_reports.sql && echo "  add_blocks_and_reports.sql"
+	@sqlite3 data/matcha.db < migrations/add_notifications_related_user_id.sql 2>/dev/null && echo "  add_notifications_related_user_id.sql" || true
+	@sqlite3 data/matcha.db < migrations/add_bot_activity_log.sql && echo "  add_bot_activity_log.sql"
+	@sqlite3 data/matcha.db < migrations/remove_set_up_column.sql 2>/dev/null && echo "  remove_set_up_column.sql" || true
+	@echo "Migrations complete."
 
 # Add related_user_id to notifications (run once if you see "table notifications has no column named related_user_id")
 migrate-notifications:
@@ -118,7 +179,11 @@ mailhog-stop-podman:
 	podman stop mailhog || true
 	podman rm mailhog || true
 
-# Generate test users
+# Install Python deps for bot placeholder image (needed when data/extracted_images has no images)
+install-placeholder-deps:
+	pip install -r scripts/requirements.txt
+
+# Generate test users (if no images in data/extracted_images, a 500x500 bot silhouette JPEG is generated via scripts/generate_bot_placeholder.py; requires Python 3 and Pillow)
 500:
 	@echo "Running migration to add is_bot column..."
 	@sqlite3 data/matcha.db < migrations/add_is_bot.sql || true
