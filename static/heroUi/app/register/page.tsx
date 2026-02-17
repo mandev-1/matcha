@@ -156,6 +156,7 @@ export default function Component() {
             variant="bordered"
             value={formData.firstName}
             onChange={handleChange}
+            autoComplete="given-name"
           />
           <Input
             isRequired
@@ -167,6 +168,7 @@ export default function Component() {
             variant="bordered"
             value={formData.lastName}
             onChange={handleChange}
+            autoComplete="family-name"
           />
           <Input
             isRequired
@@ -178,6 +180,7 @@ export default function Component() {
             variant="bordered"
             value={formData.username}
             onChange={handleChange}
+            autoComplete="username"
           />
           <Input
             isRequired
@@ -189,6 +192,7 @@ export default function Component() {
             variant="bordered"
             value={formData.email}
             onChange={handleChange}
+            autoComplete="email"
             startContent={
               <MailIcon className="text-2xl text-default-400 pointer-events-none shrink-0" />
             }

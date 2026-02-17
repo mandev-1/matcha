@@ -292,3 +292,10 @@ This will:
 
 # TODO
 1. Add Support for Russian Keyboards
+2. Passwords should not accept common words in any language
+3. Email Verification screen should look a bit cooler
+4. New user should see different Update your Location message - the current does not make sense
+5. New User going to /matcha gets 404 --> they should go to /runway and everything (Profile should be disabled)
+6. The Runway needs to add bisexuality
+7. generated users should be more believable (males have male name etc)
+8. Update your location popup is not readable in dark mode

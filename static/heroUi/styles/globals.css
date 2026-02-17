@@ -151,3 +151,9 @@
 .animate-zap-out {
     animation: zap-out 0.4s ease-out forwards;
 }
+
+/* Mobile touch scrolling for nested scroll containers (e.g. runway cards) */
+.scroll-touch {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+}

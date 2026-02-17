@@ -10,6 +10,7 @@ import { Divider } from "@heroui/divider";
 import { Form } from "@heroui/form";
 import { Tabs, Tab } from "@heroui/tabs";
 import { RadioGroup, useRadio } from "@heroui/radio";
+import { Slider } from "@heroui/slider";
 import { VisuallyHidden } from "@react-aria/visually-hidden";
 import clsx from "clsx";
 import { ScrollShadow } from "@heroui/scroll-shadow";
@@ -190,7 +191,19 @@ export default function RunwayPage() {
   const [bio, setBio] = React.useState<string>("");
   const [errors, setErrors] = React.useState<string[]>([]);
   const [selectedGender, setSelectedGender] = React.useState<string>("");
-  const [selectedPreference, setSelectedPreference] = React.useState<string>("");
+  // Slider values: 0 = not interested, 100 = very interested
+  const [preferMale, setPreferMale] = React.useState<number>(100); // Default to bisexuality (both selected)
+  const [preferFemale, setPreferFemale] = React.useState<number>(100); // Default to bisexuality (both selected)
+  
+  // Compute selectedPreference from slider values
+  const selectedPreference = React.useMemo(() => {
+    const maleSelected = preferMale > 0;
+    const femaleSelected = preferFemale > 0;
+    if (maleSelected && femaleSelected) return "both";
+    if (maleSelected) return "male";
+    if (femaleSelected) return "female";
+    return "both"; // Default to both if nothing selected
+  }, [preferMale, preferFemale]);
   const [tags, setTags] = React.useState<string[]>([]);
   const [tagInput, setTagInput] = React.useState<string>("");
   const [bigFive, setBigFive] = React.useState({
@@ -282,9 +295,9 @@ export default function RunwayPage() {
       case 0: // Create
         return (
           <div className="flex justify-center w-full">
-            <Card className="w-full max-w-[500px] h-[420px] flex flex-col">
-              <CardBody className="px-4 flex-1 overflow-hidden p-0">
-                <ScrollShadow className="h-full px-4 py-4" size={100}>
+            <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col">
+              <CardBody className="px-4 flex-1 min-h-0 overflow-hidden p-0">
+                <ScrollShadow className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch" size={100}>
                 <div className="flex w-full flex-col mb-6">
                   <h4 className="text-large mb-4">My Gender</h4>
                   <RadioGroup
@@ -306,27 +319,63 @@ export default function RunwayPage() {
 
                 <div className="flex w-full flex-col mb-6">
                   <h4 className="text-large mb-4">What I want:</h4>
-                  <Tabs
-                    aria-label="Preference selection"
-                    selectedKey={selectedPreference}
-                    onSelectionChange={(key) => setSelectedPreference(key as string)}
-                    className="w-full"
-                    classNames={{
-                      tabList: "w-full",
-                      tab: "flex-1 w-1/2",
-                    }}
-                  >
-                    <Tab key="male" title="Male">
-                      <div className="p-4">
-                        I'm reading this because I want to find a guy / boy to date and chat with (and maybe more). I'm strong because I admit this, very horny, and desperate for some fun.
+                  <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Male</span>
+                        <span className="text-xs text-default-500">{preferMale > 0 ? "Interested" : "Not interested"}</span>
                       </div>
-                    </Tab>
-                    <Tab key="female" title="Female">
-                      <div className="p-4">
-                        I clicked this because I'm down to meet a woman.. and I'm lowkey chill, serious, respectable and ready to be responsible. 
+                      <Slider
+                        aria-label="Interest in males"
+                        value={preferMale}
+                        onChange={(value) => setPreferMale(Array.isArray(value) ? value[0] : value)}
+                        minValue={0}
+                        maxValue={100}
+                        step={1}
+                        className="w-full"
+                        classNames={{
+                          track: "border-s-default-200",
+                          filler: "bg-pink-500",
+                        }}
+                      />
+                      {preferMale > 0 && (
+                        <p className="text-xs text-default-500 mt-1">
+                          I'm reading this because I want to find a guy / boy to date and chat with (and maybe more). I'm strong because I admit this, very horny, and desperate for some fun.
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Female</span>
+                        <span className="text-xs text-default-500">{preferFemale > 0 ? "Interested" : "Not interested"}</span>
                       </div>
-                    </Tab>
-                  </Tabs>
+                      <Slider
+                        aria-label="Interest in females"
+                        value={preferFemale}
+                        onChange={(value) => setPreferFemale(Array.isArray(value) ? value[0] : value)}
+                        minValue={0}
+                        maxValue={100}
+                        step={1}
+                        className="w-full"
+                        classNames={{
+                          track: "border-s-default-200",
+                          filler: "bg-pink-500",
+                        }}
+                      />
+                      {preferFemale > 0 && (
+                        <p className="text-xs text-default-500 mt-1">
+                          I clicked this because I'm down to meet a woman.. and I'm lowkey chill, serious, respectable and ready to be responsible.
+                        </p>
+                      )}
+                    </div>
+                    {selectedPreference === "both" && (
+                      <div className="bg-pink-50 dark:bg-pink-950/20 p-3 rounded-lg border border-pink-200 dark:border-pink-800">
+                        <p className="text-xs text-pink-700 dark:text-pink-300">
+                          🚲 You're interested in both - you're bisexual!
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <Divider className="mb-6" />
@@ -377,7 +426,7 @@ export default function RunwayPage() {
                         color="primary" 
                         type="submit" 
                         className="bg-pink-500 text-white hover:bg-pink-600"
-                        isDisabled={!selectedPreference}
+                        isDisabled={false}
                       >
                         Continue to Review
                       </Button>
@@ -392,9 +441,9 @@ export default function RunwayPage() {
       case 1: // Review
         return (
           <div className="flex justify-center w-full">
-            <Card className="w-full max-w-[500px] h-[420px] flex flex-col">
-              <CardBody className="px-4 flex-1 overflow-hidden p-0">
-                <ScrollShadow className="h-full px-4 py-4" size={100}>
+            <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col">
+              <CardBody className="px-4 flex-1 min-h-0 overflow-hidden p-0">
+                <ScrollShadow className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch" size={100}>
                   <h2 className="text-2xl font-semibold mb-4">Review Your Profile</h2>
                   <p className="text-default-600 mb-6">
                     Review all the information you've entered before publishing your profile.
@@ -610,9 +659,9 @@ export default function RunwayPage() {
       case 2: // Publish
         return (
           <div className="flex justify-center w-full">
-            <Card className="w-full max-w-[500px] h-[420px] flex flex-col">
-              <CardBody className="px-4 flex-1 overflow-hidden p-0">
-                <ScrollShadow className="h-full px-4 py-4" size={100}>
+            <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col">
+              <CardBody className="px-4 flex-1 min-h-0 overflow-hidden p-0">
+                <ScrollShadow className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch" size={100}>
                   <h2 className="text-2xl font-semibold mb-4">Publish Your Profile</h2>
                   <p className="text-default-600 mb-6">
                     You're all set! Upload your photos and publish your profile to start matching with other users.

@@ -183,6 +183,7 @@ function LoginContent() {
               if (error) setError("");
               if (success) setSuccess("");
             }}
+            autoComplete="username"
           />
           <Input
             isRequired
@@ -213,6 +214,7 @@ function LoginContent() {
               if (error) setError("");
               if (success) setSuccess("");
             }}
+            autoComplete="current-password"
           />
           <div className="flex w-full items-center justify-between px-1 py-2">
             <Checkbox defaultSelected name="remember" size="sm">

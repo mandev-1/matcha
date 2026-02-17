@@ -9,6 +9,7 @@ import { RadioGroup } from "@heroui/radio";
 import { Select, SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
 import { Tabs, Tab } from "@heroui/tabs";
+import { Slider } from "@heroui/slider";
 import { Image } from "@heroui/image";
 import { Icon } from "@iconify/react";
 import { addToast } from "@heroui/toast";
@@ -91,6 +92,55 @@ export default function CardBasics({
   handleSave,
   onPasswordResetModalOpen,
 }: CardBasicsProps) {
+  // Convert preference string to slider values
+  const getSliderValues = (pref: string): { male: number; female: number } => {
+    if (pref === "male") return { male: 100, female: 0 };
+    if (pref === "female") return { male: 0, female: 100 };
+    if (pref === "both") return { male: 100, female: 100 };
+    // Default to both (bisexuality) if nothing selected
+    return { male: 100, female: 100 };
+  };
+
+  // Initialize slider values from preference
+  const [preferMale, setPreferMale] = React.useState<number>(() => getSliderValues(selectedPreference).male);
+  const [preferFemale, setPreferFemale] = React.useState<number>(() => getSliderValues(selectedPreference).female);
+
+  // Update sliders when preference changes externally (e.g., from server)
+  React.useEffect(() => {
+    const values = getSliderValues(selectedPreference);
+    setPreferMale(values.male);
+    setPreferFemale(values.female);
+  }, [selectedPreference]);
+
+  // Update preference string when sliders change
+  const updatePreference = React.useCallback((male: number, female: number) => {
+    const maleSelected = male > 0;
+    const femaleSelected = female > 0;
+    let newPreference: string;
+    if (maleSelected && femaleSelected) {
+      newPreference = "both";
+    } else if (maleSelected) {
+      newPreference = "male";
+    } else if (femaleSelected) {
+      newPreference = "female";
+    } else {
+      newPreference = "both"; // Default to both if nothing selected
+    }
+    setSelectedPreference(newPreference);
+  }, [setSelectedPreference]);
+
+  const handleMaleSliderChange = (value: number | number[]) => {
+    const newValue = Array.isArray(value) ? value[0] : value;
+    setPreferMale(newValue);
+    updatePreference(newValue, preferFemale);
+  };
+
+  const handleFemaleSliderChange = (value: number | number[]) => {
+    const newValue = Array.isArray(value) ? value[0] : value;
+    setPreferFemale(newValue);
+    updatePreference(preferMale, newValue);
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-4">
@@ -194,37 +244,66 @@ export default function CardBasics({
           </Card>
 
           {/* Sexual Preference */}
-          <Card className="col-span-12 sm:col-span-4 h-[300px]">
+          <Card className="col-span-12 sm:col-span-4 min-h-[300px]">
             <CardHeader>
               <h3 className="text-xl font-semibold text-sky-300">What I want:</h3>
             </CardHeader>
-            <CardBody>
-              <Tabs
-                aria-label="Preference selection"
-                selectedKey={selectedPreference}
-                onSelectionChange={(key) => setSelectedPreference(key as string)}
-                className="w-full"
-                classNames={{
-                  tabList: "w-full",
-                  tab: "flex-1",
-                }}
-              >
-                <Tab key="male" title="Male">
-                  <div className="p-4">
+            <CardBody className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Male</span>
+                  <span className="text-xs text-default-500">{preferMale > 0 ? "Interested" : "Not interested"}</span>
+                </div>
+                <Slider
+                  aria-label="Interest in males"
+                  value={preferMale}
+                  onChange={handleMaleSliderChange}
+                  minValue={0}
+                  maxValue={100}
+                  step={1}
+                  className="w-full"
+                  classNames={{
+                    track: "border-s-default-200",
+                    filler: "bg-sky-500",
+                  }}
+                />
+                {preferMale > 0 && (
+                  <p className="text-xs text-default-500 mt-1">
                     I will be shown people who identify as male. These people vouched for being responsible and respectful.
-                  </div>
-                </Tab>
-                <Tab key="female" title="Female">
-                  <div className="p-4">
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Female</span>
+                  <span className="text-xs text-default-500">{preferFemale > 0 ? "Interested" : "Not interested"}</span>
+                </div>
+                <Slider
+                  aria-label="Interest in females"
+                  value={preferFemale}
+                  onChange={handleFemaleSliderChange}
+                  minValue={0}
+                  maxValue={100}
+                  step={1}
+                  className="w-full"
+                  classNames={{
+                    track: "border-s-default-200",
+                    filler: "bg-sky-500",
+                  }}
+                />
+                {preferFemale > 0 && (
+                  <p className="text-xs text-default-500 mt-1">
                     I will be shown females only. (Nice)
-                  </div>
-                </Tab>
-                <Tab key="both" title="Both">
-                  <div className="p-4">
-                    I'm a bisexual 🚲
-                  </div>
-                </Tab>
-              </Tabs>
+                  </p>
+                )}
+              </div>
+              {selectedPreference === "both" && (
+                <div className="bg-sky-50 dark:bg-sky-950/20 p-3 rounded-lg border border-sky-200 dark:border-sky-800">
+                  <p className="text-xs text-sky-700 dark:text-sky-300">
+                    🚲 You're interested in both - you're bisexual!
+                  </p>
+                </div>
+              )}
             </CardBody>
           </Card>
 

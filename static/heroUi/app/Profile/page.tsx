@@ -151,7 +151,8 @@ export default function Component() {
           setLastName(profile.last_name || "");
           setEmail(profile.email || "");
           setSelectedGender(profile.gender || "");
-          setSelectedPreference(profile.sexual_preference || "");
+          // Default to "both" (bisexuality) if no preference is set
+          setSelectedPreference(profile.sexual_preference || "both");
           setBio(profile.biography || "");
           // Normalize tags from server so they persist and don't reset
           const normalizedTags = (profile.tags || []).map((tag: string) => normalizeTag(tag));

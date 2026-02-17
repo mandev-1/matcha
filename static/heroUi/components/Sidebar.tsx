@@ -109,11 +109,17 @@ export function Sidebar() {
       ? "You have 1 unread message!"
       : `You have ${unreadCount} unread messages!`;
 
+  // Filter out Profile navigation item when on /runway route
+  const isRunway = pathname === "/runway";
+  const filteredNavItems = isRunway 
+    ? navItems.filter(item => item.href !== "/Profile")
+    : navItems;
+
   return (
     <>
       {/* Desktop: fixed sidebar (includes Trends / compass) */}
       <aside className="hidden md:flex fixed left-0 top-0 h-full w-20 bg-default-100 border-r border-default-200 dark:border-default-100 z-40 flex-col items-center py-6 gap-4">
-        {[...navItems, ...desktopOnlyNavItems].map((item) => {
+        {[...filteredNavItems, ...desktopOnlyNavItems].map((item) => {
           const isActive = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
           const isChatActive = item.href === "/chats" && (pathname === "/chats" || pathname?.startsWith("/chat/"));
           const isLoading = loadingHref === item.href;
@@ -171,7 +177,7 @@ export function Sidebar() {
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around gap-1 px-2 py-2 bg-content1/95 backdrop-blur-sm border-t border-default-200 dark:border-default-100"
         aria-label="Main navigation"
       >
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
           const isChatActive = item.href === "/chats" && (pathname === "/chats" || pathname?.startsWith("/chat/"));
           const isLoading = loadingHref === item.href;
