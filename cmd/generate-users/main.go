@@ -17,20 +17,22 @@ import (
 )
 
 var (
-	firstNames = []string{
-		"Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Avery", "Quinn",
-		"Sage", "River", "Skyler", "Phoenix", "Blake", "Cameron", "Dakota", "Emery",
-		"Finley", "Harper", "Hayden", "Jamie", "Kai", "Logan", "Marley", "Noah",
-		"Parker", "Reese", "Rowan", "Sawyer", "Spencer", "Tatum",
-		"Emma", "Olivia", "Sophia", "Isabella", "Charlotte", "Amelia", "Mia", "Harper",
-		"Evelyn", "Abigail", "Emily", "Elizabeth", "Mila", "Ella", "Avery", "Sofia",
-		"Camila", "Aria", "Scarlett", "Victoria", "Madison", "Luna", "Grace", "Chloe",
-		"Penelope", "Layla", "Riley", "Zoey", "Nora", "Lily", "Eleanor", "Hannah",
-		"Lillian", "Addison", "Aubrey", "Ellie", "Stella", "Natalie", "Zoe", "Leah",
+	maleFirstNames = []string{
 		"James", "John", "Robert", "Michael", "William", "David", "Richard", "Joseph",
 		"Thomas", "Charles", "Christopher", "Daniel", "Matthew", "Anthony", "Mark",
 		"Donald", "Steven", "Paul", "Andrew", "Joshua", "Kenneth", "Kevin", "Brian",
 		"George", "Timothy", "Ronald", "Jason", "Edward", "Jeffrey", "Ryan", "Jacob",
+		"Nicholas", "Eric", "Jonathan", "Stephen", "Larry", "Justin", "Scott", "Brandon",
+		"Benjamin", "Samuel", "Raymond", "Gregory", "Frank", "Alexander", "Patrick", "Jack",
+	}
+	femaleFirstNames = []string{
+		"Emma", "Olivia", "Sophia", "Isabella", "Charlotte", "Amelia", "Mia", "Harper",
+		"Evelyn", "Abigail", "Emily", "Elizabeth", "Mila", "Ella", "Sofia",
+		"Camila", "Aria", "Scarlett", "Victoria", "Madison", "Luna", "Grace", "Chloe",
+		"Penelope", "Layla", "Zoey", "Nora", "Lily", "Eleanor", "Hannah",
+		"Lillian", "Addison", "Aubrey", "Ellie", "Stella", "Natalie", "Zoe", "Leah",
+		"Hazel", "Violet", "Aurora", "Savannah", "Audrey", "Brooklyn", "Bella", "Claire",
+		"Skylar", "Lucy", "Paisley", "Everly", "Anna", "Caroline", "Nova", "Genesis",
 	}
 
 	lastNames = []string{
@@ -154,7 +156,7 @@ func copyImage(srcPath, destPath string) error {
 }
 
 func main() {
-	if len(firstNames) == 0 || len(lastNames) == 0 {
+	if len(maleFirstNames) == 0 || len(femaleFirstNames) == 0 || len(lastNames) == 0 {
 		log.Fatal("First names or last names list is empty")
 	}
 
@@ -202,7 +204,13 @@ func main() {
 	log.Printf("Generating %d test users...", numUsers)
 
 	for i := 0; i < numUsers; i++ {
-		firstName := firstNames[rand.Intn(len(firstNames))]
+		gender := genders[rand.Intn(len(genders))]
+		var firstName string
+		if gender == "male" {
+			firstName = maleFirstNames[rand.Intn(len(maleFirstNames))]
+		} else {
+			firstName = femaleFirstNames[rand.Intn(len(femaleFirstNames))]
+		}
 		lastName := lastNames[rand.Intn(len(lastNames))]
 		username := fmt.Sprintf("bot_%s_%s_%d", firstName, lastName, i+1)
 		email := fmt.Sprintf("bot_%d_%s_%s@test.com", i+1, firstName, lastName)
@@ -221,7 +229,6 @@ func main() {
 		birthDay := rand.Intn(28) + 1
 		birthDate := fmt.Sprintf("%d-%02d-%02d", birthYear, birthMonth, birthDay)
 
-		gender := genders[rand.Intn(len(genders))]
 		preference := preferences[rand.Intn(len(preferences))]
 		bio := bios[rand.Intn(len(bios))]
 		fameRating := rand.Float64()*2.0 + 3.0 // Between 3.0 and 5.0

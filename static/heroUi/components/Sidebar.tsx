@@ -56,7 +56,7 @@ interface ChatConversation {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
   const { showHint, unreadCount, isZapping } = useChatHint();
   const [loadingHref, setLoadingHref] = React.useState<string | null>(null);
   const [hasUnreadChat, setHasUnreadChat] = React.useState(false);
@@ -109,9 +109,9 @@ export function Sidebar() {
       ? "You have 1 unread message!"
       : `You have ${unreadCount} unread messages!`;
 
-  // Filter out Profile navigation item when on /runway route
-  const isRunway = pathname === "/runway";
-  const filteredNavItems = isRunway 
+  // Filter out Profile when user is not set up (e.g. on runway or new user)
+  const hideProfile = !user?.is_setup;
+  const filteredNavItems = hideProfile
     ? navItems.filter(item => item.href !== "/Profile")
     : navItems;
 

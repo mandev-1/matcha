@@ -538,9 +538,9 @@ func ChangePasswordAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check for common words
+	// Check for common words (any language)
 	if services.IsCommonWord(req.NewPassword) {
-		SendError(w, http.StatusBadRequest, "Password cannot be a commonly used English word")
+		SendError(w, http.StatusBadRequest, "Password cannot be a commonly used word")
 		return
 	}
 

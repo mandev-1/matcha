@@ -55,23 +55,26 @@ export default function Component() {
     });
   };
 
-  // Common English words that should not be accepted as passwords
+  // Common words in multiple languages that should not be accepted as passwords
   const commonWords = [
     "password", "password123", "12345678", "123456789", "qwerty", "abc123",
     "password1", "welcome", "monkey", "1234567", "letmein", "trustno1",
     "dragon", "baseball", "iloveyou", "master", "sunshine", "ashley",
     "bailey", "passw0rd", "shadow", "123123", "654321", "superman",
-    "qazwsx", "michael", "football", "welcome", "jesus", "ninja",
-    "mustang", "password1", "princess", "qwerty123", "solo", "starwars",
+    "qazwsx", "michael", "football", "jesus", "ninja",
+    "mustang", "princess", "qwerty123", "solo", "starwars",
     "hello", "hello123", "welcome123", "admin", "admin123", "root",
-    "test", "test123", "guest", "user", "demo", "sample"
+    "test", "test123", "guest", "user", "demo", "sample",
+    "пароль", "пароль123", "привет", "привет123", "админ", "админ123",
+    "йцукен", "пользователь", "тест", "тест123",
+    "contraseña", "contrasena", "contraseña123", "hola", "hola123",
+    "motdepasse", "motdepasse123", "bonjour", "bonjour123",
+    "passwort", "passwort123", "hallo", "hallo123",
+    "mima", "mima123", "pasuwaado",
   ];
 
   const isCommonWord = (password: string): boolean => {
-    // Exception for dev password
-    if (password === "Test1234") {
-      return false;
-    }
+    if (password === "Test1234") return false;
     const lowerPassword = password.toLowerCase();
     return commonWords.some(word => lowerPassword === word || lowerPassword.includes(word));
   };
@@ -90,9 +93,9 @@ export default function Component() {
       return;
     }
 
-    // Check for common English words
+    // Check for common words (any language)
     if (isCommonWord(formData.password)) {
-      setError("Password cannot be a commonly used English word");
+      setError("Password cannot be a commonly used word");
       return;
     }
 
@@ -200,6 +203,7 @@ export default function Component() {
           <Input
             isRequired
             autoComplete="new-password"
+            inputMode="text"
             endContent={
               <button type="button" onClick={toggleVisibility}>
                 {isVisible ? (
@@ -227,6 +231,7 @@ export default function Component() {
           <Input
             isRequired
             autoComplete="new-password"
+            inputMode="text"
             endContent={
               <button type="button" onClick={toggleConfirmVisibility}>
                 {isConfirmVisible ? (

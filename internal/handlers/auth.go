@@ -43,9 +43,9 @@ func RegisterAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check for common English words
+	// Check for common words (any language)
 	if services.IsCommonWord(req.Password) {
-		SendError(w, http.StatusBadRequest, "Password cannot be a commonly used English word")
+		SendError(w, http.StatusBadRequest, "Password cannot be a commonly used word")
 		return
 	}
 

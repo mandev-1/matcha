@@ -187,6 +187,7 @@ function LoginContent() {
           />
           <Input
             isRequired
+            inputMode="text"
             endContent={
               <button type="button" onClick={toggleVisibility}>
                 {isVisible ? (

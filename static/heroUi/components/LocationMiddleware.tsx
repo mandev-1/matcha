@@ -26,6 +26,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [tryAgainCount, setTryAgainCount] = useState(0);
+  const [isNewUser, setIsNewUser] = useState(false); // true = never set location, false = location expired
   const [locationData, setLocationData] = useState<{
     latitude: number;
     longitude: number;
@@ -61,8 +62,9 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
         const locationUpdatedAt = data.data?.location_updated_at;
         const hasLocation = data.data?.latitude && data.data?.longitude;
 
-        // If no location, prompt immediately
+        // If no location, prompt immediately (new user)
         if (!hasLocation) {
+          setIsNewUser(true);
           setIsChecking(false);
           onOpen();
           return;
@@ -75,6 +77,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
           const diffMinutes = (now.getTime() - updatedAt.getTime()) / (1000 * 60);
 
           if (diffMinutes >= 30) {
+            setIsNewUser(false);
             setIsChecking(false);
             onOpen();
             return;
@@ -328,15 +331,17 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
       case "consent":
         return (
           <>
-            <ModalHeader className="flex flex-col gap-1">
+            <ModalHeader className="flex flex-col gap-1 text-foreground">
               <div className="flex items-center gap-2">
                 <Icon icon="solar:map-point-bold" className="text-2xl text-primary" />
-                <span>Update Your Location</span>
+                <span>{isNewUser ? "Set Your Location" : "Update Your Location"}</span>
               </div>
             </ModalHeader>
-            <ModalBody>
+            <ModalBody className="text-foreground">
               <p>
-                Your location needs to be updated (it's been more than 30 minutes). Please share your current location to continue using the app.
+                {isNewUser
+                  ? "To show you matches nearby, we need your location. Share your current location or enter it manually to get started."
+                  : "Your location is older than 30 minutes. Please share your current location to see up-to-date matches nearby."}
               </p>
             </ModalBody>
             <ModalFooter>
@@ -353,8 +358,8 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
       case "geolocation":
         return (
           <>
-            <ModalHeader className="flex flex-col gap-1">Getting Your Location</ModalHeader>
-            <ModalBody>
+            <ModalHeader className="flex flex-col gap-1 text-foreground">Getting Your Location</ModalHeader>
+            <ModalBody className="text-foreground">
               <p>Please allow location access in your browser...</p>
             </ModalBody>
           </>
@@ -375,13 +380,13 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
                 </div>
                 <div className="text-center space-y-2">
                   <h2 className="text-3xl font-bold text-warning tracking-tight">X_X</h2>
-                  <h3 className="text-lg font-semibold text-default-700">Location grab Failed</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Location grab Failed</h3>
                 </div>
               </div>
             </ModalHeader>
             <ModalBody className="py-4">
               <div className="flex flex-col gap-3 text-center">
-                <p className="text-base leading-relaxed text-default-600">
+                <p className="text-base leading-relaxed text-foreground">
                   We couldn't access your location, but don't worry! You can still use Matcha by setting your location manually or choosing a random Prague district.
                 </p>
               </div>
@@ -436,8 +441,8 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
       case "manual":
         return (
           <>
-            <ModalHeader className="flex flex-col gap-1">Enter Location Manually</ModalHeader>
-            <ModalBody>
+            <ModalHeader className="flex flex-col gap-1 text-foreground">Enter Location Manually</ModalHeader>
+            <ModalBody className="text-foreground">
               <Input
                 label="Location"
                 placeholder="e.g., New York, NY or Paris, France"
@@ -476,8 +481,9 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
         onOpenChange={handleModalClose} 
         isDismissable={false} 
         hideCloseButton={step === "geolocation" || step === "consent" || step === "final"}
+        classNames={{ base: "bg-content1 text-foreground" }}
       >
-        <ModalContent>
+        <ModalContent className="bg-content1 text-foreground">
           {(onClose) => (
             <>
               {renderContent()}

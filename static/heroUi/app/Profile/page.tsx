@@ -331,23 +331,29 @@ export default function Component() {
       return;
     }
 
-    // Check for common words
+    // Check for common words (any language)
     const commonWords = [
       "password", "password123", "12345678", "123456789", "qwerty", "abc123",
       "password1", "welcome", "monkey", "1234567", "letmein", "trustno1",
       "dragon", "baseball", "iloveyou", "master", "sunshine", "ashley",
       "bailey", "passw0rd", "shadow", "123123", "654321", "superman",
-      "qazwsx", "michael", "football", "welcome", "jesus", "ninja",
-      "mustang", "password1", "princess", "qwerty123", "solo", "starwars",
+      "qazwsx", "michael", "football", "jesus", "ninja",
+      "mustang", "princess", "qwerty123", "solo", "starwars",
       "hello", "hello123", "welcome123", "admin", "admin123", "root",
-      "test", "test123", "guest", "user", "demo", "sample"
+      "test", "test123", "guest", "user", "demo", "sample",
+      "пароль", "пароль123", "привет", "привет123", "админ", "админ123",
+      "йцукен", "пользователь", "тест", "тест123",
+      "contraseña", "contrasena", "contraseña123", "hola", "hola123",
+      "motdepasse", "motdepasse123", "bonjour", "bonjour123",
+      "passwort", "passwort123", "hallo", "hallo123",
+      "mima", "mima123", "pasuwaado",
     ];
 
     const lowerPassword = newPassword.toLowerCase();
     const isCommon = commonWords.some(word => lowerPassword === word || lowerPassword.includes(word));
     
     if (isCommon && newPassword !== "Test1234") {
-      setPasswordError("Password cannot be a commonly used English word");
+      setPasswordError("Password cannot be a commonly used word");
       return;
     }
 
@@ -829,6 +835,7 @@ export default function Component() {
               <ModalBody>
                 <Input
                   isRequired
+                  inputMode="text"
                   endContent={
                     <button
                       className="focus:outline-none"
@@ -859,6 +866,7 @@ export default function Component() {
                 />
                 <Input
                   isRequired
+                  inputMode="text"
                   endContent={
                     <button
                       className="focus:outline-none"

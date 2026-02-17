@@ -13,19 +13,33 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Common English words that should not be accepted as passwords
+// Common words in multiple languages that should not be accepted as passwords
 var commonWords = []string{
+	// English
 	"password", "password123", "12345678", "123456789", "qwerty", "abc123",
 	"password1", "welcome", "monkey", "1234567", "letmein", "trustno1",
 	"dragon", "baseball", "iloveyou", "master", "sunshine", "ashley",
 	"bailey", "passw0rd", "shadow", "123123", "654321", "superman",
-	"qazwsx", "michael", "football", "welcome", "jesus", "ninja",
-	"mustang", "password1", "princess", "qwerty123", "solo", "starwars",
+	"qazwsx", "michael", "football", "jesus", "ninja",
+	"mustang", "princess", "qwerty123", "solo", "starwars",
 	"hello", "hello123", "welcome123", "admin", "admin123", "root",
 	"test", "test123", "guest", "user", "demo", "sample",
+	// Russian
+	"пароль", "пароль123", "привет", "привет123", "админ", "админ123",
+	"йцукен", "пользователь", "тест", "тест123",
+	// Spanish
+	"contraseña", "contrasena", "contraseña123", "hola", "hola123",
+	// French
+	"motdepasse", "motdepasse123", "bonjour", "bonjour123",
+	// German
+	"passwort", "passwort123", "hallo", "hallo123",
+	// Chinese (pinyin)
+	"mima", "mima123", "admin", "nihao",
+	// Japanese (romaji)
+	"pasuwaado", "password123",
 }
 
-// IsCommonWord checks if a password is a commonly used English word
+// IsCommonWord checks if a password is a commonly used word in any language
 func IsCommonWord(password string) bool {
 	// Exception for dev password
 	if password == "Test1234" {
