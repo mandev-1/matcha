@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  // This middleware runs on the server side
-  // For client-side redirects, we use ProtectedRoute component
+  const pathname = request.nextUrl.pathname;
+
+  // Redirect /match (typo) and /Matcha (wrong case) to /matcha
+  // Fixes 404 on case-sensitive systems and common typos
+  if (pathname === "/match" || pathname === "/Matcha") {
+    return NextResponse.redirect(new URL("/matcha", request.url));
+  }
+
   return NextResponse.next();
 }
 

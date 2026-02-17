@@ -291,7 +291,7 @@ This will:
 
 
 # TODO
-1. If you refresh the page anywhere, it points you to /Matcha
+1. ~~If you refresh the page anywhere, it points you to /Matcha~~ (middleware redirects /Matcha and /match to /matcha)
 
 # DONE
 1. ~~Add Support for Russian Keyboards for the Passwords~~ (inputMode="text" on password fields)
