@@ -35,7 +35,7 @@ export function ProtectedRoute({
 
     // If user is authenticated and tries to access login/register, redirect
     if (isAuthenticated && redirectIfAuth) {
-      router.push(redirectIfAuth);
+      router.push(user && !user.is_setup ? "/runway" : redirectIfAuth);
       return;
     }
   }, [isAuthenticated, user, requireAuth, requireSetup, redirectIfAuth, router]);
@@ -50,7 +50,7 @@ export function ProtectedRoute({
   }
 
   if (isAuthenticated && redirectIfAuth) {
-    return null;
+    return null; // Redirecting to runway or matcha
   }
 
   return <>{children}</>;

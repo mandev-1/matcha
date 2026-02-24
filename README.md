@@ -291,7 +291,12 @@ This will:
 
 
 # TODO
-1. ~~If you refresh the page anywhere, it points you to /Matcha~~ (middleware redirects /Matcha and /match to /matcha)
+1. If you refresh on anything else than /profile, it redirects you to /matcha --> clean this, it should behave normally as web would expect
+2. the matcha mathcer game is not working
+3. the runway is bit too shit
+4. there are too many systems, disable the noon meyer-briggs ones 
+5. 
+
 
 # DONE
 1. ~~Add Support for Russian Keyboards for the Passwords~~ (inputMode="text" on password fields)
@@ -302,3 +307,4 @@ This will:
 6. ~~The Runway needs to add bisexuality~~ (sliders for both, default bisexuality)
 7. ~~Generated users more believable~~ (gender-appropriate first names)
 8. ~~Update your location popup readable in dark mode~~ (text-foreground, bg-content1)
+1. ~~If you refresh the page anywhere, it points you to /Matcha~~ (middleware redirects /Matcha and /match to /matcha)

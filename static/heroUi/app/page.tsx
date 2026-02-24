@@ -16,9 +16,6 @@ export default function Home() {
       // If logged in but not set up, go to runway
       if (user && !user.is_setup) {
         router.push("/runway");
-      } else {
-        // If logged in and set up, go to matcha
-        router.push("/matcha");
       }
     }
   }, [pathname, isAuthenticated, user, router]);

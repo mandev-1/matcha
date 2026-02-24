@@ -19,6 +19,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ChatHintProvider } from "@/contexts/ChatHintContext";
 import { NotificationPanel } from "@/components/NotificationPanel";
 import { NewMessageToaster } from "@/components/NewMessageToaster";
+import { SetupGuard } from "@/components/SetupGuard";
 
 export const metadata: Metadata = {
   title: {
@@ -56,6 +57,7 @@ export default function RootLayout({
             <ChatHintProvider>
             <NewMessageToaster />
             <LocationMiddleware>
+            <SetupGuard>
             <div className="relative flex flex-row h-full min-w-0">
               <Sidebar />
               <div className="flex-1 flex flex-col ml-0 md:ml-20 h-full min-w-0 pb-20 md:pb-0">
@@ -77,6 +79,7 @@ export default function RootLayout({
               <LoginStatus />
               <HelpDrawer />
             </div>
+            </SetupGuard>
           </LocationMiddleware>
             </ChatHintProvider>
           </NotificationProvider>

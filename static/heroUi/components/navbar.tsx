@@ -27,7 +27,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 
 export const Navbar = () => {
   const router = useRouter();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const { onOpen: openHelpDrawer } = useHelpDrawer();
   const { theme, setTheme } = useTheme();
 
@@ -40,7 +40,7 @@ export const Navbar = () => {
     <HeroUINavbar maxWidth="xl" position="sticky">
       <NavbarContent className="basis-1/5 sm:basis-full min-w-0" justify="start">
         <NavbarBrand as="li" className="gap-2 md:gap-3 max-w-fit shrink-0">
-          <NextLink className="flex justify-start items-center gap-1" href="/">
+          <NextLink className="flex justify-start items-center gap-1" href={isAuthenticated && user ? (user.is_setup ? "/matcha" : "/runway") : "/"}>
             <Logo size={120} height={40} className="w-20 h-7 sm:w-24 sm:h-8 md:w-[120px] md:h-10" />
           </NextLink>
         </NavbarBrand>
