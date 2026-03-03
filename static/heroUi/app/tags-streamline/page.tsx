@@ -1,15 +1,12 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
-import { Skeleton } from "@heroui/skeleton";
+import { Card, Button, Chip, Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import { addToast } from "@heroui/toast";
+import { addToast } from "@/lib/addToast";
 import { getApiUrl } from "@/lib/apiUrl";
 
 export default function TagsStreamlinePage() {
@@ -166,9 +163,7 @@ export default function TagsStreamlinePage() {
     return (
       <ProtectedRoute requireAuth={true} requireSetup={true}>
         <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-2 md:px-4 py-8">
-          <Skeleton className="rounded-lg">
-            <div className="h-96 w-full rounded-lg bg-default-300" />
-          </Skeleton>
+          <Skeleton className="rounded-lg h-96 w-full" />
         </div>
       </ProtectedRoute>
     );
@@ -179,35 +174,32 @@ export default function TagsStreamlinePage() {
       <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-2 md:px-4 py-8">
         <div className="flex items-center justify-between">
           <Button
-            variant="flat"
+            variant="secondary"
             size="sm"
             onPress={() => router.back()}
-            startContent={<Icon icon="solar:arrow-left-linear" />}
-          >
+            >
+            <Icon icon="solar:arrow-left-linear" className="mr-1" />
             Back
           </Button>
         </div>
 
         <Card>
-          <CardHeader>
+          <Card.Header>
             <h1 className="text-2xl font-bold">Streamline Your Tags</h1>
-          </CardHeader>
-          <CardBody className="flex flex-col gap-6">
+          </Card.Header>
+          <Card.Content className="flex flex-col gap-6">
             {/* Current Tags */}
             <div className="flex flex-col gap-3">
               <h2 className="text-lg font-semibold">Your Current Tags ({tags.length}/5)</h2>
               {tags.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag) => (
-                    <Chip
-                      key={tag}
-                      onClose={() => handleRemoveTag(tag)}
-                      variant="flat"
-                      color="primary"
-                      isCloseable={!isRemoving}
-                    >
+<span key={tag} className="inline-flex items-center gap-1 rounded-full border border-default-200 bg-default-100 px-3 py-1 text-sm">
                       {tag}
-                    </Chip>
+                      <button type="button" onClick={() => handleRemoveTag(tag)} disabled={isRemoving !== null} className="opacity-70 hover:opacity-100 rounded-full p-0.5 -mr-1" aria-label={`Remove ${tag}`}>
+                        ×
+                      </button>
+                    </span>
                   ))}
                 </div>
               ) : (
@@ -238,17 +230,17 @@ export default function TagsStreamlinePage() {
                           </span>
                         </div>
                         {isUserTag ? (
-                          <Chip size="sm" variant="flat" color="success">
+                          <Chip size="sm" variant="secondary">
                             Added
                           </Chip>
                         ) : (
                           <Button
                             size="sm"
-                            variant="flat"
-                            color="primary"
+                            variant="secondary"
+                           
                             onPress={() => handleAddTag(popularTag.tag)}
                             isDisabled={!canAdd || isAdding === popularTag.tag}
-                            isLoading={isAdding === popularTag.tag}
+                            isPending={isAdding === popularTag.tag}
                           >
                             Add
                           </Button>
@@ -261,7 +253,7 @@ export default function TagsStreamlinePage() {
                 <p className="text-default-500">No popular tags available.</p>
               )}
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
     </ProtectedRoute>

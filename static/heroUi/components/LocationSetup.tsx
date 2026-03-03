@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { addToast } from "@heroui/toast";
+import { Button, Input, TextField, Label, useOverlayState } from "@heroui/react";
+import { ModalCompat, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
+import { addToast } from "@/lib/addToast";
 import { Icon } from "@iconify/react";
 import { getApiUrl } from "@/lib/apiUrl";
 
@@ -266,10 +265,10 @@ export default function LocationSetup({
               </p>
             </ModalBody>
             <ModalFooter>
-              <Button color="danger" variant="light" onPress={handleDecline}>
+              <Button variant="ghost" onPress={handleDecline}>
                 Decline
               </Button>
-              <Button color="primary" onPress={handleConsent} isLoading={isLoading}>
+              <Button onPress={handleConsent} isPending={isLoading}>
                 Share Location
               </Button>
             </ModalFooter>
@@ -314,31 +313,28 @@ export default function LocationSetup({
             </ModalBody>
             <ModalFooter className="flex flex-col gap-3 pt-4">
               <Button 
-                color="warning" 
-                variant="flat" 
+                variant="secondary" 
                 onPress={handleConsent}
-                isLoading={isLoading}
-                startContent={<Icon icon="solar:refresh-bold" />}
+                isPending={isLoading}
                 className="w-full"
                 size="lg"
               >
+                <Icon icon="solar:refresh-bold" className="mr-1" />
                 Try Again
               </Button>
               <div className="flex gap-3 w-full">
                 <Button 
-                  color="secondary" 
-                  variant="flat" 
+                  variant="secondary" 
                   onPress={handleSetPrague}
-                  isLoading={isLoading}
-                  startContent={<Icon icon="solar:map-point-add-bold" />}
+                  isPending={isLoading}
                   className="flex-1"
                   size="lg"
                 >
+                  <Icon icon="solar:map-point-add-bold" className="mr-1" />
                   Set to Prague
                 </Button>
                 <Button 
-                  color="default" 
-                  variant="flat" 
+                  variant="secondary" 
                   onPress={handleFinalDecline}
                   className="flex-1"
                   size="lg"
@@ -355,20 +351,17 @@ export default function LocationSetup({
           <>
             <ModalHeader className="flex flex-col gap-1">Enter Location Manually</ModalHeader>
             <ModalBody>
-              <Input
-                label="Location"
-                placeholder="e.g., New York, NY or Paris, France"
-                value={manualLocation}
-                onValueChange={setManualLocation}
-                variant="bordered"
-                description="Enter a city, address, or location name"
-              />
+              <TextField value={manualLocation} onChange={(v) => setManualLocation(v)}>
+                <Label>Location</Label>
+                <Input placeholder="e.g., New York, NY or Paris, France" />
+                <p className="text-sm text-default-400 mt-1">Enter a city, address, or location name</p>
+              </TextField>
             </ModalBody>
             <ModalFooter>
-              <Button color="default" variant="light" onPress={() => onOpenChange(false)}>
+              <Button variant="ghost" onPress={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button color="primary" onPress={handleManualSubmit} isLoading={isLoading}>
+              <Button onPress={handleManualSubmit} isPending={isLoading}>
                 Save Location
               </Button>
             </ModalFooter>
@@ -381,15 +374,9 @@ export default function LocationSetup({
   };
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} isDismissable={step !== "geolocation"}>
-      <ModalContent>
-        {(onClose) => (
-          <>
-            {renderContent()}
-          </>
-        )}
-      </ModalContent>
-    </Modal>
+    <ModalCompat isOpen={isOpen} onOpenChange={onOpenChange} isDismissable={step !== "geolocation"}>
+      {renderContent()}
+    </ModalCompat>
   );
 }
 

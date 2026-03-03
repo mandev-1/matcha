@@ -1,4 +1,13 @@
-.PHONY: build run test clean clean-frontend clean-all hero docker-build docker-up docker-up-build docker-down docker-logs docker-restart docker-shell docker-all docker-compose-all docker-clean podman-build podman-up podman-up-build podman-down podman-logs podman-restart podman-shell podman-all podman-compose-all podman-clean frontend-install frontend-build frontend-dev bot-simulator bot-simulator-custom mailhog mailhog-stop mailhog-podman mailhog-stop-podman mailhog-ports mailhog-kill-ports init-db migrate-notifications run-migrations
+.PHONY: build run test clean clean-frontend clean-all hero docker-build docker-up docker-up-build docker-down docker-logs docker-restart docker-shell docker-all docker-compose-all docker-clean podman-build podman-up podman-up-build podman-down podman-logs podman-restart podman-shell podman-all podman-compose-all podman-clean frontend-install frontend-build frontend-dev bot-simulator bot-simulator-custom mailhog mailhog-stop mailhog-podman mailhog-stop-podman mailhog-ports mailhog-kill-ports init-db migrate-notifications run-migrations smoke smoke-docker smoke-dev up down reset-db
+
+# Phase 2: Primary deployment targets
+up: docker-up-build
+down: docker-down
+reset-db:
+	@docker-compose down -v || true
+	@rm -f data/matcha.db 2>/dev/null || true
+	@echo "Starting fresh..."
+	@docker-compose up --build -d
 
 # Build the application
 build:
@@ -11,6 +20,18 @@ run:
 # Run tests
 test:
 	go test ./...
+
+# Phase 1 smoke checks (expects app/mailhog running)
+smoke:
+	./scripts/smoke.sh
+
+# Smoke with wait - use after docker compose up (waits up to 60s for services)
+smoke-docker:
+	SMOKE_WAIT=60 ./scripts/smoke.sh
+
+# Smoke for local dev (backend + frontend-dev, no MailHog)
+smoke-dev:
+	SKIP_MAILHOG=1 ./scripts/smoke.sh
 
 # Clean build artifacts
 clean:

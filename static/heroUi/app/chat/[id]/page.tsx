@@ -1,18 +1,14 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Image } from "@heroui/image";
-import { Skeleton } from "@heroui/skeleton";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import { Card, Button, Input, Skeleton, ScrollShadow } from "@heroui/react";
+import { ModalCompat, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
+import { Image } from "@/components/Image";
 import { Icon } from "@iconify/react";
 import { useRouter, useParams } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import { addToast } from "@heroui/toast";
-import { ScrollShadow } from "@heroui/scroll-shadow";
+import { addToast } from "@/lib/addToast";
 import { getApiUrl, getUploadUrl } from "@/lib/apiUrl";
 
 interface Message {
@@ -304,9 +300,7 @@ export default function ChatPage() {
     return (
       <ProtectedRoute requireAuth={true} requireSetup={true}>
         <div className="flex flex-col h-[calc(100vh-200px)] max-w-4xl mx-auto w-full px-2 md:px-4 py-8">
-          <Skeleton className="rounded-lg">
-            <div className="h-full w-full rounded-lg bg-default-300" />
-          </Skeleton>
+          <Skeleton className="rounded-lg h-full w-full" />
         </div>
       </ProtectedRoute>
     );
@@ -315,7 +309,7 @@ export default function ChatPage() {
   return (
     <ProtectedRoute requireAuth={true} requireSetup={true}>
       {/* Blocking yellow dialog: you're blocking them or they're blocking you */}
-      <Modal
+      <ModalCompat
         isOpen={showBlockDialog}
         onClose={() => {}}
         isDismissable={false}
@@ -339,7 +333,7 @@ export default function ChatPage() {
           </ModalBody>
           <ModalFooter>
             <Button
-              color="warning"
+              className="bg-warning text-warning-foreground"
               onPress={() => {
                 setShowBlockDialog(false);
                 router.push("/matcha");
@@ -349,17 +343,17 @@ export default function ChatPage() {
             </Button>
           </ModalFooter>
         </ModalContent>
-      </Modal>
+      </ModalCompat>
 
       <div className="flex flex-col h-[calc(100vh-200px)] max-w-4xl mx-auto w-full px-2 md:px-4 py-8">
         <Card className="flex flex-col h-full">
           {/* Chat Header */}
-          <CardHeader className="flex items-center justify-between border-b border-default-200 p-4">
+          <Card.Header className="flex items-center justify-between border-b border-default-200 p-4">
             <div className="flex items-center gap-3">
               <Button
-                isIconOnly
-                variant="light"
+                variant="ghost"
                 size="sm"
+                className="min-w-8 w-8 h-8 p-0"
                 onPress={() => router.push("/chats")}
                 aria-label="Back to chats"
               >
@@ -387,18 +381,18 @@ export default function ChatPage() {
               </div>
             </div>
             <Button
-              isIconOnly
-              variant="light"
+              variant="ghost"
               size="sm"
+              className="min-w-8 w-8 h-8 p-0"
               onPress={() => router.push(`/discover/${chatId}`)}
               aria-label="View profile"
             >
               <Icon icon="solar:user-id-bold" className="text-xl" />
             </Button>
-          </CardHeader>
+          </Card.Header>
 
           {/* Messages Area */}
-          <CardBody className="flex-1 p-0 overflow-hidden">
+          <Card.Content className="flex-1 p-0 overflow-hidden">
             <ScrollShadow className="h-full overflow-y-auto p-4">
               {isLoadingMessages ? (
                 <div className="flex flex-col items-center justify-center py-12">
@@ -406,9 +400,7 @@ export default function ChatPage() {
                     {/* Loading skeleton for messages */}
                     {[...Array(3)].map((_, i) => (
                       <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
-                        <Skeleton className="rounded-lg">
-                          <div className={`h-16 w-48 rounded-lg bg-default-200`} />
-                        </Skeleton>
+                        <Skeleton className="rounded-lg h-16 w-48" />
                       </div>
                     ))}
                   </div>
@@ -451,7 +443,7 @@ export default function ChatPage() {
                 </div>
               )}
             </ScrollShadow>
-          </CardBody>
+          </Card.Content>
 
           {/* Message Input */}
           <div className="border-t border-default-200 p-4">
@@ -459,31 +451,26 @@ export default function ChatPage() {
               <Input
                 placeholder="Type a message..."
                 value={messageText}
-                onValueChange={setMessageText}
+                onChange={(e) => setMessageText(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     handleSendMessage();
                   }
                 }}
-                classNames={{
-                  input: "text-sm",
-                  inputWrapper: "h-12",
-                }}
-                endContent={
-                  <Button
-                    isIconOnly
-                    color="primary"
-                    size="sm"
-                    isDisabled={!messageText.trim() || isSending}
-                    isLoading={isSending}
-                    onPress={handleSendMessage}
-                    aria-label="Send message"
-                  >
-                    <Icon icon="solar:arrow-up-linear" className="text-lg" />
-                  </Button>
-                }
+                className="h-12 text-sm flex-1"
               />
+              <Button
+                variant="primary"
+                size="sm"
+                className="min-w-8 w-8 h-8 p-0"
+                isDisabled={!messageText.trim() || isSending}
+                isPending={isSending}
+                onPress={handleSendMessage}
+                aria-label="Send message"
+              >
+                <Icon icon="solar:arrow-up-linear" className="text-lg" />
+              </Button>
             </div>
           </div>
         </Card>

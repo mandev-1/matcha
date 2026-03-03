@@ -1,10 +1,8 @@
 "use client";
 
 import React from "react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Pagination } from "@heroui/pagination";
-import { Spinner } from "@heroui/spinner";
-import { Link } from "@heroui/link";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Link } from "@heroui/react";
+import { PaginationCompat } from "@/components/PaginationCompat";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { getApiUrl } from "@/lib/apiUrl";
@@ -121,83 +119,53 @@ function BotActivityPageContent() {
       <h1 className="text-3xl font-bold mb-6 text-default-900 dark:text-default-100">
         Test User Activity Log
       </h1>
-      <Table
-        aria-label="Bot activity log table"
-        bottomContent={
-          data && data.data.pages > 0 ? (
-            <div className="flex w-full justify-center">
-              <Pagination
-                isCompact
-                showControls
-                showShadow
-                color="primary"
-                page={page}
-                total={data.data.pages}
-                onChange={(page) => setPage(page)}
-              />
-            </div>
-          ) : null
-        }
-      >
+      <div>
+      <Table aria-label="Bot activity log table">
+        <Table.Content>
         <TableHeader>
           {columns.map((column) => (
             <TableColumn key={column.key}>{column.label}</TableColumn>
           ))}
         </TableHeader>
-        <TableBody
-          items={data?.data.activities ?? []}
-          loadingContent={<Spinner />}
-          loadingState={loadingState}
-        >
+        <TableBody items={data?.data.activities ?? []}>
           {(item) => (
             <TableRow key={item.id}>
-              {(columnKey) => {
-                const key = String(columnKey);
-                const value = getKeyValue(item, key);
-                if (key === "bot_display_name") {
-                  const displayName = item.bot_display_name || item.bot_username;
-                  return (
-                    <TableCell>
-                      <Link
-                        href={`/discover/${item.bot_id}`}
-                        className="text-primary hover:underline"
-                      >
-                        {displayName}
-                      </Link>
-                    </TableCell>
-                  );
-                }
-                if (key === "action_type") {
-                  return <TableCell>{formatActionType(value as string)}</TableCell>;
-                }
-                if (key === "target_display_name") {
-                  const targetDisplayName = item.target_display_name || item.target_username;
-                  if (item.target_user_id && targetDisplayName) {
-                    return (
-                      <TableCell>
-                        <Link
-                          href={`/discover/${item.target_user_id}`}
-                          className="text-primary hover:underline"
-                        >
-                          {targetDisplayName}
-                        </Link>
-                      </TableCell>
-                    );
-                  }
-                  return <TableCell>-</TableCell>;
-                }
-                if (key === "created_at") {
-                  return <TableCell>{formatDateTime(value as string)}</TableCell>;
-                }
-                if (key === "details") {
-                  return <TableCell>{value || "-"}</TableCell>;
-                }
-                return <TableCell>{value}</TableCell>;
-              }}
+              <TableCell>
+                <Link
+                  href={`/discover/${item.bot_id}`}
+                  className="text-primary hover:underline"
+                >
+                  {item.bot_display_name || item.bot_username}
+                </Link>
+              </TableCell>
+              <TableCell>{formatActionType(item.action_type)}</TableCell>
+              <TableCell>
+                {item.target_user_id && (item.target_display_name || item.target_username) ? (
+                  <Link
+                    href={`/discover/${item.target_user_id}`}
+                    className="text-primary hover:underline"
+                  >
+                    {item.target_display_name || item.target_username}
+                  </Link>
+                ) : "-"}
+              </TableCell>
+              <TableCell>{item.details ?? "-"}</TableCell>
+              <TableCell>{formatDateTime(item.created_at)}</TableCell>
             </TableRow>
           )}
         </TableBody>
+        </Table.Content>
       </Table>
+        {data && data.data.pages > 0 && (
+          <div className="flex w-full justify-center mt-4">
+            <PaginationCompat
+              page={page}
+              total={data.data.pages}
+              onChange={(p) => setPage(p)}
+            />
+          </div>
+        )}
+      </div>
       {data && (
         <div className="mt-4 text-sm text-default-500">
           Showing {((page - 1) * data.data.limit) + 1} to {Math.min(page * data.data.limit, data.data.total)} of {data.data.total} activities

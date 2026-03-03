@@ -1,14 +1,10 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Image } from "@heroui/image";
-import { Chip } from "@heroui/chip";
+import { Card, Button, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner } from "@heroui/react";
+import { Image } from "@/components/Image";
+import { Progress } from "@/components/Progress";
 import { Icon } from "@iconify/react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Spinner } from "@heroui/spinner";
-import { Progress } from "@heroui/progress";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getApiUrl, getUploadUrl } from "@/lib/apiUrl";
@@ -64,7 +60,7 @@ export default function CardProfile({
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-2 md:px-4">
       <div className="flex justify-center items-center">
-        <Card isFooterBlurred className="border-none w-full h-auto md:h-[450px]" radius="lg">
+        <Card className="border-none w-full h-auto md:h-[450px]">
           <div className="grid grid-cols-12 gap-1 md:gap-2 h-full p-1 md:p-2">
             {/* Big image on the left - 6 columns (Profile image - slot 1) */}
             <div className="col-span-12 md:col-span-6 h-[402px] md:h-full min-h-0 flex items-center justify-center bg-default-100 rounded-lg overflow-hidden">
@@ -106,36 +102,36 @@ export default function CardProfile({
               </div>
             </div>
           </div>
-          <CardFooter className="justify-between before:bg-white/10 border-white/20 border-1 overflow-hidden py-1 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
+          <Card.Footer className="justify-between before:bg-white/10 border-white/20 border-1 overflow-hidden py-1 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
             <p className="text-tiny text-white/80">{likesReceivedCount === 1 ? "1 like." : `${likesReceivedCount} likes.`}</p>
             <Button
               className="text-tiny text-white bg-black/20"
-              color="default"
-              radius="lg"
+             
+             
               size="sm"
-              variant="flat"
+              variant="secondary"
               onPress={onImageUploadModalOpen}
-              startContent={<Icon icon="solar:gallery-add-linear" className="text-sm" />}
-            >
-              Upload new Images
+>
+                <Icon icon="solar:gallery-add-linear" className="text-sm mr-1" />
+                Upload new Images
             </Button>
-          </CardFooter>
+          </Card.Footer>
         </Card>
       </div>
       
       {/* Profile Information */}
-      <Card className="w-full relative" radius="lg">
+      <Card className="w-full relative">
         <Button
           className="absolute top-4 right-4 z-10"
-          color="primary"
-          variant="flat"
+         
+          variant="secondary"
           size="sm"
           onPress={onEditClick}
-          startContent={<Icon icon="solar:pen-linear" className="text-lg" />}
         >
+          <Icon icon="solar:pen-linear" className="text-lg mr-1" />
           Edit
         </Button>
-        <CardBody className="flex flex-col gap-4 p-4 md:p-6">
+        <Card.Content className="flex flex-col gap-4 p-4 md:p-6">
           {/* Name and Basic Info */}
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl md:text-3xl font-bold">
@@ -165,8 +161,8 @@ export default function CardProfile({
                 {tags.map((tag) => (
                   <Chip
                     key={tag}
-                    variant="flat"
-                    color="primary"
+                    variant="secondary"
+                   
                     size="sm"
                   >
                     {tag}
@@ -197,7 +193,7 @@ export default function CardProfile({
               </div>
             )}
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Profile Visitors */}
@@ -290,30 +286,30 @@ function ProfileVisitorsCard() {
 
   if (isLoading) {
     return (
-      <Card className="w-full" radius="lg">
-        <CardBody>
+      <Card className="w-full">
+        <Card.Content>
           <p className="text-default-500">Loading visitors...</p>
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   }
 
   if (visitors.length === 0) {
     return (
-      <Card className="w-full" radius="lg">
-        <CardBody>
+      <Card className="w-full">
+        <Card.Content>
           <div className="flex flex-col items-center justify-center py-8">
             <Icon icon="solar:eye-linear" className="text-4xl text-default-400 mb-2" />
             <p className="text-default-500 text-center">No one has visited your profile yet</p>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   }
 
   return (
-    <Card className="w-full" radius="lg">
-      <CardBody>
+    <Card className="w-full">
+      <Card.Content>
         <div className="flex flex-col gap-2">
           {visitors.map((visitor, index) => (
             <div
@@ -331,12 +327,12 @@ function ProfileVisitorsCard() {
                     {visitor.first_name} {visitor.last_name}
                   </p>
                   {visitor.is_connected && (
-                    <Chip size="sm" color="success" variant="flat">
+                    <Chip size="sm" variant="secondary">
                       Connected
                     </Chip>
                   )}
                   {visitor.gave_like && !visitor.is_connected && (
-                    <Chip size="sm" className="bg-pink-500/20 text-pink-500 border-pink-500/30" variant="flat">
+                    <Chip size="sm" className="bg-pink-500/20 text-pink-500 border-pink-500/30" variant="secondary">
                       Gave Like
                     </Chip>
                   )}
@@ -371,7 +367,7 @@ function ProfileVisitorsCard() {
             </div>
           ))}
         </div>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }
@@ -469,48 +465,45 @@ function ConnectionsTable() {
 
   if (isLoading) {
     return (
-      <Card className="w-full" radius="lg">
-        <CardBody>
+      <Card className="w-full">
+        <Card.Content>
           <div className="flex items-center justify-center py-8">
-            <Spinner size="lg" color="primary" />
+            <Spinner size="lg" color="accent" />
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   }
 
   if (connections.length === 0) {
     return (
-      <Card className="w-full" radius="lg">
-        <CardBody>
+      <Card className="w-full">
+        <Card.Content>
           <div className="flex flex-col items-center justify-center py-8">
             <Icon icon="solar:users-group-rounded-linear" className="text-4xl text-default-400 mb-2" />
             <p className="text-default-500 text-center">No connections yet</p>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   }  return (
-    <Card className="w-full" radius="lg">
-      <CardBody className="flex flex-col gap-4 p-4 md:p-6">
+    <Card className="w-full">
+      <Card.Content className="flex flex-col gap-4 p-4 md:p-6">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-semibold text-sky-300">Connections</h3>
           <Button
-            color="primary"
-            variant="flat"
+           
+            variant="secondary"
             size="sm"
             onPress={() => router.push("/chats")}
-            endContent={<Icon icon="solar:chat-round-line-linear" className="text-lg" />}
           >
             Continue chatting
+            <Icon icon="solar:chat-round-line-linear" className="text-lg ml-1" />
           </Button>
         </div>
 
-        <Table 
-          aria-label="Connections table"
-          selectionMode="none"
-          removeWrapper
-        >
+        <Table aria-label="Connections table">
+          <Table.Content>
           <TableHeader>
             <TableColumn>NAME</TableColumn>
             <TableColumn>AGE</TableColumn>
@@ -518,7 +511,7 @@ function ConnectionsTable() {
             <TableColumn>STATUS</TableColumn>
             <TableColumn>FAME</TableColumn>
           </TableHeader>
-          <TableBody emptyContent="No connections found.">
+          <TableBody renderEmptyState={() => "No connections found."}>
             {connections.map((connection) => (
               <TableRow
                 key={connection.id}
@@ -549,7 +542,7 @@ function ConnectionsTable() {
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     {connection.is_online ? (
-                      <Chip size="sm" color="success" variant="flat">
+                      <Chip size="sm" variant="secondary">
                         Online
                       </Chip>
                     ) : (
@@ -561,7 +554,7 @@ function ConnectionsTable() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Chip size="sm" variant="flat" color="primary">
+                    <Chip size="sm" variant="secondary">
                       Level {Math.floor(connection.fame_rating)}
                     </Chip>
                   </div>
@@ -569,8 +562,9 @@ function ConnectionsTable() {
               </TableRow>
             ))}
           </TableBody>
+          </Table.Content>
         </Table>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }
@@ -612,12 +606,12 @@ function FameRatingEvolutionCard() {
 
   if (isLoading) {
     return (
-      <Card className="w-full" radius="lg">
-        <CardBody>
+      <Card className="w-full">
+        <Card.Content>
           <div className="flex items-center justify-center py-8">
-            <Spinner size="lg" color="primary" />
+            <Spinner size="lg" color="accent" />
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   }
@@ -655,11 +649,11 @@ function FameRatingEvolutionCard() {
   const pathData = `M ${points.join(' L ')}`;
 
   return (
-    <Card className="w-full" radius="lg">
-      <CardBody className="flex flex-col gap-4 p-4 md:p-6">
+    <Card className="w-full">
+      <Card.Content className="flex flex-col gap-4 p-4 md:p-6">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-semibold text-sky-300">Fame Rating Evolution</h3>
-          <Chip size="lg" color="primary" variant="flat">
+          <Chip size="lg" variant="secondary">
             Level {currentLevel}
           </Chip>
         </div>
@@ -675,8 +669,6 @@ function FameRatingEvolutionCard() {
           </div>
           <Progress
             value={progressPercentage}
-            color="primary"
-            size="lg"
             className="w-full"
             aria-label="Progress to next level"
           />
@@ -755,7 +747,7 @@ function FameRatingEvolutionCard() {
             ))}
           </div>
         </div>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }
@@ -803,12 +795,12 @@ function JoinDateMessage() {
   }
 
   return (
-    <Card className="w-full" radius="lg">
-      <CardBody className="p-4 md:p-6">
+    <Card className="w-full">
+      <Card.Content className="p-4 md:p-6">
         <p className="text-base text-default-700 text-center">
           I joined matcha {daysSinceJoin} {daysSinceJoin === 1 ? 'day' : 'days'} ago! I love my friends, and will give Martin and Madi 5 stars.
         </p>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }

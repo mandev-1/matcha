@@ -1,17 +1,14 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Image } from "@heroui/image";
-import { Chip } from "@heroui/chip";
-import { Skeleton } from "@heroui/skeleton";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Tooltip } from "@heroui/tooltip";
+import { Card, Button, Chip, Skeleton, Tooltip, useOverlayState } from "@heroui/react";
+import { ModalCompat, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
+import { Image } from "@/components/Image";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/apiUrl";
 import clsx from "clsx";
 
 interface UserProfile {
@@ -45,8 +42,10 @@ export default function MatchaPage() {
   const [keptProfile, setKeptProfile] = React.useState<UserProfile | null>(null);
   const [currentFive, setCurrentFive] = React.useState<UserProfile[]>([]);
   const [round, setRound] = React.useState(1);
-  const { isOpen: isSnoozeOpen, onOpen: onSnoozeOpen, onOpenChange: onSnoozeOpenChange } = useDisclosure();
-  const { isOpen: isFinalPickOpen, onOpen: onFinalPickOpen, onOpenChange: onFinalPickOpenChange } = useDisclosure();
+  const snoozeOverlay = useOverlayState({ defaultOpen: false });
+  const finalPickOverlay = useOverlayState({ defaultOpen: false });
+  const { isOpen: isSnoozeOpen, open: onSnoozeOpen, setOpen: onSnoozeOpenChange } = snoozeOverlay;
+  const { isOpen: isFinalPickOpen, open: onFinalPickOpen, setOpen: onFinalPickOpenChange } = finalPickOverlay;
   const poolRef = React.useRef<UserProfile[]>([]);
   poolRef.current = pool;
   // Browse state (when not in a match)
@@ -63,7 +62,7 @@ export default function MatchaPage() {
       if (token) {
         headers.Authorization = `Bearer ${token}`;
       }
-      const response = await fetch(`/api/browse?limit=5&offset=${currentOffset}`, {
+      const response = await fetch(getApiUrl(`/api/browse?limit=5&offset=${currentOffset}`), {
         headers,
       });
       if (response.ok) {
@@ -111,7 +110,7 @@ export default function MatchaPage() {
     if (!token) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/browse?limit=${MATCH_POOL_SIZE}&offset=0`, {
+      const response = await fetch(getApiUrl(`/api/browse?limit=${MATCH_POOL_SIZE}&offset=0`), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
@@ -199,7 +198,7 @@ export default function MatchaPage() {
     setCurrentFive([]);
     setRound(1);
     setFinalPickSending(null);
-    if (isFinalPickOpen) onFinalPickOpenChange();
+    if (isFinalPickOpen) onFinalPickOpenChange(false);
     loadProfiles(0);
   };
 
@@ -208,14 +207,14 @@ export default function MatchaPage() {
       if (!token) return;
       setFinalPickSending(profile.id);
       try {
-        const res = await fetch(`/api/like/${profile.id}`, {
+        const res = await fetch(getApiUrl(`/api/like/${profile.id}`), {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           setKeptProfile(profile);
           setMatchComplete(true);
-          onFinalPickOpenChange();
+          onFinalPickOpenChange(false);
         }
       } catch {
         // ignore
@@ -270,7 +269,7 @@ export default function MatchaPage() {
               </span>
             )}
             {matchActive && !matchComplete && (
-              <Button variant="flat" size="sm" onPress={endMatch}>
+              <Button variant="secondary" size="sm" onPress={endMatch}>
                 End match
               </Button>
             )}
@@ -282,36 +281,32 @@ export default function MatchaPage() {
           </div>
         </div>
 
-        <Modal isOpen={isSnoozeOpen} onOpenChange={onSnoozeOpenChange} placement="center">
-          <ModalContent>
-            <ModalHeader className="flex flex-col gap-1 text-center">
-              Ok, lets snooze these!
-            </ModalHeader>
-            <ModalBody className="text-center pb-2">
-              <p className="text-default-600">Wanna play again (1 try left)</p>
-            </ModalBody>
-            <ModalFooter className="flex justify-center gap-2">
-              <Button color="primary" onPress={() => { onSnoozeOpenChange(); endMatch(); }}>
-                Play again
-              </Button>
-              <Button variant="flat" onPress={onSnoozeOpenChange}>
-                Close
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+        <ModalCompat isOpen={isSnoozeOpen} onOpenChange={onSnoozeOpenChange} placement="center">
+          <ModalHeader className="flex flex-col gap-1 text-center">
+            Ok, lets snooze these!
+          </ModalHeader>
+          <ModalBody className="text-center pb-2">
+            <p className="text-default-600">Wanna play again (1 try left)</p>
+          </ModalBody>
+          <ModalFooter className="flex justify-center gap-2">
+            <Button onPress={() => { onSnoozeOpenChange(false); endMatch(); }}>
+              Play again
+            </Button>
+            <Button variant="secondary" onPress={() => onSnoozeOpenChange(false)}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalCompat>
 
         {/* Round 5: final pick — click one to send a like */}
-        <Modal
+        <ModalCompat
           isOpen={isFinalPickOpen}
           onOpenChange={onFinalPickOpenChange}
           placement="center"
-          size="3xl"
-          scrollBehavior="inside"
+          size="lg"
           isDismissable={false}
         >
-          <ModalContent>
-            <ModalHeader className="flex flex-col gap-1 text-center">
+          <ModalHeader className="flex flex-col gap-1 text-center">
               <span className="text-xl font-bold">Final pick!</span>
               <span className="text-sm font-normal text-default-500">
                 Click one user to match with. This will instantly send them a like.
@@ -320,12 +315,15 @@ export default function MatchaPage() {
             <ModalBody className="pb-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {currentFive.map((profile) => (
-                  <Card
+                  <button
                     key={profile.id}
-                    isPressable
-                    className="w-full transition-all hover:scale-[1.02] hover:border-primary"
-                    onPress={() => handleFinalPick(profile)}
-                    isDisabled={finalPickSending !== null}
+                    type="button"
+                    onClick={() => handleFinalPick(profile)}
+                    disabled={finalPickSending !== null}
+                    className="w-full text-left"
+                  >
+                  <Card
+                    className="w-full transition-all hover:scale-[1.02] hover:border-primary disabled:opacity-50"
                   >
                     <div className="relative h-40 w-full overflow-hidden">
                       <Image
@@ -339,20 +337,20 @@ export default function MatchaPage() {
                         </div>
                       )}
                     </div>
-                    <CardBody className="p-3">
+                    <Card.Content className="p-3">
                       <h3 className="font-semibold truncate">
                         {profile.first_name} {profile.last_name}
                       </h3>
                       {profile.age > 0 && (
                         <p className="text-sm text-default-500">{profile.age} years old</p>
                       )}
-                    </CardBody>
+                    </Card.Content>
                   </Card>
+                  </button>
                 ))}
               </div>
             </ModalBody>
-          </ModalContent>
-        </Modal>
+        </ModalCompat>
 
         {matchComplete && keptProfile && (
           <div className="rounded-xl border-2 border-primary bg-primary/5 p-6 text-center">
@@ -362,12 +360,12 @@ export default function MatchaPage() {
             </p>
             <div className="flex gap-3 justify-center flex-wrap">
               <Button
-                color="primary"
+               
                 onPress={() => router.push(`/discover/${keptProfile.id}`)}
               >
                 View profile
               </Button>
-              <Button variant="flat" onPress={endMatch}>
+              <Button variant="secondary" onPress={endMatch}>
                 Start a new match
               </Button>
             </div>
@@ -378,17 +376,11 @@ export default function MatchaPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 w-full">
             {[...Array(12)].map((_, i) => (
               <Card key={i} className="w-full">
-                <Skeleton className="rounded-lg">
-                  <div className="h-64 w-full rounded-lg bg-default-300" />
-                </Skeleton>
-                <CardBody className="gap-2">
-                  <Skeleton className="w-3/5 rounded-lg">
-                    <div className="h-4 w-3/5 rounded-lg bg-default-200" />
-                  </Skeleton>
-                  <Skeleton className="w-4/5 rounded-lg">
-                    <div className="h-3 w-4/5 rounded-lg bg-default-200" />
-                  </Skeleton>
-                </CardBody>
+                <Skeleton className="rounded-lg h-64 w-full" />
+                <Card.Content className="gap-2">
+                  <Skeleton className="w-3/5 h-4 rounded-lg" />
+                  <Skeleton className="w-4/5 h-3 rounded-lg" />
+                </Card.Content>
               </Card>
             ))}
           </div>
@@ -472,7 +464,7 @@ export default function MatchaPage() {
                       </div>
                     )}
                   </div>
-                  <CardBody className="p-4">
+                  <Card.Content className="p-4">
                     <div className="flex flex-col gap-1">
                       <h3 className="text-lg font-semibold truncate">
                         {profile.first_name} {profile.last_name}
@@ -512,19 +504,19 @@ export default function MatchaPage() {
                     {profile.tags && profile.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {profile.tags.slice(0, 2).map((tag) => (
-                          <Chip key={tag} size="sm" variant="flat" color="primary">
+                          <Chip key={tag} size="sm" variant="secondary">
                             {tag}
                           </Chip>
                         ))}
                         {profile.tags.length > 2 && (
-                          <Chip size="sm" variant="flat" color="default">
+                          <Chip size="sm" variant="secondary">
                             +{profile.tags.length - 2}
                           </Chip>
                         )}
                       </div>
                     )}
-                  </CardBody>
-                  <CardFooter className="pt-0">
+                  </Card.Content>
+                  <Card.Footer className="pt-0">
                     <div
                       className="w-full px-3 py-1.5 text-sm text-center rounded-lg bg-primary/20 text-primary cursor-pointer hover:bg-primary/30 transition-colors"
                       onClick={(e) => {
@@ -534,23 +526,22 @@ export default function MatchaPage() {
                     >
                       View Profile
                     </div>
-                  </CardFooter>
+                  </Card.Footer>
                 </Card>
               );
               })}
               {inMatchMode && round >= 2 && round < MATCH_ROUNDS && !matchComplete && (
                 <div className="w-full min-h-[320px] rounded-lg border-2 border-default-200 dark:border-default-100 overflow-hidden flex flex-col">
                   <Button
-                    color="primary"
+                   
                     className="flex-1 min-h-[160px] rounded-none text-base font-semibold"
                     onPress={stillTop}
-                    endContent={<Icon icon="solar:arrow-right-linear" />}
                   >
-                    Still Top →
+                    Still Top → <Icon icon="solar:arrow-right-linear" className="ml-1" />
                   </Button>
                   <Button
-                    color="danger"
-                    variant="flat"
+                   
+                    variant="secondary"
                     className="flex-1 min-h-[160px] rounded-none text-base font-semibold"
                     onPress={onSnoozeOpen}
                   >
@@ -583,21 +574,22 @@ export default function MatchaPage() {
             )}
             {!inMatchMode && (
               <div className="flex justify-center mt-6">
-                <Tooltip
-                  showArrow
-                  content="Try a matching game! Hack it and select the best match."
-                  placement="top"
-                >
+                <Tooltip>
+                  <Tooltip.Trigger>
                   <Button
                     size="lg"
-                    variant="flat"
+                    variant="secondary"
                     className="bg-sky-200 text-sky-800 hover:bg-sky-300 dark:bg-sky-500/30 dark:text-sky-200 dark:hover:bg-sky-500/50"
                     onPress={startMatch}
-                    isLoading={isLoading && pool.length === 0}
-                    startContent={<Icon icon="solar:heart-bold" />}
+                    isPending={isLoading && pool.length === 0}
                   >
+                    <Icon icon="solar:heart-bold" className="mr-1" />
                     Matcha Matcha, Matcha!
                   </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content placement="top" showArrow>
+                    Try a matching game! Hack it and select the best match.
+                  </Tooltip.Content>
                 </Tooltip>
               </div>
             )}

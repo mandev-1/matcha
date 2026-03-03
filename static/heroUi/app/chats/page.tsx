@@ -1,12 +1,8 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Image } from "@heroui/image";
-import { Chip } from "@heroui/chip";
-import { Skeleton } from "@heroui/skeleton";
-import { Spinner } from "@heroui/spinner";
+import { Card, Button, Chip, Skeleton, Spinner } from "@heroui/react";
+import { Image } from "@/components/Image";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -110,7 +106,7 @@ export default function ChatsPage() {
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <Spinner size="lg" color="primary" />
+            <Spinner size="lg" color="accent" />
             <p className="mt-4 text-default-500">Loading connections...</p>
           </div>
         ) : connections.length === 0 ? (
@@ -145,7 +141,7 @@ export default function ChatsPage() {
                     </div>
                   </div>
                 </div>
-                <CardBody className="p-4">
+                <Card.Content className="p-4">
                   <div className="flex flex-col gap-1">
                     <h3 className="text-lg font-semibold">
                       {connection.first_name} {connection.last_name}
@@ -174,35 +170,34 @@ export default function ChatsPage() {
                   {connection.tags && connection.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {connection.tags.slice(0, 3).map((tag) => (
-                        <Chip key={tag} size="sm" variant="flat" color="primary">
+                        <Chip key={tag} size="sm" variant="soft" color="accent">
                           {tag}
                         </Chip>
                       ))}
                       {connection.tags.length > 3 && (
-                        <Chip size="sm" variant="flat" color="default">
+                        <Chip size="sm" variant="soft">
                           +{connection.tags.length - 3}
                         </Chip>
                       )}
                     </div>
                   )}
-                </CardBody>
-                <CardFooter className="pt-0 gap-2">
+                </Card.Content>
+                <Card.Footer className="pt-0 gap-2">
                   <Button
-                    color="primary"
-                    variant="solid"
+                    variant="primary"
                     size="sm"
-                    className="flex-1"
-                    startContent={<Icon icon="solar:chat-round-line-bold" className="text-lg" />}
+                    className="flex-1 gap-2"
                     onPress={() => {
                       router.push(`/chat/${connection.id}`);
                     }}
                   >
+                    <Icon icon="solar:chat-round-line-bold" className="text-lg" />
                     Start Chat
                   </Button>
                   <Button
-                    variant="light"
+                    variant="ghost"
                     size="sm"
-                    isIconOnly
+                    className="min-w-8 w-8 h-8 p-0"
                     aria-label="View Profile"
                     onPress={() => {
                       router.push(`/discover/${connection.id}`);
@@ -210,7 +205,7 @@ export default function ChatsPage() {
                   >
                     <Icon icon="solar:user-id-bold" className="text-lg" />
                   </Button>
-                </CardFooter>
+                </Card.Footer>
               </Card>
             ))}
           </div>

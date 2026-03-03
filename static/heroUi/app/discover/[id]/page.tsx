@@ -1,17 +1,14 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Image } from "@heroui/image";
-import { Chip } from "@heroui/chip";
-import { Skeleton } from "@heroui/skeleton";
-import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
+import clsx from "clsx";
+import { Card, Button, Chip, Skeleton, Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
+import { Image } from "@/components/Image";
 import { Icon } from "@iconify/react";
 import { useRouter, useParams } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import { addToast } from "@heroui/toast";
+import { addToast } from "@/lib/addToast";
 import { getApiUrl, getUploadUrl } from "@/lib/apiUrl";
 
 interface UserProfile {
@@ -189,9 +186,7 @@ export default function UserProfilePage() {
     return (
       <ProtectedRoute requireAuth={true} requireSetup={true}>
         <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-2 md:px-4 py-8">
-          <Skeleton className="rounded-lg">
-            <div className="h-96 w-full rounded-lg bg-default-300" />
-          </Skeleton>
+          <Skeleton className="rounded-lg h-96 w-full" />
         </div>
       </ProtectedRoute>
     );
@@ -249,7 +244,7 @@ export default function UserProfilePage() {
     if (!profile) return;
 
     try {
-      const response = await fetch(`/api/unblock/${userId}`, {
+      const response = await fetch(getApiUrl(`/api/unblock/${userId}`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -287,7 +282,7 @@ export default function UserProfilePage() {
     if (!profile) return;
 
     try {
-      const response = await fetch(`/api/report/${userId}`, {
+      const response = await fetch(getApiUrl(`/api/report/${userId}`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -328,7 +323,7 @@ export default function UserProfilePage() {
     if (!profile) return;
 
     try {
-      const response = await fetch(`/api/simulate-connection/${userId}`, {
+      const response = await fetch(getApiUrl(`/api/simulate-connection/${userId}`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -381,8 +376,8 @@ export default function UserProfilePage() {
       <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-2 md:px-4 py-8">
         {/* Blocked Message */}
         {profile.is_blocked && (
-          <Card className="w-full border-warning" radius="lg">
-            <CardBody className="flex flex-col gap-3 p-4">
+          <Card className="w-full border-warning rounded-lg">
+            <Card.Content className="flex flex-col gap-3 p-4">
               <div className="flex items-center gap-2">
                 <Icon icon="solar:block-bold" className="text-2xl text-warning" />
                 <h3 className="text-lg font-semibold text-warning">You blocked this profile</h3>
@@ -393,47 +388,33 @@ export default function UserProfilePage() {
                 </p>
               )}
               <Button
-                color="primary"
-                variant="flat"
+                variant="secondary"
                 size="sm"
-                className="self-start"
+                className="self-start gap-2"
                 onPress={handleUnblock}
-                startContent={<Icon icon="solar:unlock-bold" />}
               >
+                <Icon icon="solar:unlock-bold" />
                 Unblock Profile
               </Button>
-            </CardBody>
+            </Card.Content>
           </Card>
         )}
 
         <div className="flex items-center justify-between">
           <Button
-            variant="flat"
+            variant="secondary"
             size="sm"
+            className="gap-2"
             onPress={() => router.back()}
-            startContent={<Icon icon="solar:arrow-left-linear" />}
           >
+            <Icon icon="solar:arrow-left-linear" />
             Back to Discover
           </Button>
-          <Popover
-            showArrow
-            backdrop="opaque"
-            classNames={{
-              base: [
-                "before:bg-default-200",
-              ],
-              content: [
-                "py-3 px-4 border border-default-200",
-                "bg-linear-to-br from-white to-default-300",
-                "dark:from-default-100 dark:to-default-50",
-              ],
-            }}
-            placement="bottom-end"
-          >
+          <Popover>
             <PopoverTrigger>
               <Button
-                isIconOnly
-                variant="light"
+                className="min-w-8 w-8 h-8 p-0"
+                variant="ghost"
                 size="sm"
                 aria-label="More options"
               >
@@ -441,60 +422,58 @@ export default function UserProfilePage() {
               </Button>
             </PopoverTrigger>
             <PopoverContent>
-              {(titleProps) => (
-                <div className="px-1 py-2 w-48">
-                  <h3 className="text-small font-bold mb-2" {...titleProps}>
-                    Options
-                  </h3>
+              <div className="px-1 py-2 w-48">
+                <h3 className="text-small font-bold mb-2">
+                  Options
+                </h3>
                   <div className="flex flex-col gap-1">
                     {profile.is_blocked ? (
                       <Button
-                        variant="light"
+                        variant="ghost"
                         size="sm"
-                        className="justify-start"
-                        startContent={<Icon icon="solar:unlock-bold" className="text-lg" />}
+                        className="justify-start gap-2"
                         onPress={handleUnblock}
                       >
+                        <Icon icon="solar:unlock-bold" className="text-lg" />
                         Unblock
                       </Button>
                     ) : (
                       <Button
-                        variant="light"
+                        variant="ghost"
                         size="sm"
-                        className="justify-start"
-                        startContent={<Icon icon="solar:block-bold" className="text-lg" />}
+                        className="justify-start gap-2"
                         onPress={handleBlock}
                       >
+                        <Icon icon="solar:block-bold" className="text-lg" />
                         Block
                       </Button>
                     )}
                     <Button
-                      variant="light"
+                      variant="ghost"
                       size="sm"
-                      className="justify-start"
-                      startContent={<Icon icon="solar:flag-bold" className="text-lg" />}
+                      className="justify-start gap-2"
                       onPress={handleReport}
                     >
+                      <Icon icon="solar:flag-bold" className="text-lg" />
                       Flag as "This is not a human"
                     </Button>
                     <Button
-                      variant="light"
+                      variant="ghost"
                       size="sm"
-                      className="justify-start text-warning"
-                      startContent={<Icon icon="solar:link-bold" className="text-lg" />}
+                      className="justify-start gap-2 text-warning"
                       onPress={handleSimulateConnection}
                     >
+                      <Icon icon="solar:link-bold" className="text-lg" />
                       Simulate Connection (Dev Only)
                     </Button>
                   </div>
                 </div>
-              )}
             </PopoverContent>
           </Popover>
         </div>
 
         {/* Image Gallery */}
-        <Card isFooterBlurred className="border-none w-full h-auto md:h-[450px]" radius="lg">
+        <Card className="border-none w-full h-auto md:h-[450px]">
           <div className="grid grid-cols-12 gap-1 md:gap-2 h-full p-1 md:p-2">
             {/* Big image on the left - 6 columns (Profile image - slot 1) */}
             <div className="col-span-12 md:col-span-6 h-[402px] md:h-full min-h-0 flex items-center justify-center bg-default-100 rounded-lg overflow-hidden">
@@ -517,7 +496,7 @@ export default function UserProfilePage() {
               ))}
             </div>
           </div>
-          <CardFooter className="justify-between before:bg-white/10 border-white/20 border-1 overflow-hidden py-1 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
+          <Card.Footer className="justify-between before:bg-white/10 border-white/20 border-1 overflow-hidden py-1 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
             <p className="text-tiny text-blue-800 dark:text-blue-300 font-semibold drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]">
               Level {Math.floor(profile.fame_rating)} |{" "}
               {profile.is_liked ? (
@@ -549,27 +528,27 @@ export default function UserProfilePage() {
               )}
             </p>
             <Button
-              className={profile.is_liked
-                ? "text-tiny text-white bg-black/20"
-                : "text-tiny bg-pink-500 text-white/95 font-semibold drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] hover:bg-pink-600 active:bg-pink-700 md:bg-black/20 md:text-white md:font-normal md:drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] md:hover:bg-black/20"
-              }
-              color={profile.is_liked ? "danger" : "default"}
-              radius="lg"
+              className={clsx(
+                "gap-2",
+                profile.is_liked
+                  ? "text-tiny text-white bg-black/20"
+                  : "text-tiny bg-pink-500 text-white/95 font-semibold drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] hover:bg-pink-600 active:bg-pink-700 md:bg-black/20 md:text-white md:font-normal md:drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] md:hover:bg-black/20"
+              )}
+              variant={profile.is_liked ? "danger" : "secondary"}
               size="sm"
-              variant="flat"
               onPress={handleLike}
-              isLoading={isLiking}
+              isPending={isLiking}
               isDisabled={profile.is_blocked}
-              startContent={<Icon icon={profile.is_liked ? "solar:heart-bold" : "solar:heart-linear"} className={!profile.is_liked ? "drop-shadow-[0_0_6px_rgba(255,255,255,0.6)] md:drop-shadow-none" : undefined} />}
             >
+              <Icon icon={profile.is_liked ? "solar:heart-bold" : "solar:heart-linear"} className={!profile.is_liked ? "drop-shadow-[0_0_6px_rgba(255,255,255,0.6)] md:drop-shadow-none" : undefined} />
               {profile.is_liked ? "I don't like anymore" : "Like"}
             </Button>
-          </CardFooter>
+          </Card.Footer>
         </Card>
 
         {/* Profile Information */}
-        <Card className="w-full" radius="lg">
-          <CardBody className="flex flex-col gap-4 p-4 md:p-6">
+        <Card className="w-full">
+          <Card.Content className="flex flex-col gap-4 p-4 md:p-6">
             {/* Name and Basic Info */}
             <div className="flex flex-col gap-2">
               <h2 className="text-2xl md:text-3xl font-bold">
@@ -616,8 +595,8 @@ export default function UserProfilePage() {
                     return (
                       <Chip
                         key={tag}
-                        variant="flat"
-                        color={hasCommonTag ? "warning" : "primary"}
+                        variant="secondary"
+                        color={hasCommonTag ? "warning" : "accent"}
                         size="sm"
                         className={hasCommonTag ? "bg-warning/20 text-warning border-warning/30" : ""}
                       >
@@ -659,7 +638,7 @@ export default function UserProfilePage() {
                 </div>
               )}
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
     </ProtectedRoute>

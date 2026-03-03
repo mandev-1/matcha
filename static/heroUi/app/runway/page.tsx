@@ -2,65 +2,42 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@heroui/button";
-import { Card, CardHeader, CardBody } from "@heroui/card";
-import { Input, Textarea } from "@heroui/input";
-import { Spacer } from "@heroui/spacer";
-import { Divider } from "@heroui/divider";
-import { Form } from "@heroui/form";
-import { Tabs, Tab } from "@heroui/tabs";
-import { RadioGroup, useRadio } from "@heroui/radio";
-import { Slider } from "@heroui/slider";
-import { VisuallyHidden } from "@react-aria/visually-hidden";
+import { Button, Card, Form, Tabs, Tab, RadioGroup, Radio, Slider, ScrollShadow, Chip, TextArea, Input } from "@heroui/react";
+import { Spacer } from "@/components/Spacer";
+import { Divider } from "@/components/Divider";
+import { SelectCompat } from "@/components/SelectCompat";
+import { SelectItem } from "@/components/SelectItem";
+import { Image } from "@/components/Image";
 import clsx from "clsx";
-import { ScrollShadow } from "@heroui/scroll-shadow";
-import { Chip } from "@heroui/chip";
-import { Select, SelectItem } from "@heroui/select";
-import { addToast, ToastProvider } from "@heroui/toast";
-import { Image } from "@heroui/image";
+import { addToast } from "@/lib/addToast";
 import { Icon } from "@iconify/react";
 import { getApiUrl } from "@/lib/apiUrl";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import RowSteps from "@/components/row-steps";
 
-const CustomRadio = (props: any) => {
-  const {
-    Component,
-    children,
-    description,
-    getBaseProps,
-    getWrapperProps,
-    getInputProps,
-    getLabelProps,
-    getLabelWrapperProps,
-    getControlProps,
-  } = useRadio(props);
-
+const CustomRadio = (props: { value: string; description?: string; className?: string; children?: React.ReactNode }) => {
+  const { value, description, className, children } = props;
   return (
-    <Component
-      {...getBaseProps({
-        className: clsx(
-          "group inline-flex items-center hover:opacity-70 active:opacity-50 justify-between flex-row-reverse tap-highlight-transparent m-0",
-          "cursor-pointer border-2 border-default rounded-lg gap-4 p-4",
-          "data-[selected=true]:border-primary",
-          props.className,
-        ),
-      })}
+    <Radio
+      value={value}
+      className={clsx(
+        "group inline-flex items-center hover:opacity-70 active:opacity-50 justify-between flex-row-reverse tap-highlight-transparent m-0",
+        "cursor-pointer border-2 border-default rounded-lg gap-4 p-4",
+        "data-[selected=true]:border-primary",
+        className
+      )}
     >
-      <VisuallyHidden>
-        <input {...getInputProps()} />
-      </VisuallyHidden>
-      <span {...getWrapperProps()}>
-        <span {...getControlProps()} />
-      </span>
-      <div {...getLabelWrapperProps()}>
-        {children && <span {...getLabelProps()}>{children}</span>}
+      <Radio.Control>
+        <Radio.Indicator />
+      </Radio.Control>
+      <Radio.Content>
+        {children && <span>{children}</span>}
         {description && (
           <span className="text-small text-foreground opacity-70">{description}</span>
         )}
-      </div>
-    </Component>
+      </Radio.Content>
+    </Radio>
   );
 };
 
@@ -284,7 +261,6 @@ export default function RunwayPage() {
       // Show toast notification
       addToast({
         title: "Gender and Bio set",
-        timeout: 3000,
       });
       setCurrentStep(1);
     }
@@ -296,13 +272,13 @@ export default function RunwayPage() {
         return (
           <div className="flex justify-center w-full">
             <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col">
-              <CardBody className="px-4 flex-1 min-h-0 overflow-hidden p-0">
+              <Card.Content className="px-4 flex-1 min-h-0 overflow-hidden p-0">
                 <ScrollShadow className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch" size={100}>
                 <div className="flex w-full flex-col mb-6">
                   <h4 className="text-large mb-4">My Gender</h4>
                   <RadioGroup
                     value={selectedGender}
-                    onValueChange={setSelectedGender}
+                    onChange={setSelectedGender}
                     orientation="horizontal"
                     className="flex flex-row gap-3 w-full"
                   >
@@ -333,11 +309,12 @@ export default function RunwayPage() {
                         maxValue={100}
                         step={1}
                         className="w-full"
-                        classNames={{
-                          track: "border-s-default-200",
-                          filler: "bg-pink-500",
-                        }}
-                      />
+                      >
+                        <Slider.Track>
+                          <Slider.Fill className="bg-pink-500" />
+                          <Slider.Thumb />
+                        </Slider.Track>
+                      </Slider>
                       {preferMale > 0 && (
                         <p className="text-xs text-default-500 mt-1">
                           I'm reading this because I want to find a guy / boy to date and chat with (and maybe more). I'm strong because I admit this, very horny, and desperate for some fun.
@@ -357,11 +334,12 @@ export default function RunwayPage() {
                         maxValue={100}
                         step={1}
                         className="w-full"
-                        classNames={{
-                          track: "border-s-default-200",
-                          filler: "bg-pink-500",
-                        }}
-                      />
+                      >
+                        <Slider.Track>
+                          <Slider.Fill className="bg-pink-500" />
+                          <Slider.Thumb />
+                        </Slider.Track>
+                      </Slider>
                       {preferFemale > 0 && (
                         <p className="text-xs text-default-500 mt-1">
                           I clicked this because I'm down to meet a woman.. and I'm lowkey chill, serious, respectable and ready to be responsible.
@@ -380,38 +358,37 @@ export default function RunwayPage() {
 
                 <Divider className="mb-6" />
 
-                <CardHeader className="px-0 pt-0 pb-0">
+                <Card.Header className="px-0 pt-0 pb-0">
                   <div className="flex flex-col items-start">
                     <h4 className="text-large">Bio</h4>
                     <p className="text-small text-default-500">
                       Write a short biography of your situation right now, what stage of life you are entering, where are you coming from and what is important and filling for you right now
                     </p>
                   </div>
-                </CardHeader>
+                </Card.Header>
                 <Spacer y={2} />
                 <Form className="gap-0" validationBehavior="native" onSubmit={handleBioSubmit}>
-                  <Textarea
-                    isClearable
-                    isRequired
-                    errorMessage={() => (
-                      <ul>
-                        {errors.map((error, i) => (
-                          <li key={i}>{error}</li>
-                        ))}
-                      </ul>
-                    )}
-                    isInvalid={errors.length > 0}
-                    label="Bio"
+                  <TextArea
+                    required
                     maxLength={250}
                     name="bio"
                     value={bio}
-                    variant="bordered"
-                    onValueChange={(value) => {
+                    variant="secondary"
+                    placeholder="Write your bio..."
+                    className="min-h-[100px]"
+                    onChange={(e) => {
+                      const value = e.target.value;
                       setBio(value);
                       validateBio(value);
                     }}
-                    onClear={() => setBio("")}
                   />
+                  {errors.length > 0 && (
+                    <ul className="text-sm text-danger mt-1 list-disc list-inside">
+                      {errors.map((error, i) => (
+                        <li key={i}>{error}</li>
+                      ))}
+                    </ul>
+                  )}
                   <Spacer y={6} />
                   <Divider />
                   <div className="flex w-full flex-wrap-reverse items-center justify-between gap-2 px-4 pt-4 md:flex-wrap">
@@ -419,11 +396,11 @@ export default function RunwayPage() {
                       Max. 250 characters. <span className="text-default-500">{bio.length}/250</span>
                     </p>
                     <div className="flex items-center gap-2">
-                      <Button type="reset" variant="bordered" onPress={() => setBio("")}>
+                      <Button type="reset" variant="secondary" onPress={() => setBio("")}>
                         Cancel
                       </Button>
                       <Button 
-                        color="primary" 
+                        
                         type="submit" 
                         className="bg-pink-500 text-white hover:bg-pink-600"
                         isDisabled={false}
@@ -434,7 +411,7 @@ export default function RunwayPage() {
                   </div>
                 </Form>
                 </ScrollShadow>
-              </CardBody>
+              </Card.Content>
             </Card>
           </div>
         );
@@ -442,7 +419,7 @@ export default function RunwayPage() {
         return (
           <div className="flex justify-center w-full">
             <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col">
-              <CardBody className="px-4 flex-1 min-h-0 overflow-hidden p-0">
+              <Card.Content className="px-4 flex-1 min-h-0 overflow-hidden p-0">
                 <ScrollShadow className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch" size={100}>
                   <h2 className="text-2xl font-semibold mb-4">Review Your Profile</h2>
                   <p className="text-default-600 mb-6">
@@ -457,30 +434,28 @@ export default function RunwayPage() {
                         <Input
                           placeholder="Add a tag (e.g., #vegan, #geek)"
                           value={tagInput}
-                          onValueChange={setTagInput}
-                          onKeyPress={(e) => {
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               e.preventDefault();
                               addTag();
                             }
                           }}
-                          variant="bordered"
+                          variant="secondary"
                           className="flex-1"
                         />
-                        <Button onPress={addTag} variant="flat" isDisabled={tags.length >= 5 || !tagInput.trim()}>
+                        <Button onPress={addTag} variant="secondary" isDisabled={tags.length >= 5 || !tagInput.trim()}>
                           Add
                         </Button>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {tags.map((tag) => (
-                          <Chip
-                            key={tag}
-                            onClose={() => removeTag(tag)}
-                            variant="flat"
-                            color="primary"
-                          >
+<span key={tag} className="inline-flex items-center gap-1 rounded-full border border-default-200 bg-default-100 px-3 py-1 text-sm">
                             {tag}
-                          </Chip>
+                            <button type="button" onClick={() => removeTag(tag)} className="opacity-70 hover:opacity-100 rounded-full p-0.5 -mr-1" aria-label={`Remove ${tag}`}>
+                              ×
+                            </button>
+                          </span>
                         ))}
                       </div>
                     </div>
@@ -489,7 +464,7 @@ export default function RunwayPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-3">Big Five Personality Traits</h3>
                       <div className="space-y-3">
-                        <Select
+                        <SelectCompat
                           label="Openness"
                           placeholder="Select openness level"
                           selectedKeys={bigFive.openness ? [bigFive.openness] : []}
@@ -497,13 +472,12 @@ export default function RunwayPage() {
                             const value = Array.from(keys)[0] as string;
                             setBigFive({ ...bigFive, openness: value });
                           }}
-                          variant="bordered"
                         >
                           <SelectItem key="low">Low</SelectItem>
                           <SelectItem key="medium">Medium</SelectItem>
                           <SelectItem key="high">High</SelectItem>
-                        </Select>
-                        <Select
+                        </SelectCompat>
+                        <SelectCompat
                           label="Conscientiousness"
                           placeholder="Select conscientiousness level"
                           selectedKeys={bigFive.conscientiousness ? [bigFive.conscientiousness] : []}
@@ -511,13 +485,12 @@ export default function RunwayPage() {
                             const value = Array.from(keys)[0] as string;
                             setBigFive({ ...bigFive, conscientiousness: value });
                           }}
-                          variant="bordered"
                         >
                           <SelectItem key="low">Low</SelectItem>
                           <SelectItem key="medium">Medium</SelectItem>
                           <SelectItem key="high">High</SelectItem>
-                        </Select>
-                        <Select
+                        </SelectCompat>
+                        <SelectCompat
                           label="Extraversion"
                           placeholder="Select extraversion level"
                           selectedKeys={bigFive.extraversion ? [bigFive.extraversion] : []}
@@ -525,13 +498,12 @@ export default function RunwayPage() {
                             const value = Array.from(keys)[0] as string;
                             setBigFive({ ...bigFive, extraversion: value });
                           }}
-                          variant="bordered"
                         >
                           <SelectItem key="low">Low</SelectItem>
                           <SelectItem key="medium">Medium</SelectItem>
                           <SelectItem key="high">High</SelectItem>
-                        </Select>
-                        <Select
+                        </SelectCompat>
+                        <SelectCompat
                           label="Agreeableness"
                           placeholder="Select agreeableness level"
                           selectedKeys={bigFive.agreeableness ? [bigFive.agreeableness] : []}
@@ -539,13 +511,12 @@ export default function RunwayPage() {
                             const value = Array.from(keys)[0] as string;
                             setBigFive({ ...bigFive, agreeableness: value });
                           }}
-                          variant="bordered"
                         >
                           <SelectItem key="low">Low</SelectItem>
                           <SelectItem key="medium">Medium</SelectItem>
                           <SelectItem key="high">High</SelectItem>
-                        </Select>
-                        <Select
+                        </SelectCompat>
+                        <SelectCompat
                           label="Neuroticism"
                           placeholder="Select neuroticism level"
                           selectedKeys={bigFive.neuroticism ? [bigFive.neuroticism] : []}
@@ -553,18 +524,17 @@ export default function RunwayPage() {
                             const value = Array.from(keys)[0] as string;
                             setBigFive({ ...bigFive, neuroticism: value });
                           }}
-                          variant="bordered"
                         >
                           <SelectItem key="low">Low</SelectItem>
                           <SelectItem key="medium">Medium</SelectItem>
                           <SelectItem key="high">High</SelectItem>
-                        </Select>
+                        </SelectCompat>
                       </div>
                     </div>
 
                     {/* Siblings Section */}
                     <div>
-                      <Select
+                      <SelectCompat
                         label="Siblings"
                         placeholder="Select your sibling position"
                         selectedKeys={siblings ? [siblings] : []}
@@ -572,7 +542,6 @@ export default function RunwayPage() {
                           const value = Array.from(keys)[0] as string;
                           setSiblings(value);
                         }}
-                        variant="bordered"
                       >
                         <SelectItem key="middle_child">Middle child</SelectItem>
                         <SelectItem key="slightly_older_siblings">Slightly older siblings</SelectItem>
@@ -580,13 +549,13 @@ export default function RunwayPage() {
                         <SelectItem key="youngest_child">I'm the youngest child</SelectItem>
                         <SelectItem key="only_child">Only child</SelectItem>
                         <SelectItem key="twin">Twin</SelectItem>
-                      </Select>
+                      </SelectCompat>
                     </div>
 
                     {/* MBTI Section */}
                     <div>
                       <h3 className="text-lg font-semibold mb-3">MBTI (Myers-Briggs Type Indicator)</h3>
-                      <Select
+                      <SelectCompat
                         label="MBTI Type"
                         placeholder="Select your MBTI type"
                         selectedKeys={mbti ? [mbti] : []}
@@ -594,7 +563,6 @@ export default function RunwayPage() {
                           const value = Array.from(keys)[0] as string;
                           setMbti(value);
                         }}
-                        variant="bordered"
                       >
                         <SelectItem key="INTJ">INTJ - Architect</SelectItem>
                         <SelectItem key="INTP">INTP - Thinker</SelectItem>
@@ -612,13 +580,13 @@ export default function RunwayPage() {
                         <SelectItem key="ISFP">ISFP - Adventurer</SelectItem>
                         <SelectItem key="ESTP">ESTP - Entrepreneur</SelectItem>
                         <SelectItem key="ESFP">ESFP - Entertainer</SelectItem>
-                      </Select>
+                      </SelectCompat>
                     </div>
 
                     {/* Caliper Profile Section */}
                     <div>
                       <h3 className="text-lg font-semibold mb-3">Caliper Profile</h3>
-                      <Select
+                      <SelectCompat
                         label="Caliper Profile"
                         placeholder="Select your Caliper profile"
                         selectedKeys={caliper ? [caliper] : []}
@@ -626,19 +594,18 @@ export default function RunwayPage() {
                           const value = Array.from(keys)[0] as string;
                           setCaliper(value);
                         }}
-                        variant="bordered"
                       >
                         <SelectItem key="analytical">Analytical</SelectItem>
                         <SelectItem key="conceptual">Conceptual</SelectItem>
                         <SelectItem key="social">Social</SelectItem>
                         <SelectItem key="structured">Structured</SelectItem>
-                      </Select>
+                      </SelectCompat>
                     </div>
                   </div>
 
                   <div className="flex gap-3 mt-6">
                     <Button
-                      variant="bordered"
+                      variant="secondary"
                       className="flex-1"
                       onPress={() => setCurrentStep(0)}
                     >
@@ -652,7 +619,7 @@ export default function RunwayPage() {
                     </Button>
                   </div>
                 </ScrollShadow>
-              </CardBody>
+              </Card.Content>
             </Card>
           </div>
         );
@@ -660,7 +627,7 @@ export default function RunwayPage() {
         return (
           <div className="flex justify-center w-full">
             <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col">
-              <CardBody className="px-4 flex-1 min-h-0 overflow-hidden p-0">
+              <Card.Content className="px-4 flex-1 min-h-0 overflow-hidden p-0">
                 <ScrollShadow className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch" size={100}>
                   <h2 className="text-2xl font-semibold mb-4">Publish Your Profile</h2>
                   <p className="text-default-600 mb-6">
@@ -745,7 +712,7 @@ export default function RunwayPage() {
                   <div className="flex flex-col gap-2 mt-6">
                     <div className="flex gap-3">
                       <Button
-                        variant="bordered"
+                        variant="secondary"
                         className="flex-1"
                         onPress={() => setCurrentStep(1)}
                       >
@@ -754,9 +721,8 @@ export default function RunwayPage() {
                       <Button
                         className="flex-1 bg-pink-500 text-white hover:bg-pink-600"
                         onPress={handleFinalStep}
-                        isLoading={loading}
-isDisabled={!hasAtLeastOnePhoto}
-                      title={!hasAtLeastOnePhoto ? "Add at least one photo to continue" : undefined}
+isPending={loading}
+                        isDisabled={!hasAtLeastOnePhoto}
                       >
                         Who will I find on Matcha?
                       </Button>
@@ -768,7 +734,7 @@ isDisabled={!hasAtLeastOnePhoto}
                     )}
                   </div>
                 </ScrollShadow>
-              </CardBody>
+              </Card.Content>
             </Card>
           </div>
         );
@@ -810,9 +776,6 @@ isDisabled={!hasAtLeastOnePhoto}
 
   return (
     <ProtectedRoute requireAuth={true}>
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[100]">
-        <ToastProvider />
-      </div>
       <div className="flex h-full w-full items-center justify-center min-h-screen pb-4 md:pb-10">
         <div className="rounded-large flex w-full max-w-4xl flex-col gap-6 px-8 pt-6 pb-[15px]">
           <div className="text-center mb-6">

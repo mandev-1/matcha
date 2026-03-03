@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { useRadio } from "@heroui/radio";
-import { VisuallyHidden } from "@react-aria/visually-hidden";
+import { Radio } from "@heroui/react";
 import clsx from "clsx";
 
 interface CustomRadioProps {
@@ -13,71 +12,44 @@ interface CustomRadioProps {
 }
 
 const CustomRadio = (props: CustomRadioProps) => {
-  const {
-    Component,
-    children,
-    description,
-    getBaseProps,
-    getWrapperProps,
-    getInputProps,
-    getLabelProps,
-    getLabelWrapperProps,
-    getControlProps,
-  } = useRadio(props);
-
-  const isPink = props.value === "female";
+  const { value, description, className, children } = props;
+  const isPink = value === "female";
 
   return (
-    <Component
-      {...getBaseProps({
-        className: clsx(
-          "group inline-flex items-center hover:opacity-70 active:opacity-50 justify-between flex-row-reverse tap-highlight-transparent m-0",
-          "cursor-pointer border-2 border-default rounded-lg gap-4 p-4",
-          isPink 
-            ? "data-[selected=true]:border-pink-500" 
-            : "data-[selected=true]:border-primary",
-          props.className,
-        ),
-        "data-value": props.value,
-      })}
+    <Radio
+      value={value}
+      className={clsx(
+        "group inline-flex items-center hover:opacity-70 active:opacity-50 justify-between flex-row-reverse tap-highlight-transparent m-0",
+        "cursor-pointer border-2 border-default rounded-lg gap-4 p-4",
+        isPink
+          ? "data-[selected=true]:border-pink-500"
+          : "data-[selected=true]:border-primary",
+        className
+      )}
     >
-      <VisuallyHidden>
-        <input {...getInputProps()} />
-      </VisuallyHidden>
-      <span {...getWrapperProps({
-        className: clsx(
-          isPink 
-            ? "[&>span[data-selected=true]]:!bg-pink-500 [&>span[data-selected=true]]:!border-pink-500 [&>span[data-selected=true]>span]:!bg-pink-500" 
-            : "",
-        ),
-        style: isPink ? {
-          "--heroui-primary": "#ec4899",
-          "--heroui-primary-foreground": "#ffffff",
-        } as React.CSSProperties : undefined,
-      })}>
-        <span 
-          {...getControlProps({
-            className: clsx(
-              isPink 
-                ? "data-[selected=true]:!bg-pink-500 data-[selected=true]:!border-pink-500 [&>span]:!bg-pink-500" 
-                : "",
-            ),
-            style: isPink ? {
-              "--heroui-primary": "#ec4899",
-              "--heroui-primary-foreground": "#ffffff",
-            } as React.CSSProperties : undefined,
-          })} 
+      <Radio.Control
+        className={clsx(
+          isPink
+            ? "[&>span[data-selected=true]]:!bg-pink-500 [&>span[data-selected=true]]:!border-pink-500"
+            : ""
+        )}
+      >
+        <Radio.Indicator
+          className={clsx(
+            isPink
+              ? "data-[selected=true]:!bg-pink-500 data-[selected=true]:!border-pink-500"
+              : ""
+          )}
         />
-      </span>
-      <div {...getLabelWrapperProps()}>
-        {children && <span {...getLabelProps()}>{children}</span>}
+      </Radio.Control>
+      <Radio.Content>
+        {children && <span>{children}</span>}
         {description && (
           <span className="text-small text-foreground opacity-70">{description}</span>
         )}
-      </div>
-    </Component>
+      </Radio.Content>
+    </Radio>
   );
 };
 
 export default CustomRadio;
-

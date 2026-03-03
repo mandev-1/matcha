@@ -1,7 +1,6 @@
 "use client";
 
 import type {ComponentProps} from "react";
-import type {ButtonProps} from "@heroui/button";
 
 import React from "react";
 import {useState} from "react";
@@ -30,7 +29,7 @@ export interface RowStepsProps extends React.HTMLAttributes<HTMLButtonElement> {
    *
    * @default "primary"
    */
-  color?: ButtonProps["color"];
+  color?: "primary" | "secondary" | "success" | "warning" | "danger" | "default";
   /**
    * The current step index.
    */

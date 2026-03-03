@@ -1,9 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button } from "@heroui/button";
-import { Tooltip } from "@heroui/tooltip";
-import { ScrollShadow } from "@heroui/scroll-shadow";
+import { Button, Tooltip, ScrollShadow } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
@@ -36,7 +34,7 @@ export default function Component() {
       <ScrollShadow hideScrollBar className="flex flex-nowrap gap-2" orientation="horizontal">
         <div className="flex gap-2">
           {ideas.map(({title, description}, index) => (
-            <Button key={index} className="flex h-14 flex-col items-start gap-0" variant="flat">
+            <Button key={index} className="flex h-14 flex-col items-start gap-0" variant="secondary">
               <p>{title}</p>
               <p className="text-default-500">{description}</p>
             </Button>
@@ -44,68 +42,46 @@ export default function Component() {
         </div>
       </ScrollShadow>
       <form className="rounded-medium bg-default-100 hover:bg-default-200/70 flex w-full flex-col items-start transition-colors">
-        <PromptInput
-          classNames={{
-            inputWrapper: "bg-transparent! shadow-none",
-            innerWrapper: "relative",
-            input: "pt-1 pl-2 pb-6 pr-10! text-medium",
-          }}
-          endContent={
-            <div className="flex items-end gap-2">
-              <Tooltip showArrow content="Send message">
+        <div className="relative w-full">
+          <PromptInput
+            className="pt-1 pl-2 pb-6 pr-10 text-medium bg-transparent shadow-none min-h-[80px]"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            variant="secondary"
+            rows={3}
+          />
+          <div className="absolute bottom-2 right-2">
+            <Tooltip>
+              <Tooltip.Trigger>
                 <Button
-                  isIconOnly
-                  color={!prompt ? "default" : "primary"}
+                  className="min-w-8 w-8 h-8 p-0"
+                  variant={!prompt ? "secondary" : "primary"}
                   isDisabled={!prompt}
-                  radius="lg"
                   size="sm"
-                  variant="solid"
                 >
                   <Icon
-                    className={clsx(
-                      "[&>path]:stroke-[2px]",
-                      !prompt ? "text-default-600" : "text-primary-foreground",
-                    )}
+                    className={clsx("[&>path]:stroke-[2px]", !prompt ? "text-default-600" : "text-primary-foreground")}
                     icon="solar:arrow-up-linear"
                     width={20}
                   />
                 </Button>
-              </Tooltip>
-            </div>
-          }
-          minRows={3}
-          radius="lg"
-          value={prompt}
-          variant="flat"
-          onValueChange={setPrompt}
-        />
+              </Tooltip.Trigger>
+              <Tooltip.Content>Send message</Tooltip.Content>
+            </Tooltip>
+          </div>
+        </div>
         <div className="flex w-full items-center justify-between gap-2 overflow-auto px-4 pb-4">
           <div className="flex w-full gap-1 md:gap-3">
-            <Button
-              size="sm"
-              startContent={
-                <Icon className="text-default-500" icon="solar:paperclip-linear" width={18} />
-              }
-              variant="flat"
-            >
+            <Button size="sm" variant="secondary">
+              <Icon className="text-default-500 mr-1" icon="solar:paperclip-linear" width={18} />
               Attach
             </Button>
-            <Button
-              size="sm"
-              startContent={
-                <Icon className="text-default-500" icon="solar:soundwave-linear" width={18} />
-              }
-              variant="flat"
-            >
+            <Button size="sm" variant="secondary">
+              <Icon className="text-default-500 mr-1" icon="solar:soundwave-linear" width={18} />
               Voice Commands
             </Button>
-            <Button
-              size="sm"
-              startContent={
-                <Icon className="text-default-500" icon="solar:notes-linear" width={18} />
-              }
-              variant="flat"
-            >
+            <Button size="sm" variant="secondary">
+              <Icon className="text-default-500 mr-1" icon="solar:notes-linear" width={18} />
               Templates
             </Button>
           </div>

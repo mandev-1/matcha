@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { Card, CardBody } from "@heroui/card";
+import { Card } from "@heroui/react";
 
 interface MarkdownRendererProps {
   content: string;
@@ -288,11 +288,11 @@ export default function MarkdownRenderer({ content, onHeadingsExtracted }: Markd
 
   return (
     <Card className="bg-default-50 dark:bg-default-100">
-      <CardBody className="p-8">
+      <Card.Content className="p-8">
         <article className="prose prose-lg dark:prose-invert max-w-none">
           {parseMarkdown(content)}
         </article>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }

@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, CardHeader, CardBody } from "@heroui/card";
-import type { CardProps } from "@heroui/card";
+import { Card, type CardProps } from "@heroui/react";
 
 export type FeatureCardProps = CardProps & {
   title: string;
@@ -13,12 +12,12 @@ export type FeatureCardProps = CardProps & {
 const FeatureCard = React.forwardRef<HTMLDivElement, FeatureCardProps>(
   ({title, descriptions = [], icon, ...props}, ref) => {
     return (
-      <Card ref={ref} className="bg-content2" shadow="none" {...props}>
-        <CardHeader className="flex flex-col gap-2 px-4 pt-6 pb-4">
+      <Card ref={ref} className="bg-content2" {...props}>
+        <Card.Header className="flex flex-col gap-2 px-4 pt-6 pb-4">
           {icon}
           <p className="text-medium text-content2-foreground">{title}</p>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-2">
+        </Card.Header>
+        <Card.Content className="flex flex-col gap-2">
           {descriptions.map((description, index) => (
             <div
               key={index}
@@ -27,7 +26,7 @@ const FeatureCard = React.forwardRef<HTMLDivElement, FeatureCardProps>(
               <p className="text-small">{description}</p>
             </div>
           ))}
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   },

@@ -2,9 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
-import { Card, CardBody } from "@heroui/card";
+import { Link, Card } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { getApiUrl } from "@/lib/apiUrl";
 
@@ -45,7 +43,7 @@ function VerifyEmailContent() {
   return (
     <div className="flex h-full w-full items-center justify-center min-h-screen bg-gradient-to-br from-pink-500/5 via-background to-purple-500/5">
       <Card className="w-full max-w-md mx-4 shadow-xl border border-default-200/50 dark:border-default-100/20">
-        <CardBody className="p-8 md:p-10">
+        <Card.Content className="p-8 md:p-10">
           <div className="flex flex-col items-center gap-6 text-center">
             <div className="flex items-center justify-center w-16 h-16 rounded-full bg-pink-500/10 dark:bg-pink-500/20">
               <Icon
@@ -77,15 +75,13 @@ function VerifyEmailContent() {
                   <Icon icon="solar:check-circle-bold" className="text-5xl text-success" />
                 </div>
                 <p className="text-success font-medium text-lg">{message}</p>
-                <Button
-                  as={Link}
+                <Link
                   href="/login"
-                  className="w-full bg-pink-500 text-white hover:bg-pink-600 font-semibold"
-                  size="lg"
-                  startContent={<Icon icon="solar:login-2-bold" />}
+                  className="inline-flex items-center justify-center gap-2 w-full min-h-12 px-6 rounded-lg bg-pink-500 text-white hover:bg-pink-600 font-semibold transition-colors"
                 >
+                  <Icon icon="solar:login-2-bold" />
                   Go to Login
-                </Button>
+                </Link>
               </div>
             )}
 
@@ -96,26 +92,23 @@ function VerifyEmailContent() {
                 </div>
                 <p className="text-danger font-medium max-w-sm">{message}</p>
                 <div className="flex gap-3 w-full">
-                  <Button
-                    as={Link}
+                  <Link
                     href="/login"
-                    variant="bordered"
-                    className="flex-1"
+                    className="flex-1 inline-flex items-center justify-center min-h-10 px-4 rounded-lg border border-default-200 bg-default-100 hover:bg-default-200 transition-colors"
                   >
                     Go to Login
-                  </Button>
-                  <Button
-                    as={Link}
+                  </Link>
+                  <Link
                     href="/register"
-                    className="flex-1 bg-pink-500 text-white hover:bg-pink-600"
+                    className="flex-1 inline-flex items-center justify-center min-h-10 px-4 rounded-lg bg-pink-500 text-white hover:bg-pink-600 transition-colors"
                   >
                     Sign Up Again
-                  </Button>
+                  </Link>
                 </div>
               </div>
             )}
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     </div>
   );

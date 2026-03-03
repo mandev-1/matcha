@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Skeleton } from "@heroui/skeleton";
+import { Card, Skeleton } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { getApiUrl } from "@/lib/apiUrl";
@@ -89,14 +88,14 @@ function TrendsContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="w-full">
-            <CardHeader>
+            <Card.Header>
               <Skeleton className="h-6 w-32 rounded" />
-            </CardHeader>
-            <CardBody className="gap-2">
+            </Card.Header>
+            <Card.Content className="gap-2">
               <Skeleton className="h-4 w-full rounded" />
               <Skeleton className="h-4 w-4/5 rounded" />
               <Skeleton className="h-4 w-3/5 rounded" />
-            </CardBody>
+            </Card.Content>
           </Card>
         ))}
       </div>
@@ -106,9 +105,9 @@ function TrendsContent() {
   if (error) {
     return (
       <Card className="border-danger/50 bg-danger/5">
-        <CardBody>
+        <Card.Content>
           <p className="text-danger">{error}</p>
-        </CardBody>
+        </Card.Content>
       </Card>
     );
   }
@@ -130,11 +129,11 @@ function TrendsContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Most popular tags */}
         <Card className="w-full">
-          <CardHeader className="flex flex-row items-center gap-2">
+          <Card.Header className="flex flex-row items-center gap-2">
             <Icon icon="solar:tag-bold" className="text-primary text-xl" />
             <span className="font-semibold text-lg">Most popular tags</span>
-          </CardHeader>
-          <CardBody className="pt-0">
+          </Card.Header>
+          <Card.Content className="pt-0">
             {data.popular_tags.length === 0 ? (
               <p className="text-default-400 text-sm">No tag data yet.</p>
             ) : (
@@ -150,16 +149,16 @@ function TrendsContent() {
                 ))}
               </ul>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
 
         {/* Personality types (MBTI) */}
         <Card className="w-full">
-          <CardHeader className="flex flex-row items-center gap-2">
+          <Card.Header className="flex flex-row items-center gap-2">
             <Icon icon="solar:users-group-two-rounded-bold" className="text-primary text-xl" />
             <span className="font-semibold text-lg">Personality types (MBTI)</span>
-          </CardHeader>
-          <CardBody className="pt-0">
+          </Card.Header>
+          <Card.Content className="pt-0">
             {data.personality_types.length === 0 ? (
               <p className="text-default-400 text-sm">No personality data yet.</p>
             ) : (
@@ -175,16 +174,16 @@ function TrendsContent() {
                 ))}
               </ul>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
 
         {/* Gender */}
         <Card className="w-full">
-          <CardHeader className="flex flex-row items-center gap-2">
+          <Card.Header className="flex flex-row items-center gap-2">
             <Icon icon="solar:user-bold" className="text-primary text-xl" />
             <span className="font-semibold text-lg">Gender</span>
-          </CardHeader>
-          <CardBody className="pt-0">
+          </Card.Header>
+          <Card.Content className="pt-0">
             {data.gender_counts.length === 0 ? (
               <p className="text-default-400 text-sm">No gender data yet.</p>
             ) : (
@@ -202,16 +201,16 @@ function TrendsContent() {
                 ))}
               </ul>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
 
         {/* Orientation (straight, gay, both) */}
         <Card className="w-full">
-          <CardHeader className="flex flex-row items-center gap-2">
+          <Card.Header className="flex flex-row items-center gap-2">
             <Icon icon="solar:heart-bold" className="text-primary text-xl" />
             <span className="font-semibold text-lg">Orientation</span>
-          </CardHeader>
-          <CardBody className="pt-0">
+          </Card.Header>
+          <Card.Content className="pt-0">
             {data.orientation_counts.length === 0 ? (
               <p className="text-default-400 text-sm">No orientation data yet.</p>
             ) : (
@@ -229,7 +228,7 @@ function TrendsContent() {
                 ))}
               </ul>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
     </div>

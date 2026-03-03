@@ -2,10 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Checkbox } from "@heroui/checkbox";
-import { Link } from "@heroui/link";
+import { Button, Input, InputGroup, Checkbox, Link, TextField, Label } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { getApiUrl } from "@/lib/apiUrl";
@@ -149,129 +146,61 @@ export default function Component() {
         )}
 
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <Input
-            isRequired
-            label="First Name"
-            labelPlacement="outside"
-            name="firstName"
-            placeholder="Enter your first name"
-            type="text"
-            variant="bordered"
-            value={formData.firstName}
-            onChange={handleChange}
-            autoComplete="given-name"
-          />
-          <Input
-            isRequired
-            label="Last Name"
-            labelPlacement="outside"
-            name="lastName"
-            placeholder="Enter your last name"
-            type="text"
-            variant="bordered"
-            value={formData.lastName}
-            onChange={handleChange}
-            autoComplete="family-name"
-          />
-          <Input
-            isRequired
-            label="Username"
-            labelPlacement="outside"
-            name="username"
-            placeholder="Enter your username"
-            type="text"
-            variant="bordered"
-            value={formData.username}
-            onChange={handleChange}
-            autoComplete="username"
-          />
-          <Input
-            isRequired
-            label="Email"
-            labelPlacement="outside"
-            name="email"
-            placeholder="Enter your email"
-            type="email"
-            variant="bordered"
-            value={formData.email}
-            onChange={handleChange}
-            autoComplete="email"
-            startContent={
-              <MailIcon className="text-2xl text-default-400 pointer-events-none shrink-0" />
-            }
-          />
-          <Input
-            isRequired
-            autoComplete="new-password"
-            inputMode="text"
-            endContent={
-              <button type="button" onClick={toggleVisibility}>
-                {isVisible ? (
-                  <Icon
-                    className="text-default-400 pointer-events-none text-2xl"
-                    icon="solar:eye-closed-linear"
-                  />
-                ) : (
-                  <Icon
-                    className="text-default-400 pointer-events-none text-2xl"
-                    icon="solar:eye-bold"
-                  />
-                )}
-              </button>
-            }
-            label="Password"
-            labelPlacement="outside"
-            name="password"
-            placeholder="Enter your password"
-            type={isVisible ? "text" : "password"}
-            variant="bordered"
-            value={formData.password}
-            onChange={handleChange}
-          />
-          <Input
-            isRequired
-            autoComplete="new-password"
-            inputMode="text"
-            endContent={
-              <button type="button" onClick={toggleConfirmVisibility}>
-                {isConfirmVisible ? (
-                  <Icon
-                    className="text-default-400 pointer-events-none text-2xl"
-                    icon="solar:eye-closed-linear"
-                  />
-                ) : (
-                  <Icon
-                    className="text-default-400 pointer-events-none text-2xl"
-                    icon="solar:eye-bold"
-                  />
-                )}
-              </button>
-            }
-            label="Confirm Password"
-            labelPlacement="outside"
-            name="confirmPassword"
-            placeholder="Confirm your password"
-            type={isConfirmVisible ? "text" : "password"}
-            variant="bordered"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-          />
-          <Checkbox isRequired className="py-4" size="sm">
+          <TextField isRequired name="firstName" value={formData.firstName} onChange={(v) => setFormData({ ...formData, firstName: v })}>
+            <Label>First Name</Label>
+            <Input placeholder="Enter your first name" variant="secondary" autoComplete="given-name" />
+          </TextField>
+          <TextField isRequired name="lastName" value={formData.lastName} onChange={(v) => setFormData({ ...formData, lastName: v })}>
+            <Label>Last Name</Label>
+            <Input placeholder="Enter your last name" variant="secondary" autoComplete="family-name" />
+          </TextField>
+          <TextField isRequired name="username" value={formData.username} onChange={(v) => setFormData({ ...formData, username: v })}>
+            <Label>Username</Label>
+            <Input placeholder="Enter your username" variant="secondary" autoComplete="username" />
+          </TextField>
+          <TextField isRequired name="email" value={formData.email} onChange={(v) => setFormData({ ...formData, email: v })}>
+            <Label>Email</Label>
+            <InputGroup variant="secondary">
+              <InputGroup.Prefix>
+                <MailIcon className="text-2xl text-default-400 shrink-0" />
+              </InputGroup.Prefix>
+              <InputGroup.Input placeholder="Enter your email" type="email" autoComplete="email" />
+            </InputGroup>
+          </TextField>
+          <TextField isRequired name="password" value={formData.password} onChange={(v) => setFormData({ ...formData, password: v })}>
+            <Label>Password</Label>
+            <InputGroup variant="secondary">
+              <InputGroup.Input placeholder="Enter your password" type={isVisible ? "text" : "password"} autoComplete="new-password" />
+              <InputGroup.Suffix>
+                <Button type="button" size="sm" variant="ghost" onPress={toggleVisibility} className="min-w-8 w-8 h-8 p-0">
+                  <Icon className="text-2xl text-default-400" icon={isVisible ? "solar:eye-closed-linear" : "solar:eye-bold"} />
+                </Button>
+              </InputGroup.Suffix>
+            </InputGroup>
+          </TextField>
+          <TextField isRequired name="confirmPassword" value={formData.confirmPassword} onChange={(v) => setFormData({ ...formData, confirmPassword: v })}>
+            <Label>Confirm Password</Label>
+            <InputGroup variant="secondary">
+              <InputGroup.Input placeholder="Confirm your password" type={isConfirmVisible ? "text" : "password"} autoComplete="new-password" />
+              <InputGroup.Suffix>
+                <Button type="button" size="sm" variant="ghost" onPress={toggleConfirmVisibility} className="min-w-8 w-8 h-8 p-0">
+                  <Icon className="text-2xl text-default-400" icon={isConfirmVisible ? "solar:eye-closed-linear" : "solar:eye-bold"} />
+                </Button>
+              </InputGroup.Suffix>
+            </InputGroup>
+          </TextField>
+          <Checkbox isRequired className="py-4">
             I agree with the&nbsp;
-            <Link className="relative z-1" href="#" size="sm">
-              Terms
-            </Link>
+            <Link className="relative z-1" href="#">Terms</Link>
             &nbsp; and&nbsp;
-            <Link className="relative z-1" href="#" size="sm">
-              Privacy Policy
-            </Link>
+            <Link className="relative z-1" href="#">Privacy Policy</Link>
           </Checkbox>
-          <Button className="w-full bg-pink-500 text-white hover:bg-pink-600" type="submit" isLoading={loading}>
+          <Button className="w-full bg-pink-500 text-white hover:bg-pink-600" type="submit" isPending={loading}>
             Sign Up
           </Button>
         </form>
         <p className="text-small text-center">
-          <Link href="/login" size="sm">
+          <Link href="/login">
             Already have an account? Log In
           </Link>
         </p>

@@ -3,8 +3,6 @@
 import type { ThemeProviderProps } from "next-themes";
 
 import * as React from "react";
-import { HeroUIProvider } from "@heroui/system";
-import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { HelpDrawerProvider } from "@/contexts/HelpDrawerContext";
@@ -14,26 +12,14 @@ export interface ProvidersProps {
   themeProps?: ThemeProviderProps;
 }
 
-declare module "@react-types/shared" {
-  interface RouterConfig {
-    routerOptions: NonNullable<
-      Parameters<ReturnType<typeof useRouter>["push"]>[1]
-    >;
-  }
-}
-
 export function Providers({ children, themeProps }: ProvidersProps) {
-  const router = useRouter();
-
   return (
-    <HeroUIProvider navigate={router.push}>
-      <NextThemesProvider {...themeProps}>
-        <AuthProvider>
-          <HelpDrawerProvider>
-            {children}
-          </HelpDrawerProvider>
-        </AuthProvider>
-      </NextThemesProvider>
-    </HeroUIProvider>
+    <NextThemesProvider {...themeProps}>
+      <AuthProvider>
+        <HelpDrawerProvider>
+          {children}
+        </HelpDrawerProvider>
+      </AuthProvider>
+    </NextThemesProvider>
   );
 }

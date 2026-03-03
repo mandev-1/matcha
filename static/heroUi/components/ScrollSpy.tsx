@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Card, CardBody } from "@heroui/card";
+import { Card } from "@heroui/react";
 import type { Heading } from "./MarkdownRenderer";
 
 interface ScrollSpyProps {
@@ -80,7 +80,7 @@ export default function ScrollSpy({ headings }: ScrollSpyProps) {
 
   return (
     <Card className="sticky top-24 w-64 max-h-[calc(100vh-8rem)] overflow-y-auto bg-default-50 dark:bg-default-100">
-      <CardBody className="p-4">
+      <Card.Content className="p-4">
         <h3 className="text-sm font-semibold mb-3 text-default-700 dark:text-default-300 uppercase tracking-wide">
           Table of Contents
         </h3>
@@ -106,7 +106,7 @@ export default function ScrollSpy({ headings }: ScrollSpyProps) {
             );
           })}
         </nav>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }

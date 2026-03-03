@@ -1,25 +1,13 @@
 "use client";
 
 import React from "react";
-import { Avatar, AvatarGroup } from "@heroui/avatar";
-import { Tabs, Tab } from "@heroui/tabs";
-import { Button } from "@heroui/button";
+import { Avatar, Tabs, Tab, Button, Link, Tooltip, Modal, Card, Input, InputGroup, TextArea, Form, Chip, Skeleton, Spinner, useOverlayState, TextField, Label } from "@heroui/react";
+import { ModalCompat, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
+import { Image } from "@/components/Image";
+import { Spacer } from "@/components/Spacer";
+import { Divider } from "@/components/Divider";
 import { Icon } from "@iconify/react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter } from "@heroui/drawer";
-import { Image } from "@heroui/image";
-import { Link } from "@heroui/link";
-import { Tooltip } from "@heroui/tooltip";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
-import { Input, Textarea } from "@heroui/input";
-import { Form } from "@heroui/form";
-import { Select, SelectItem } from "@heroui/select";
-import { Chip } from "@heroui/chip";
-import { Spacer } from "@heroui/spacer";
-import { Divider } from "@heroui/divider";
-import { Skeleton } from "@heroui/skeleton";
-import { Spinner } from "@heroui/spinner";
-import { addToast } from "@heroui/toast";
+import { addToast } from "@/lib/addToast";
 import clsx from "clsx";
 import { useAuth } from "@/contexts/AuthContext";
 import LocationSetup from "@/components/LocationSetup";
@@ -54,11 +42,16 @@ const LockIcon = (props: React.SVGProps<SVGSVGElement>) => {
 };
 
 export default function Component() {
-  const {isOpen, onOpen, onOpenChange} = useDisclosure();
-  const {isOpen: isResetModalOpen, onOpen: onResetModalOpen, onOpenChange: onResetModalOpenChange} = useDisclosure();
-  const {isOpen: isPasswordResetModalOpen, onOpen: onPasswordResetModalOpen, onOpenChange: onPasswordResetModalOpenChange} = useDisclosure();
-  const {isOpen: isLocationModalOpen, onOpen: onLocationModalOpen, onOpenChange: onLocationModalOpenChange} = useDisclosure();
-  const {isOpen: isImageUploadModalOpen, onOpen: onImageUploadModalOpen, onOpenChange: onImageUploadModalOpenChange} = useDisclosure();
+  const editDrawerOverlay = useOverlayState({ defaultOpen: false });
+  const resetModalOverlay = useOverlayState({ defaultOpen: false });
+  const passwordResetModalOverlay = useOverlayState({ defaultOpen: false });
+  const locationModalOverlay = useOverlayState({ defaultOpen: false });
+  const imageUploadModalOverlay = useOverlayState({ defaultOpen: false });
+  const { isOpen, open: onOpen, setOpen: onOpenChange } = editDrawerOverlay;
+  const { isOpen: isResetModalOpen, open: onResetModalOpen, setOpen: onResetModalOpenChange } = resetModalOverlay;
+  const { isOpen: isPasswordResetModalOpen, open: onPasswordResetModalOpen, setOpen: onPasswordResetModalOpenChange } = passwordResetModalOverlay;
+  const { isOpen: isLocationModalOpen, open: onLocationModalOpen, setOpen: onLocationModalOpenChange } = locationModalOverlay;
+  const { isOpen: isImageUploadModalOpen, open: onImageUploadModalOpen, setOpen: onImageUploadModalOpenChange } = imageUploadModalOverlay;
   const { user, logout } = useAuth();
 
   // Add style for pink radio button inner dot
@@ -386,7 +379,7 @@ export default function Component() {
       addToast({
         title: "Password reset successfully",
         description: "Your password has been updated.",
-        color: "secondary",
+        color: "success",
       });
     } catch (error) {
       console.error("Error resetting password:", error);
@@ -435,11 +428,11 @@ export default function Component() {
             selectedKey={selectedTab}
             onSelectionChange={(key) => setSelectedTab(key as string)}
           >
-            <Tab key="card-preview" title="My Card" />
-            <Tab key="basics" title="Basics" />
-            <Tab key="settings" title="Settings" />
+            <Tab key="card-preview">My Card</Tab>
+            <Tab key="basics">Basics</Tab>
+            <Tab key="settings">Settings</Tab>
           </Tabs>
-          <Button className="justify-center" size="sm" variant="flat" onPress={onOpen}>
+          <Button className="justify-center" size="sm" variant="secondary" onPress={onOpen}>
             Help
           </Button>
         </div>
@@ -519,26 +512,24 @@ export default function Component() {
         )}
 
       </div>
-      <Drawer
+      <ModalCompat
         hideCloseButton
-        backdrop="blur"
         classNames={{
-          base: "sm:data-[placement=right]:m-2 sm:data-[placement=left]:m-2 rounded-medium",
+          base: "sm:m-2 rounded-medium",
         }}
         isOpen={isOpen}
         onOpenChange={onOpenChange}
+        placement="right"
+        size="lg"
       >
-        <DrawerContent>
-          {(onClose) => (
-            <>
-              <DrawerHeader className="absolute top-0 inset-x-0 z-50 flex flex-row gap-2 px-2 py-2 border-b border-default-200/50 justify-between bg-content1/50 backdrop-saturate-150 backdrop-blur-lg">
-                <Tooltip content="Close">
+              <Modal.Header className="flex flex-row gap-2 px-2 py-2 border-b border-default-200/50 justify-between bg-content1/50 backdrop-saturate-150 backdrop-blur-lg">
+                <Tooltip>
+                  <Tooltip.Trigger>
                   <Button
-                    isIconOnly
-                    className="text-default-400"
+                    className="text-default-400 min-w-8 w-8 h-8 p-0"
                     size="sm"
-                    variant="light"
-                    onPress={onClose}
+                    variant="ghost"
+                    onPress={() => onOpenChange(false)}
                   >
                     <svg
                       fill="none"
@@ -554,96 +545,59 @@ export default function Component() {
                       <path d="m13 17 5-5-5-5M6 17l5-5-5-5" />
                     </svg>
                   </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>Close</Tooltip.Content>
                 </Tooltip>
                 <div className="w-full flex justify-start gap-2">
                   <Button
                     className="font-medium text-small text-default-500"
                     size="sm"
-                    startContent={
-                      <svg
-                        height="16"
-                        viewBox="0 0 16 16"
-                        width="16"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M3.85.75c-.908 0-1.702.328-2.265.933-.558.599-.835 1.41-.835 2.29V7.88c0 .801.23 1.548.697 2.129.472.587 1.15.96 1.951 1.06a.75.75 0 1 0 .185-1.489c-.435-.054-.752-.243-.967-.51-.219-.273-.366-.673-.366-1.19V3.973c0-.568.176-.993.433-1.268.25-.27.632-.455 1.167-.455h4.146c.479 0 .828.146 1.071.359.246.215.43.54.497.979a.75.75 0 0 0 1.483-.23c-.115-.739-.447-1.4-.99-1.877C9.51 1 8.796.75 7.996.75zM7.9 4.828c-.908 0-1.702.326-2.265.93-.558.6-.835 1.41-.835 2.29v3.905c0 .879.275 1.69.833 2.289.563.605 1.357.931 2.267.931h4.144c.91 0 1.705-.326 2.268-.931.558-.599.833-1.41.833-2.289V8.048c0-.879-.275-1.69-.833-2.289-.563-.605-1.357-.931-2.267-.931zm-1.6 3.22c0-.568.176-.992.432-1.266.25-.27.632-.454 1.168-.454h4.145c.54 0 .92.185 1.17.453.255.274.43.698.43 1.267v3.905c0 .569-.175.993-.43 1.267-.25.268-.631.453-1.17.453H7.898c-.54 0-.92-.185-1.17-.453-.255-.274-.43-.698-.43-1.267z"
-                          fill="currentColor"
-                          fillRule="evenodd"
-                        />
-                      </svg>
-                    }
-                    variant="flat"
+                    variant="secondary"
                   >
+                    <svg className="mr-1" height="16" viewBox="0 0 16 16" width="16" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3.85.75c-.908 0-1.702.328-2.265.933-.558.599-.835 1.41-.835 2.29V7.88c0 .801.23 1.548.697 2.129.472.587 1.15.96 1.951 1.06a.75.75 0 1 0 .185-1.489c-.435-.054-.752-.243-.967-.51-.219-.273-.366-.673-.366-1.19V3.973c0-.568.176-.993.433-1.268.25-.27.632-.455 1.167-.455h4.146c.479 0 .828.146 1.071.359.246.215.43.54.497.979a.75.75 0 0 0 1.483-.23c-.115-.739-.447-1.4-.99-1.877C9.51 1 8.796.75 7.996.75zM7.9 4.828c-.908 0-1.702.326-2.265.93-.558.6-.835 1.41-.835 2.29v3.905c0 .879.275 1.69.833 2.289.563.605 1.357.931 2.267.931h4.144c.91 0 1.705-.326 2.268-.931.558-.599.833-1.41.833-2.289V8.048c0-.879-.275-1.69-.833-2.289-.563-.605-1.357-.931-2.267-.931zm-1.6 3.22c0-.568.176-.992.432-1.266.25-.27.632-.454 1.168-.454h4.145c.54 0 .92.185 1.17.453.255.274.43.698.43 1.267v3.905c0 .569-.175.993-.43 1.267-.25.268-.631.453-1.17.453H7.898c-.54 0-.92-.185-1.17-.453-.255-.274-.43-.698-.43-1.267z" fill="currentColor" fillRule="evenodd" />
+                    </svg>
                     Copy Link
                   </Button>
                   <Button
                     className="font-medium text-small text-default-500"
-                    endContent={
-                      <svg
-                        fill="none"
-                        height="16"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        width="16"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path d="M7 17 17 7M7 7h10v10" />
-                      </svg>
-                    }
                     size="sm"
-                    variant="flat"
+                    variant="secondary"
                   >
                     Event Page
+                    <svg className="ml-1" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M7 17 17 7M7 7h10v10" />
+                    </svg>
                   </Button>
                 </div>
                 <div className="flex gap-1 items-center">
-                  <Tooltip content="Previous">
-                    <Button isIconOnly className="text-default-500" size="sm" variant="flat">
-                      <svg
-                        fill="none"
-                        height="16"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        width="16"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
+                  <Tooltip>
+                    <Tooltip.Trigger>
+                    <Button className="text-default-500 min-w-8 w-8 h-8 p-0" size="sm" variant="secondary">
+                      <svg fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg">
                         <path d="m18 15-6-6-6 6" />
                       </svg>
                     </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>Previous</Tooltip.Content>
                   </Tooltip>
-                  <Tooltip content="Next">
-                    <Button isIconOnly className="text-default-500" size="sm" variant="flat">
-                      <svg
-                        fill="none"
-                        height="16"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        width="16"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
+                  <Tooltip>
+                    <Tooltip.Trigger>
+                    <Button className="text-default-500 min-w-8 w-8 h-8 p-0" size="sm" variant="secondary">
+                      <svg fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg">
                         <path d="m6 9 6 6 6-6" />
                       </svg>
                     </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>Next</Tooltip.Content>
                   </Tooltip>
                 </div>
-              </DrawerHeader>
-              <DrawerBody className="pt-16">
+              </Modal.Header>
+              <Modal.Body className="pt-16">
                 <div className="flex w-full justify-center items-center pt-4">
                   <Image
-                    isBlurred
-                    isZoomed
                     alt="Event image"
-                    className="aspect-square w-full hover:scale-110"
+                    className="aspect-square w-full hover:scale-110 object-cover"
                     height={300}
                     src="https://nextuipro.nyc3.cdn.digitaloceanspaces.com/components-images/places/san-francisco.png"
                   />
@@ -692,29 +646,15 @@ export default function Component() {
                       </div>
                       <div className="flex flex-col gap-0.5">
                         <Link
-                          isExternal
-                          showAnchorIcon
-                          anchorIcon={
-                            <svg
-                              className="group-hover:text-inherit text-default-400 transition-[color,transform] group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                              fill="none"
-                              height="16"
-                              stroke="currentColor"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              viewBox="0 0 24 24"
-                              width="16"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path d="M7 17 17 7M7 7h10v10" />
-                            </svg>
-                          }
-                          className="group gap-x-0.5 text-medium text-foreground font-medium"
+                          target="_blank"
+                          className="group gap-x-0.5 text-medium text-foreground font-medium inline-flex items-center"
                           href="https://www.google.com/maps/place/555+California+St,+San+Francisco,+CA+94103"
                           rel="noreferrer noopener"
                         >
                           555 California St suite 500
+                          <svg className="ml-0.5 text-default-400 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7 17 17 7M7 7h10v10" />
+                          </svg>
                         </Link>
                         <p className="text-small text-default-500">San Francisco, California</p>
                       </div>
@@ -759,160 +699,123 @@ export default function Component() {
                     </div>
                   </div>
                 </div>
-              </DrawerBody>
-              <DrawerFooter>
-              </DrawerFooter>
-            </>
-          )}
-        </DrawerContent>
-      </Drawer>
+              </Modal.Body>
+              <Modal.Footer />
+      </ModalCompat>
 
       {/* Reset Profile Modal */}
-      <Modal
+      <ModalCompat
         isDismissable={false}
-        isKeyboardDismissDisabled={true}
         isOpen={isResetModalOpen}
         onOpenChange={onResetModalOpenChange}
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">
-                Reset Profile
-              </ModalHeader>
-              <ModalBody>
-                <p>
-                  Are you sure you want to reset your profile? This action will delete all profile data except your name, username, email, and password.
-                </p>
-                <p>
-                  The following information will be cleared:
-                </p>
-                <ul className="list-disc list-inside text-small text-default-500 space-y-1">
-                  <li>Gender</li>
-                  <li>Sexual preference</li>
-                  <li>Biography</li>
-                  <li>Hobbies & Interests</li>
-                  <li>Big Five Personality Traits</li>
-                  <li>Siblings information</li>
-                  <li>MBTI type</li>
-                  <li>Caliper profile</li>
-                  <li>Profile pictures</li>
-                </ul>
-                <p className="text-small text-danger mt-2">
-                  <strong>Note:</strong> This action will also log you out. You will need to log in again after resetting your profile.
-                </p>
-                <p className="text-small text-danger mt-1">
-                  This action cannot be undone.
-                </p>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="default" variant="light" onPress={onClose} isDisabled={isResetting}>
-                  Cancel
-                </Button>
-                <Button 
-                  color="danger" 
-                  onPress={() => handleReset(onClose)}
-                  isLoading={isResetting}
-                >
-                  Yes, Reset Profile
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+        <ModalHeader className="flex flex-col gap-1">
+          Reset Profile
+        </ModalHeader>
+        <ModalBody>
+          <p>
+            Are you sure you want to reset your profile? This action will delete all profile data except your name, username, email, and password.
+          </p>
+          <p>
+            The following information will be cleared:
+          </p>
+          <ul className="list-disc list-inside text-small text-default-500 space-y-1">
+            <li>Gender</li>
+            <li>Sexual preference</li>
+            <li>Biography</li>
+            <li>Hobbies & Interests</li>
+            <li>Big Five Personality Traits</li>
+            <li>Siblings information</li>
+            <li>MBTI type</li>
+            <li>Caliper profile</li>
+            <li>Profile pictures</li>
+          </ul>
+          <p className="text-small text-danger mt-2">
+            <strong>Note:</strong> This action will also log you out. You will need to log in again after resetting your profile.
+          </p>
+          <p className="text-small text-danger mt-1">
+            This action cannot be undone.
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onPress={() => onResetModalOpenChange(false)} isDisabled={isResetting}>
+            Cancel
+          </Button>
+          <Button
+            onPress={() => handleReset(() => onResetModalOpenChange(false))}
+            isPending={isResetting}
+          >
+            Yes, Reset Profile
+          </Button>
+        </ModalFooter>
+      </ModalCompat>
 
       {/* Password Reset Modal */}
-      <Modal 
-        isOpen={isPasswordResetModalOpen} 
-        placement="top-center" 
+      <ModalCompat
+        isOpen={isPasswordResetModalOpen}
         onOpenChange={onPasswordResetModalOpenChange}
+        placement="center"
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">Reset Password</ModalHeader>
-              <ModalBody>
-                <Input
-                  isRequired
-                  inputMode="text"
-                  endContent={
-                    <button
-                      className="focus:outline-none"
-                      type="button"
-                      onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                    >
-                      {isPasswordVisible ? (
-                        <Icon className="text-2xl text-default-400 pointer-events-none" icon="solar:eye-closed-linear" />
-                      ) : (
-                        <Icon className="text-2xl text-default-400 pointer-events-none" icon="solar:eye-bold" />
-                      )}
-                    </button>
-                  }
-                  label="New Password"
-                  placeholder="Enter your new password"
-                  type={isPasswordVisible ? "text" : "password"}
-                  variant="bordered"
-                  value={newPassword}
-                  onValueChange={(value) => {
-                    setNewPassword(value);
-                    setPasswordError("");
-                  }}
-                  errorMessage={passwordError}
-                  isInvalid={!!passwordError}
-                  startContent={
-                    <LockIcon className="text-2xl text-default-400 pointer-events-none shrink-0" />
-                  }
-                />
-                <Input
-                  isRequired
-                  inputMode="text"
-                  endContent={
-                    <button
-                      className="focus:outline-none"
-                      type="button"
-                      onClick={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
-                    >
-                      {isConfirmPasswordVisible ? (
-                        <Icon className="text-2xl text-default-400 pointer-events-none" icon="solar:eye-closed-linear" />
-                      ) : (
-                        <Icon className="text-2xl text-default-400 pointer-events-none" icon="solar:eye-bold" />
-                      )}
-                    </button>
-                  }
-                  label="Confirm Password"
-                  placeholder="Confirm your new password"
-                  type={isConfirmPasswordVisible ? "text" : "password"}
-                  variant="bordered"
-                  value={confirmPassword}
-                  onValueChange={(value) => {
-                    setConfirmPassword(value);
-                    setPasswordError("");
-                  }}
-                  errorMessage={newPassword && confirmPassword && newPassword !== confirmPassword ? "Passwords do not match" : ""}
-                  isInvalid={!!newPassword && !!confirmPassword && newPassword !== confirmPassword}
-                  startContent={
-                    <LockIcon className="text-2xl text-default-400 pointer-events-none shrink-0" />
-                  }
-                />
-              </ModalBody>
-              <ModalFooter>
-                <Button color="danger" variant="flat" onPress={onClose} isDisabled={isResettingPassword}>
-                  Cancel
+        <ModalHeader className="flex flex-col gap-1">Reset Password</ModalHeader>
+        <ModalBody>
+          <TextField
+            isRequired
+            name="newPassword"
+            value={newPassword}
+            onChange={(v) => { setNewPassword(v); setPasswordError(""); }}
+            isInvalid={!!passwordError}
+          >
+            <Label>New Password</Label>
+            <InputGroup variant="secondary">
+              <InputGroup.Input
+                placeholder="Enter your new password"
+                type={isPasswordVisible ? "text" : "password"}
+              />
+              <InputGroup.Suffix>
+                <Button type="button" size="sm" variant="ghost" onPress={() => setIsPasswordVisible(!isPasswordVisible)} className="min-w-8 w-8 h-8 p-0">
+                  <Icon className="text-2xl text-default-400" icon={isPasswordVisible ? "solar:eye-closed-linear" : "solar:eye-bold"} />
                 </Button>
-                <Button 
-                  color="primary" 
-                  onPress={() => handlePasswordReset(onClose)}
-                  isLoading={isResettingPassword}
-                  className="bg-pink-500 text-white hover:bg-pink-600"
-                >
-                  Reset Password
+              </InputGroup.Suffix>
+            </InputGroup>
+            {passwordError && <p className="text-sm text-danger mt-1">{passwordError}</p>}
+          </TextField>
+          <TextField
+            isRequired
+            name="confirmPassword"
+            value={confirmPassword}
+            onChange={(v) => { setConfirmPassword(v); setPasswordError(""); }}
+            isInvalid={!!newPassword && !!confirmPassword && newPassword !== confirmPassword}
+          >
+            <Label>Confirm Password</Label>
+            <InputGroup variant="secondary">
+              <InputGroup.Input
+                placeholder="Confirm your new password"
+                type={isConfirmPasswordVisible ? "text" : "password"}
+              />
+              <InputGroup.Suffix>
+                <Button type="button" size="sm" variant="ghost" onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)} className="min-w-8 w-8 h-8 p-0">
+                  <Icon className="text-2xl text-default-400" icon={isConfirmPasswordVisible ? "solar:eye-closed-linear" : "solar:eye-bold"} />
                 </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+              </InputGroup.Suffix>
+            </InputGroup>
+            {newPassword && confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-sm text-danger mt-1">Passwords do not match</p>
+            )}
+          </TextField>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onPress={() => onPasswordResetModalOpenChange(false)} isDisabled={isResettingPassword}>
+            Cancel
+          </Button>
+          <Button
+            onPress={() => handlePasswordReset(() => onPasswordResetModalOpenChange(false))}
+            isPending={isResettingPassword}
+            className="bg-pink-500 text-white hover:bg-pink-600"
+          >
+            Reset Password
+          </Button>
+        </ModalFooter>
+      </ModalCompat>
 
       {/* Location Setup Modal */}
       <LocationSetup
@@ -931,25 +834,21 @@ export default function Component() {
       />
 
       {/* Image Upload Modal */}
-      <Modal 
-        isOpen={isImageUploadModalOpen} 
+      <ModalCompat
+        isOpen={isImageUploadModalOpen}
         onOpenChange={onImageUploadModalOpenChange}
-        size="2xl"
-        scrollBehavior="inside"
+        size="lg"
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <Icon icon="solar:gallery-add-bold" className="text-2xl text-primary" />
-                  <span>Upload & Manage Images</span>
-                </div>
-                <p className="text-sm text-default-500 font-normal mt-1">
-                  Click on any slot to upload an image. Slot 1 is your profile picture.
-                </p>
-              </ModalHeader>
-              <ModalBody>
+        <ModalHeader className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <Icon icon="solar:gallery-add-bold" className="text-2xl text-primary" />
+            <span>Upload & Manage Images</span>
+          </div>
+          <p className="text-sm text-default-500 font-normal mt-1">
+            Click on any slot to upload an image. Slot 1 is your profile picture.
+          </p>
+        </ModalHeader>
+        <ModalBody>
                 <div className="flex flex-col gap-4">
                   {/* Image Carousel/Grid */}
                   <div className="grid grid-cols-5 gap-3">
@@ -1070,8 +969,8 @@ export default function Component() {
                         <Button
                           key={index}
                           size="sm"
-                          variant="flat"
-                          color="default"
+                          variant="secondary"
+                         
                           onPress={async () => {
                             // Swap images at index and index+1
                             const newImages = [...userImages];
@@ -1120,24 +1019,21 @@ export default function Component() {
                               setUserImages(revertedImages);
                             }
                           }}
-                          startContent={<Icon icon="solar:swap-linear" className="text-sm" />}
-                        >
+                          >
+                          <Icon icon="solar:swap-linear" className="text-sm mr-1" />
                           Swap {index + 1} ↔ {index + 2}
                         </Button>
                       ))}
                     </div>
                   </div>
                 </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="default" variant="light" onPress={onClose}>
-                  Close
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onPress={() => onImageUploadModalOpenChange(false)}>
+            Close
+          </Button>
+        </ModalFooter>
+      </ModalCompat>
     </>
   );
 }

@@ -1,11 +1,8 @@
 "use client";
 
 import React from "react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Pagination } from "@heroui/pagination";
-import { Spinner } from "@heroui/spinner";
-import { Link } from "@heroui/link";
-import { Chip } from "@heroui/chip";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Link, Chip } from "@heroui/react";
+import { PaginationCompat } from "@/components/PaginationCompat";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { getApiUrl } from "@/lib/apiUrl";
@@ -90,103 +87,69 @@ function RankingPageContent() {
       <p className="text-default-600 dark:text-default-400 mb-6">
         Users ranked by their fame rating. Higher fame rating means more active and engaged users.
       </p>
-      <Table
-        aria-label="User ranking table"
-        bottomContent={
-          data && data.data.pages > 0 ? (
-            <div className="flex w-full justify-center">
-              <Pagination
-                isCompact
-                showControls
-                showShadow
-                color="primary"
-                page={page}
-                total={data.data.pages}
-                onChange={(page) => setPage(page)}
-              />
-            </div>
-          ) : null
-        }
-      >
+      <div>
+      <Table aria-label="User ranking table">
+        <Table.Content>
         <TableHeader>
           {columns.map((column) => (
             <TableColumn key={column.key}>{column.label}</TableColumn>
           ))}
         </TableHeader>
-        <TableBody
-          items={data?.data.users ?? []}
-          loadingContent={<Spinner />}
-          loadingState={loadingState}
-        >
+        <TableBody items={data?.data.users ?? []}>
           {(item) => (
             <TableRow key={item.id}>
-              {(columnKey) => {
-                if (columnKey === "rank") {
-                  return (
-                    <TableCell>
-                      <span className="font-semibold">#{item.rank}</span>
-                    </TableCell>
-                  );
-                }
-                if (columnKey === "name") {
-                  return (
-                    <TableCell>
-                      <Link
-                        href={`/discover/${item.id}`}
-                        className="text-primary hover:underline"
-                      >
-                        {item.first_name} {item.last_name}
-                      </Link>
-                      {item.is_bot && (
-                        <Chip size="sm" variant="flat" color="secondary" className="ml-2">
-                          Bot
-                        </Chip>
-                      )}
-                    </TableCell>
-                  );
-                }
-                if (columnKey === "level") {
-                  return (
-                    <TableCell>
-                      <Chip size="sm" variant="flat" color="primary">
-                        Level {item.level}
-                      </Chip>
-                    </TableCell>
-                  );
-                }
-                if (columnKey === "fame_rating") {
-                  return (
-                    <TableCell>
-                      <span className="font-mono">{item.fame_rating.toFixed(2)}</span>
-                    </TableCell>
-                  );
-                }
-                if (columnKey === "type") {
-                  return (
-                    <TableCell>
-                      {item.is_bot ? (
-                        <Chip size="sm" variant="flat" color="secondary">
-                          Test User
-                        </Chip>
-                      ) : (
-                        <Chip size="sm" variant="flat" color="default">
-                          User
-                        </Chip>
-                      )}
-                    </TableCell>
-                  );
-                }
-                return <TableCell>{getKeyValue(item, String(columnKey))}</TableCell>;
-              }}
+              <TableCell>
+                <span className="font-semibold">#{item.rank}</span>
+              </TableCell>
+              <TableCell>
+                <Link href={`/discover/${item.id}`} className="text-primary hover:underline">
+                  {item.first_name} {item.last_name}
+                </Link>
+                {item.is_bot && (
+                  <Chip size="sm" variant="secondary" color="default" className="ml-2">
+                    Bot
+                  </Chip>
+                )}
+              </TableCell>
+              <TableCell>
+                <Chip size="sm" variant="secondary">
+                  Level {item.level}
+                </Chip>
+              </TableCell>
+              <TableCell>
+                <span className="font-mono">{item.fame_rating.toFixed(2)}</span>
+              </TableCell>
+              <TableCell>
+                {item.is_bot ? (
+                  <Chip size="sm" variant="secondary" color="default">
+                    Test User
+                  </Chip>
+                ) : (
+                  <Chip size="sm" variant="secondary">
+                    User
+                  </Chip>
+                )}
+              </TableCell>
             </TableRow>
           )}
         </TableBody>
+        </Table.Content>
       </Table>
+      {data && data.data.pages > 0 && (
+        <div className="flex w-full justify-center mt-4">
+          <PaginationCompat
+            page={page}
+            total={data.data.pages}
+            onChange={(p) => setPage(p)}
+          />
+        </div>
+      )}
       {data && (
         <div className="mt-4 text-sm text-default-500">
           Showing {((page - 1) * data.data.limit) + 1} to {Math.min(page * data.data.limit, data.data.total)} of {data.data.total} users
         </div>
       )}
+      </div>
     </div>
   );
 }

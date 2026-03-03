@@ -2,8 +2,7 @@
 
 import React from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Button } from "@heroui/button";
-import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
+import { Button, Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChatHint } from "@/contexts/ChatHintContext";
@@ -26,6 +25,11 @@ const navItems: NavItem[] = [
     label: "Discover",
     href: "/discover",
     icon: "solar:users-group-rounded-bold",
+  },
+  {
+    label: "Search",
+    href: "/search",
+    icon: "solar:magnifer-bold",
   },
   {
     label: "Chats",
@@ -128,19 +132,16 @@ export function Sidebar() {
           const btn = (
             <Button
               key={item.href}
-              isIconOnly
-              variant={isActive ? "solid" : "light"}
-              color={isActive ? "primary" : "default"}
+              variant={isActive ? "primary" : "ghost"}
               className={clsx(
-                "transition-all duration-200",
+                "transition-all duration-200 min-w-14 w-14 h-14 p-0",
                 isChats && showPinkChat ? "w-16 h-16 min-w-16" : "w-14 h-14 min-w-14",
                 isActive && "bg-[#00b7fa] text-white",
                 showPinkChat && "text-pink-500"
               )}
               aria-label={item.label}
               onPress={() => handleNavigation(item.href)}
-              title={item.label}
-              isLoading={isLoading}
+              isPending={isLoading}
             >
               <Icon
                 icon={item.icon}
@@ -153,7 +154,7 @@ export function Sidebar() {
           );
           if (isChats && (showHint || isZapping)) {
             return (
-              <Popover key={item.href} isOpen={showHint || isZapping} placement="right" showArrow>
+              <Popover key={item.href} isOpen={showHint || isZapping}>
                 <PopoverTrigger>{btn}</PopoverTrigger>
                 <PopoverContent>
                   <div
@@ -185,19 +186,17 @@ export function Sidebar() {
           const showPinkChat = isChats && hasUnreadChat && !isActive && !isChatActive;
           const mobileBtn = (
             <Button
-              isIconOnly
-              variant="light"
-              color={isActive ? "primary" : "default"}
+              variant="ghost"
               size="sm"
               className={clsx(
-                "min-w-11 w-11 h-11 flex-shrink-0",
+                "min-w-11 w-11 h-11 flex-shrink-0 p-0",
                 isActive && "bg-primary/15 text-primary",
                 showPinkChat && "text-pink-500"
               )}
               aria-label={item.label}
               aria-current={isActive ? "page" : undefined}
               onPress={() => handleNavigation(item.href)}
-              isLoading={isLoading}
+              isPending={isLoading}
             >
               <Icon
                 icon={item.icon}
@@ -210,7 +209,7 @@ export function Sidebar() {
           );
           if (isChats && (showHint || isZapping)) {
             return (
-              <Popover key={item.href} isOpen={showHint || isZapping} placement="top" showArrow>
+              <Popover key={item.href} isOpen={showHint || isZapping}>
                 <PopoverTrigger>{mobileBtn}</PopoverTrigger>
                 <PopoverContent>
                   <div

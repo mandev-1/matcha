@@ -1,18 +1,12 @@
 "use client";
 
 import React from "react";
-import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/input";
-import { Form } from "@heroui/form";
-import { RadioGroup } from "@heroui/radio";
-import { Select, SelectItem } from "@heroui/select";
-import { Chip } from "@heroui/chip";
-import { Tabs, Tab } from "@heroui/tabs";
-import { Slider } from "@heroui/slider";
-import { Image } from "@heroui/image";
+import { Card, Button, Input, TextArea, Form, RadioGroup, Chip, Tabs, Tab, Slider, TextField, Label, Description } from "@heroui/react";
+import { SelectCompat } from "@/components/SelectCompat";
+import { SelectItem } from "@/components/SelectItem";
+import { Image } from "@/components/Image";
 import { Icon } from "@iconify/react";
-import { addToast } from "@heroui/toast";
+import { addToast } from "@/lib/addToast";
 import CustomRadio from "./CustomRadio";
 
 interface CardBasicsProps {
@@ -154,40 +148,27 @@ export default function CardBasics({
       <Form onSubmit={handleSave} className="flex flex-col gap-6">
         <div className="max-w-[900px] gap-2 grid grid-cols-12 grid-rows-2 px-8">
           {/* Basic Information */}
-          <Card isFooterBlurred className="w-full h-[300px] col-span-12 sm:col-span-7">
-            <CardHeader>
+          <Card className="w-full h-[300px] col-span-12 sm:col-span-7">
+            <Card.Header>
               <h3 className="text-xl font-semibold text-sky-300">Basic Information</h3>
-            </CardHeader>
-            <CardBody className="flex flex-col gap-4">
+            </Card.Header>
+            <Card.Content className="flex flex-col gap-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  isRequired
-                  label="First Name"
-                  labelPlacement="outside"
-                  value={firstName}
-                  onValueChange={setFirstName}
-                  variant="bordered"
-                />
-                <Input
-                  isRequired
-                  label="Last Name"
-                  labelPlacement="outside"
-                  value={lastName}
-                  onValueChange={setLastName}
-                  variant="bordered"
-                />
+                <TextField isRequired name="firstName" value={firstName} onChange={setFirstName}>
+                  <Label>First Name</Label>
+                  <Input variant="secondary" placeholder="First name" />
+                </TextField>
+                <TextField isRequired name="lastName" value={lastName} onChange={setLastName}>
+                  <Label>Last Name</Label>
+                  <Input variant="secondary" placeholder="Last name" />
+                </TextField>
               </div>
-              <Input
-                isRequired
-                label="Email"
-                labelPlacement="outside"
-                type="email"
-                value={email}
-                onValueChange={setEmail}
-                variant="bordered"
-              />
-            </CardBody>
-            <CardFooter className="absolute bg-black/40 bottom-0 z-10 border-t-1 border-default-600 dark:border-default-100">
+              <TextField isRequired name="email" type="email" value={email} onChange={setEmail}>
+                <Label>Email</Label>
+                <Input variant="secondary" placeholder="Email" type="email" />
+              </TextField>
+            </Card.Content>
+            <Card.Footer className="absolute bg-black/40 bottom-0 z-10 border-t-1 border-default-600 dark:border-default-100">
               <div className="flex grow gap-2 items-center">
                 <Image
                   alt="Breathing app icon"
@@ -199,56 +180,46 @@ export default function CardBasics({
                   <p className="text-tiny text-white/60">Want a young wife (guaranteed)? Book in advance!</p>
                 </div>
               </div>
-              <Button radius="full" size="sm">
+              <Button size="sm">
                 Try now
               </Button>
-            </CardFooter>
+            </Card.Footer>
           </Card>
 
           {/* Account Security */}
           <Card className="w-full h-[300px] col-span-12 sm:col-span-5">
-            <CardHeader>
+            <Card.Header>
               <h3 className="text-xl font-semibold text-sky-300">Account Security</h3>
-            </CardHeader>
-            <CardBody className="flex flex-col gap-4">
-              <Input
-                label="Username"
-                labelPlacement="outside"
-                value={user?.username || ""}
-                variant="bordered"
-                isReadOnly
-                description="Your username cannot be changed"
-              />
-              <Input
-                label="Password"
-                labelPlacement="outside"
-                type="password"
-                value="••••••••"
-                variant="bordered"
-                isReadOnly
-                description="Click below to reset your password"
-                endContent={
-                  <Icon icon="solar:lock-password-linear" className="text-2xl text-default-400 pointer-events-none shrink-0" />
-                }
-              />
-            </CardBody>
-            <CardFooter className="justify-end">
+            </Card.Header>
+            <Card.Content className="flex flex-col gap-4">
+              <TextField name="username" value={user?.username || ""} isReadOnly>
+                <Label>Username</Label>
+                <Input variant="secondary" readOnly />
+                <Description>Your username cannot be changed</Description>
+              </TextField>
+              <TextField name="password" value="••••••••" isReadOnly>
+                <Label>Password</Label>
+                <Input variant="secondary" type="password" readOnly />
+                <Description>Click below to reset your password</Description>
+              </TextField>
+            </Card.Content>
+            <Card.Footer className="justify-end">
               <Button 
-                color="primary" 
-                variant="flat"
+                
+                variant="secondary"
                 onPress={onPasswordResetModalOpen}
               >
                 Reset Password
               </Button>
-            </CardFooter>
+            </Card.Footer>
           </Card>
 
           {/* Sexual Preference */}
           <Card className="col-span-12 sm:col-span-4 min-h-[300px]">
-            <CardHeader>
+            <Card.Header>
               <h3 className="text-xl font-semibold text-sky-300">What I want:</h3>
-            </CardHeader>
-            <CardBody className="flex flex-col gap-4">
+            </Card.Header>
+            <Card.Content className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Male</span>
@@ -262,11 +233,12 @@ export default function CardBasics({
                   maxValue={100}
                   step={1}
                   className="w-full"
-                  classNames={{
-                    track: "border-s-default-200",
-                    filler: "bg-sky-500",
-                  }}
-                />
+                >
+                  <Slider.Track>
+                    <Slider.Fill />
+                    <Slider.Thumb />
+                  </Slider.Track>
+                </Slider>
                 {preferMale > 0 && (
                   <p className="text-xs text-default-500 mt-1">
                     I will be shown people who identify as male. These people vouched for being responsible and respectful.
@@ -286,11 +258,12 @@ export default function CardBasics({
                   maxValue={100}
                   step={1}
                   className="w-full"
-                  classNames={{
-                    track: "border-s-default-200",
-                    filler: "bg-sky-500",
-                  }}
-                />
+                >
+                  <Slider.Track>
+                    <Slider.Fill />
+                    <Slider.Thumb />
+                  </Slider.Track>
+                </Slider>
                 {preferFemale > 0 && (
                   <p className="text-xs text-default-500 mt-1">
                     I will be shown females only. (Nice)
@@ -304,18 +277,18 @@ export default function CardBasics({
                   </p>
                 </div>
               )}
-            </CardBody>
+            </Card.Content>
           </Card>
 
           {/* My Gender */}
           <Card className="col-span-12 sm:col-span-4 h-[300px]">
-            <CardHeader className=" z-10 top-1 flex-col items-start!">
+            <Card.Header className=" z-10 top-1 flex-col items-start!">
               <h3 className="text-xl font-semibold text-sky-300">My Gender</h3>
-            </CardHeader>
-            <CardBody>
+            </Card.Header>
+            <Card.Content>
               <RadioGroup
                 value={selectedGender}
-                onValueChange={setSelectedGender}
+                onChange={setSelectedGender}
                 orientation="horizontal"
                 className="flex flex-row gap-3 w-full [&>div[data-value=female]>div>span>span[data-selected=true]]:!bg-pink-500 [&>div[data-value=female]>div>span>span[data-selected=true]]:!border-pink-500"
               >
@@ -326,16 +299,16 @@ export default function CardBasics({
                   Female gender (no penis)
                 </CustomRadio>
               </RadioGroup>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           {/* Siblings */}
           <Card className="col-span-12 sm:col-span-4 h-[300px]">
-            <CardHeader>
+            <Card.Header>
               <h3 className="text-xl font-semibold text-sky-300">Siblings</h3>
-            </CardHeader>
-            <CardBody>
-              <Select
+            </Card.Header>
+            <Card.Content>
+              <SelectCompat
                 label="Siblings"
                 placeholder="Select your sibling position"
                 selectedKeys={siblings ? [siblings] : []}
@@ -343,7 +316,6 @@ export default function CardBasics({
                   const value = Array.from(keys)[0] as string;
                   setSiblings(value);
                 }}
-                variant="bordered"
               >
                 <SelectItem key="middle_child">Middle child</SelectItem>
                 <SelectItem key="slightly_older_siblings">Slightly older siblings</SelectItem>
@@ -351,17 +323,17 @@ export default function CardBasics({
                 <SelectItem key="youngest_child">I'm the youngest child</SelectItem>
                 <SelectItem key="only_child">Only child</SelectItem>
                 <SelectItem key="twin">Twin</SelectItem>
-              </Select>
-            </CardBody>
+              </SelectCompat>
+            </Card.Content>
           </Card>
 
           {/* Big Five Personality Traits */}
           <Card className="col-span-12 sm:col-span-8 h-[300px]">
-            <CardHeader>
+            <Card.Header>
               <h3 className="text-xl font-semibold text-sky-300">Big Five Personality Traits</h3>
-            </CardHeader>
-            <CardBody className="flex flex-col gap-4">
-              <Select
+            </Card.Header>
+            <Card.Content className="flex flex-col gap-4">
+              <SelectCompat
                 label="Openness"
                 placeholder="Select openness level"
                 selectedKeys={bigFive.openness ? [bigFive.openness] : []}
@@ -369,13 +341,12 @@ export default function CardBasics({
                   const value = Array.from(keys)[0] as string;
                   setBigFive({ ...bigFive, openness: value });
                 }}
-                variant="bordered"
               >
                 <SelectItem key="low">Low</SelectItem>
                 <SelectItem key="medium">Medium</SelectItem>
                 <SelectItem key="high">High</SelectItem>
-              </Select>
-              <Select
+              </SelectCompat>
+              <SelectCompat
                 label="Conscientiousness"
                 placeholder="Select conscientiousness level"
                 selectedKeys={bigFive.conscientiousness ? [bigFive.conscientiousness] : []}
@@ -383,13 +354,12 @@ export default function CardBasics({
                   const value = Array.from(keys)[0] as string;
                   setBigFive({ ...bigFive, conscientiousness: value });
                 }}
-                variant="bordered"
               >
                 <SelectItem key="low">Low</SelectItem>
                 <SelectItem key="medium">Medium</SelectItem>
                 <SelectItem key="high">High</SelectItem>
-              </Select>
-              <Select
+              </SelectCompat>
+              <SelectCompat
                 label="Extraversion"
                 placeholder="Select extraversion level"
                 selectedKeys={bigFive.extraversion ? [bigFive.extraversion] : []}
@@ -397,13 +367,12 @@ export default function CardBasics({
                   const value = Array.from(keys)[0] as string;
                   setBigFive({ ...bigFive, extraversion: value });
                 }}
-                variant="bordered"
               >
                 <SelectItem key="low">Low</SelectItem>
                 <SelectItem key="medium">Medium</SelectItem>
                 <SelectItem key="high">High</SelectItem>
-              </Select>
-              <Select
+              </SelectCompat>
+              <SelectCompat
                 label="Agreeableness"
                 placeholder="Select agreeableness level"
                 selectedKeys={bigFive.agreeableness ? [bigFive.agreeableness] : []}
@@ -411,13 +380,12 @@ export default function CardBasics({
                   const value = Array.from(keys)[0] as string;
                   setBigFive({ ...bigFive, agreeableness: value });
                 }}
-                variant="bordered"
               >
                 <SelectItem key="low">Low</SelectItem>
                 <SelectItem key="medium">Medium</SelectItem>
                 <SelectItem key="high">High</SelectItem>
-              </Select>
-              <Select
+              </SelectCompat>
+              <SelectCompat
                 label="Neuroticism"
                 placeholder="Select neuroticism level"
                 selectedKeys={bigFive.neuroticism ? [bigFive.neuroticism] : []}
@@ -425,22 +393,21 @@ export default function CardBasics({
                   const value = Array.from(keys)[0] as string;
                   setBigFive({ ...bigFive, neuroticism: value });
                 }}
-                variant="bordered"
               >
                 <SelectItem key="low">Low</SelectItem>
                 <SelectItem key="medium">Medium</SelectItem>
                 <SelectItem key="high">High</SelectItem>
-              </Select>
-            </CardBody>
+              </SelectCompat>
+            </Card.Content>
           </Card>
 
           {/* Caliper Profile */}
           <Card className="col-span-12 sm:col-span-4 h-[300px]">
-            <CardHeader>
+            <Card.Header>
               <h3 className="text-xl font-semibold text-sky-300">Caliper Profile</h3>
-            </CardHeader>
-            <CardBody>
-              <Select
+            </Card.Header>
+            <Card.Content>
+              <SelectCompat
                 label="Caliper Profile"
                 placeholder="Select your Caliper profile"
                 selectedKeys={caliper ? [caliper] : []}
@@ -448,67 +415,67 @@ export default function CardBasics({
                   const value = Array.from(keys)[0] as string;
                   setCaliper(value);
                 }}
-                variant="bordered"
               >
                 <SelectItem key="analytical">Analytical</SelectItem>
                 <SelectItem key="conceptual">Conceptual</SelectItem>
                 <SelectItem key="social">Social</SelectItem>
                 <SelectItem key="structured">Structured</SelectItem>
-              </Select>
-            </CardBody>
+              </SelectCompat>
+            </Card.Content>
           </Card>
 
           {/* Bio */}
-          <Card isFooterBlurred className="w-full h-[300px] col-span-12 sm:col-span-12">
-            <CardHeader>
+          <Card className="w-full h-[300px] col-span-12 sm:col-span-12">
+            <Card.Header>
               <div className="flex flex-col items-start">
                 <h3 className="text-xl font-semibold text-sky-300">Bio</h3>
                 <p className="text-small text-default-500">
                   Write a short biography of your situation right now, what stage of life you are entering, where are you coming from and what is important and filling for you right now
                 </p>
               </div>
-            </CardHeader>
-            <CardBody>
-              <Textarea
-                isClearable
-                label="Bio"
-                maxLength={250}
-                value={bio}
-                variant="bordered"
-                onValueChange={setBio}
-                onClear={() => setBio("")}
-              />
+            </Card.Header>
+            <Card.Content>
+              <TextField value={bio} onChange={setBio}>
+                <Label>Bio</Label>
+                <TextArea
+                  maxLength={250}
+                  variant="secondary"
+                  placeholder="Write your bio..."
+                  className="min-h-[100px]"
+                />
+              </TextField>
               <p className="text-small text-default-400 mt-2">
                 Max. 250 characters. <span className="text-default-500">{bio.length}/250</span>
               </p>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           {/* Hobbies & Interests */}
-          <Card isFooterBlurred className="w-full h-[300px] col-span-7 sm:col-span-7">
-            <CardHeader>
+          <Card className="w-full h-[300px] col-span-7 sm:col-span-7">
+            <Card.Header>
               <h3 className="text-xl font-semibold text-sky-300">Hobbies & Interests</h3>
-            </CardHeader>
-            <CardBody className="flex flex-col gap-4">
+            </Card.Header>
+            <Card.Content className="flex flex-col gap-4">
               <div className="flex gap-2">
                 <Input
                   placeholder="Add a tag (e.g., #vegan, #geek)"
                   value={tagInput}
-                  onValueChange={setTagInput}
-                  onKeyPress={(e) => {
+                  onChange={(e) => setTagInput(e.target.value)}
+                  variant="secondary"
+                  className="flex-1"
+                  disabled={tags.length >= 5}
+                  onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       addTag();
                     }
                   }}
-                  variant="bordered"
-                  className="flex-1"
-                  isDisabled={tags.length >= 5}
                 />
                 <Button 
                   onPress={addTag} 
-                  variant="flat"
+                  variant="secondary"
                   isDisabled={tags.length >= 5 || !tagInput.trim()}
+                  className="shrink-0"
                 >
                   Add
                 </Button>
@@ -518,26 +485,29 @@ export default function CardBasics({
               )}
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag) => (
-                  <Chip
-                    key={tag}
-                    onClose={() => removeTag(tag)}
-                    variant="flat"
-                    color="primary"
-                  >
+                  <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-default-200 bg-default-100 px-3 py-1 text-sm">
                     {tag}
-                  </Chip>
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="opacity-70 hover:opacity-100 rounded-full p-0.5 -mr-1"
+                      aria-label={`Remove ${tag}`}
+                    >
+                      <Icon icon="solar:close-circle-linear" className="text-lg" />
+                    </button>
+                  </span>
                 ))}
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
 
           {/* MBTI */}
-          <Card isFooterBlurred className="w-full h-[300px] col-span-5 sm:col-span-5">
-            <CardHeader>
+          <Card className="w-full h-[300px] col-span-5 sm:col-span-5">
+            <Card.Header>
               <h3 className="text-xl font-semibold text-sky-300">MBTI (Myers-Briggs Type Indicator)</h3>
-            </CardHeader>
-            <CardBody>
-              <Select
+            </Card.Header>
+            <Card.Content>
+              <SelectCompat
                 label="MBTI Type"
                 placeholder="Select your MBTI type"
                 selectedKeys={mbti ? [mbti] : []}
@@ -545,7 +515,6 @@ export default function CardBasics({
                   const value = Array.from(keys)[0] as string;
                   setMbti(value);
                 }}
-                variant="bordered"
               >
                 <SelectItem key="INTJ">INTJ - Architect</SelectItem>
                 <SelectItem key="INTP">INTP - Thinker</SelectItem>
@@ -563,17 +532,17 @@ export default function CardBasics({
                 <SelectItem key="ISFP">ISFP - Adventurer</SelectItem>
                 <SelectItem key="ESTP">ESTP - Entrepreneur</SelectItem>
                 <SelectItem key="ESFP">ESFP - Entertainer</SelectItem>
-              </Select>
-            </CardBody>
+              </SelectCompat>
+            </Card.Content>
           </Card>
         </div>
 
         {/* Save Button */}
         <div className="flex w-full justify-end gap-4 pb-72">
-          <Button type="button" variant="bordered" onPress={() => window.location.reload()}>
+          <Button type="button" variant="secondary" onPress={() => window.location.reload()}>
             Cancel
           </Button>
-          <Button type="submit" color="primary" isLoading={isSaving} className="bg-pink-500 text-white hover:bg-pink-600">
+          <Button type="submit" isPending={isSaving} className="bg-pink-500 text-white hover:bg-pink-600">
             Save Changes
           </Button>
         </div>

@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { addToast } from "@heroui/toast";
+import { Button, Input, TextField, Label, useOverlayState } from "@heroui/react";
+import { ModalCompat, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
+import { addToast } from "@/lib/addToast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
@@ -17,10 +16,10 @@ interface LocationMiddlewareProps {
 export function LocationMiddleware({ children }: LocationMiddlewareProps) {
   const { isAuthenticated, logout, token } = useAuth();
   const router = useRouter();
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  // HeroUI types onOpenChange as () => void but it accepts (open: boolean) at runtime
-  const setModalOpen = (open: boolean) => (onOpenChange as (open?: boolean) => void)(open);
-  const closeModal = () => setModalOpen(false);
+  const overlayState = useOverlayState({ defaultOpen: false });
+  const { isOpen, open: onOpen, setOpen } = overlayState;
+  const setModalOpen = (open: boolean) => setOpen(open);
+  const closeModal = () => setOpen(false);
   const [step, setStep] = useState<"consent" | "geolocation" | "manual" | "final">("consent");
   const [manualLocation, setManualLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -345,10 +344,10 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
               </p>
             </ModalBody>
             <ModalFooter>
-              <Button color="danger" variant="light" onPress={handleDecline}>
+              <Button variant="ghost" onPress={handleDecline}>
                 Refuse
               </Button>
-              <Button color="primary" onPress={handleConsent} isLoading={isLoading}>
+              <Button onPress={handleConsent} isPending={isLoading}>
                 Share Location
               </Button>
             </ModalFooter>
@@ -393,31 +392,29 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
             </ModalBody>
             <ModalFooter className="flex flex-col gap-3 pt-4">
               <Button 
-                color="warning" 
-                variant="flat" 
+                variant="secondary" 
                 onPress={handleConsent}
-                isLoading={isLoading}
-                startContent={<Icon icon="solar:refresh-bold" />}
+                isPending={isLoading}
                 className="w-full"
                 size="lg"
               >
+                <Icon icon="solar:refresh-bold" className="mr-1" />
                 Try Again
               </Button>
               <div className="flex gap-3 w-full">
                 <Button 
-                  color="secondary" 
-                  variant="flat" 
+                  variant="secondary" 
                   onPress={handleSetPrague}
-                  isLoading={isLoading}
-                  startContent={<Icon icon="solar:map-point-add-bold" />}
+                  isPending={isLoading}
                   className="flex-1"
                   size="lg"
                 >
+                  <Icon icon="solar:map-point-add-bold" className="mr-1" />
                   Set to Prague
                 </Button>
                 <Button 
-                  color="default" 
-                  variant="flat" 
+                  
+                  variant="secondary" 
                   onPress={() => setStep("manual")}
                   className="flex-1"
                   size="lg"
@@ -426,8 +423,8 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
                 </Button>
               </div>
               <Button 
-                color="danger" 
-                variant="light" 
+                
+                variant="ghost" 
                 onPress={handleFinalDecline}
                 className="w-full"
                 size="lg"
@@ -443,20 +440,17 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
           <>
             <ModalHeader className="flex flex-col gap-1 text-foreground">Enter Location Manually</ModalHeader>
             <ModalBody className="text-foreground">
-              <Input
-                label="Location"
-                placeholder="e.g., New York, NY or Paris, France"
-                value={manualLocation}
-                onValueChange={setManualLocation}
-                variant="bordered"
-                description="Enter a city, address, or location name"
-              />
+              <TextField value={manualLocation} onChange={(v) => setManualLocation(v)}>
+                <Label>Location</Label>
+                <Input placeholder="e.g., New York, NY or Paris, France" />
+                <p className="text-sm text-default-400 mt-1">Enter a city, address, or location name</p>
+              </TextField>
             </ModalBody>
             <ModalFooter>
-              <Button color="default" variant="light" onPress={() => setStep("final")}>
+              <Button variant="ghost" onPress={() => setStep("final")}>
                 Cancel
               </Button>
-              <Button color="primary" onPress={handleManualSubmit} isLoading={isLoading}>
+              <Button onPress={handleManualSubmit} isPending={isLoading}>
                 Save Location
               </Button>
             </ModalFooter>
@@ -476,21 +470,16 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
   return (
     <>
       {children}
-      <Modal 
-        isOpen={isOpen} 
-        onOpenChange={handleModalClose} 
-        isDismissable={false} 
+      <ModalCompat
+        isOpen={isOpen}
+        onOpenChange={handleModalClose}
+        onClose={closeModal}
+        isDismissable={false}
         hideCloseButton={step === "geolocation" || step === "consent" || step === "final"}
         classNames={{ base: "bg-content1 text-foreground" }}
       >
-        <ModalContent className="bg-content1 text-foreground">
-          {(onClose) => (
-            <>
-              {renderContent()}
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+        {renderContent()}
+      </ModalCompat>
     </>
   );
 }

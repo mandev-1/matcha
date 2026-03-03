@@ -1,26 +1,18 @@
 "use client";
 
 import React from "react";
-import { Textarea } from "@heroui/input";
-import type { TextAreaProps } from "@heroui/input";
+import { TextArea, type TextAreaProps } from "@heroui/react";
 import clsx from "clsx";
 
 const PromptInput = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
-  ({classNames = {}, ...props}, ref) => {
+  ({ className, ...props }, ref) => {
     return (
-      <Textarea
+      <TextArea
         ref={ref}
         aria-label="Prompt"
-        className="min-h-[40px]"
-        classNames={{
-          ...classNames,
-          label: clsx("hidden", classNames?.label),
-          input: clsx("py-0", classNames?.input),
-        }}
-        minRows={1}
+        className={clsx("min-h-[40px] py-0", className)}
+        rows={1}
         placeholder="Enter a prompt here"
-        radius="lg"
-        variant="bordered"
         {...props}
       />
     );

@@ -1,24 +1,14 @@
 "use client";
 
 import React, { useTransition } from "react";
-import { Card, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Image } from "@heroui/image";
-import { Chip } from "@heroui/chip";
-import { Skeleton } from "@heroui/skeleton";
-import { Link } from "@heroui/link";
-import { Alert } from "@heroui/alert";
-import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
-import { Select, SelectItem } from "@heroui/select";
-import { Slider } from "@heroui/slider";
-import { Checkbox } from "@heroui/checkbox";
-import { RadioGroup, Radio } from "@heroui/radio";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
+import { Card, Button, Chip, Skeleton, Link, Alert, Popover, PopoverTrigger, PopoverContent, Slider, Label, Checkbox, RadioGroup, Radio, useOverlayState } from "@heroui/react";
+import { ModalCompat, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
+import { Image } from "@/components/Image";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
-import { addToast } from "@heroui/toast";
+import { addToast } from "@/lib/addToast";
 import { useServerStatus } from "@/contexts/ServerStatusContext";
 import { getApiUrl, getUploadUrl } from "@/lib/apiUrl";
 
@@ -73,7 +63,8 @@ export default function DiscoverPage() {
   const [addedTags, setAddedTags] = React.useState<Set<string>>(new Set());
   const [forceTagsAlert, setForceTagsAlert] = React.useState(false);
   const [sortBy, setSortBy] = React.useState<string>("");
-  const {isOpen: isFilterModalOpen, onOpen: onFilterModalOpen, onOpenChange: onFilterModalOpenChange} = useDisclosure();
+  const filterModalOverlay = useOverlayState({ defaultOpen: false });
+  const { isOpen: isFilterModalOpen, open: onFilterModalOpen, setOpen: onFilterModalOpenChange } = filterModalOverlay;
 
   // Mafia boss hover dialog: which profile's popover is open (if any)
   const [mafiaPopoverProfileId, setMafiaPopoverProfileId] = React.useState<number | null>(null);
@@ -486,92 +477,82 @@ export default function DiscoverPage() {
 
         {/* Tag Alert */}
         {shouldShowAlert && (
-          <Alert
-            color="warning"
-            description="You don't have any tags which the other users have. Review them and you will match with more people."
-            endContent={
-              <Popover 
-                placement="right"
-                isOpen={isPopoverOpen}
-                onOpenChange={(open) => {
-                  setIsPopoverOpen(open);
-                  if (!open) {
-                    // Only hide alert when popover closes (user clicks away)
-                    setShowTagAlert(false);
-                  } else {
-                    // When popover opens, ensure alert stays visible and set forceTagsAlert
-                    setShowTagAlert(true);
+          <Alert status="warning" className="flex flex-row items-center justify-between gap-4">
+            <Alert.Content>
+              <Alert.Title>Tags, tags, tags, tags.....</Alert.Title>
+              <Alert.Description>
+                You don&apos;t have any tags which the other users have. Review them and you will match with more people.
+              </Alert.Description>
+            </Alert.Content>
+            <Popover
+              isOpen={isPopoverOpen}
+              onOpenChange={(open) => {
+                setIsPopoverOpen(open);
+                if (!open) {
+                  setShowTagAlert(false);
+                } else {
+                  setShowTagAlert(true);
+                  setForceTagsAlert(true);
+                }
+              }}
+            >
+              <PopoverTrigger>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => {
                     setForceTagsAlert(true);
-                  }
-                }}
-              >
-                <PopoverTrigger>
-                  <Button 
-                    color="warning" 
-                    size="sm" 
-                    variant="flat"
-                    onPress={() => {
-                      // Set forceTagsAlert when Review button is clicked
-                      setForceTagsAlert(true);
-                      setIsPopoverOpen(true);
-                      setShowTagAlert(true);
-                    }}
-                  >
-                    Review
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent>
-                  {(titleProps) => (
-                    <div className="px-1 py-2 w-64">
-                      <h3 className="text-small font-bold mb-3" {...titleProps}>
-                        These are popular tags
-                      </h3>
-                      <div className="flex flex-col gap-2">
-                        {popularTags.length > 0 ? (
-                          popularTags.map((popularTag) => {
-                            const normalizedTag = popularTag.tag.trim().toLowerCase();
-                            const isAdded = addedTags.has(normalizedTag);
-                            const isDisabled = isLoadingTags || isAdded || (tagMatchStatus?.tag_count || 0) >= 5;
-                            
-                            return (
-                              <div
-                                key={popularTag.tag}
-                                className="flex items-center justify-between p-2 rounded-lg hover:bg-default-100 transition-colors"
-                              >
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-medium">{popularTag.tag}</span>
-                                  <span className="text-xs text-default-500">
-                                    {popularTag.user_count} {popularTag.user_count === 1 ? "person" : "people"} have this tag
-                                  </span>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  variant="flat"
-                                  color={isAdded ? "success" : "primary"}
-                                  onPress={() => {
-                                    if (!isAdded) {
-                                      handleAddTag(popularTag.tag);
-                                    }
-                                  }}
-                                  isDisabled={isDisabled}
-                                >
-                                  {isAdded ? "Added" : "Add"}
-                                </Button>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <p className="text-tiny text-default-500">No popular tags available</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </PopoverContent>
-              </Popover>
-            }
-            title="Tags, tags, tags, tags....."
-            variant="faded"
-          />
+                    setIsPopoverOpen(true);
+                    setShowTagAlert(true);
+                  }}
+                >
+                  Review
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <div className="px-1 py-2 w-64">
+                  <h3 className="text-small font-bold mb-3">These are popular tags</h3>
+                  <div className="flex flex-col gap-2">
+                    {popularTags.length > 0 ? (
+                      popularTags.map((popularTag) => {
+                        const normalizedTag = popularTag.tag.trim().toLowerCase();
+                        const isAdded = addedTags.has(normalizedTag);
+                        const isDisabled = isLoadingTags || isAdded || (tagMatchStatus?.tag_count || 0) >= 5;
+
+                        return (
+                          <div
+                            key={popularTag.tag}
+                            className="flex items-center justify-between p-2 rounded-lg hover:bg-default-100 transition-colors"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">{popularTag.tag}</span>
+                              <span className="text-xs text-default-500">
+                                {popularTag.user_count} {popularTag.user_count === 1 ? "person" : "people"} have this tag
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant={isAdded ? "secondary" : "primary"}
+                              onPress={() => {
+                                if (!isAdded) {
+                                  handleAddTag(popularTag.tag);
+                                }
+                              }}
+                              isDisabled={isDisabled}
+                            >
+                              {isAdded ? "Added" : "Add"}
+                            </Button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-tiny text-default-500">No popular tags available</p>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </Alert>
         )}
 
 
@@ -579,17 +560,11 @@ export default function DiscoverPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {[...Array(8)].map((_, i) => (
               <Card key={i} className="w-full">
-                <Skeleton className="rounded-lg">
-                  <div className="h-48 w-full rounded-lg bg-default-300" />
-                </Skeleton>
-                <CardBody className="gap-2">
-                  <Skeleton className="w-3/5 rounded-lg">
-                    <div className="h-4 w-3/5 rounded-lg bg-default-200" />
-                  </Skeleton>
-                  <Skeleton className="w-4/5 rounded-lg">
-                    <div className="h-3 w-4/5 rounded-lg bg-default-200" />
-                  </Skeleton>
-                </CardBody>
+                <Skeleton className="rounded-lg h-48 w-full" />
+                <Card.Content className="gap-2">
+                  <Skeleton className="w-3/5 h-4 rounded-lg" />
+                  <Skeleton className="w-4/5 h-3 rounded-lg" />
+                </Card.Content>
               </Card>
             ))}
           </div>
@@ -641,7 +616,7 @@ export default function DiscoverPage() {
                       </div>
                     </div>
                   </div>
-                  <CardBody className="p-4">
+                  <Card.Content className="p-4">
                     <div className="flex flex-col gap-1">
                       <h3 className="text-lg font-semibold">
                         {profile.first_name} {profile.last_name}
@@ -693,7 +668,7 @@ export default function DiscoverPage() {
                             <Chip
                               key={tag}
                               size="sm"
-                              variant="flat"
+                              variant="secondary"
                               color={showSharedAsYellow ? "warning" : "default"}
                               className={showSharedAsYellow ? "bg-warning/20 text-warning border-warning/30" : "text-default-700 dark:text-default-300"}
                             >
@@ -702,14 +677,14 @@ export default function DiscoverPage() {
                           );
                         })}
                         {profile.tags.length > 3 && (
-                          <Chip size="sm" variant="flat" color="default">
+                          <Chip size="sm" variant="secondary">
                             +{profile.tags.length - 3}
                           </Chip>
                         )}
                       </div>
                     )}
-                  </CardBody>
-                  <CardFooter className="pt-0">
+                  </Card.Content>
+                  <Card.Footer className="pt-0">
                     <div
                       className="w-full px-3 py-1.5 text-sm text-center rounded-lg bg-primary/20 text-primary cursor-pointer hover:bg-primary/30 transition-colors"
                       onClick={(e) => {
@@ -721,7 +696,7 @@ export default function DiscoverPage() {
                     >
                       View Profile
                     </div>
-                  </CardFooter>
+                  </Card.Footer>
                 </Card>
                 );
 
@@ -731,9 +706,6 @@ export default function DiscoverPage() {
                       key={profile.id}
                       isOpen={mafiaPopoverProfileId === profile.id}
                       onOpenChange={(open) => !open && setMafiaPopoverProfileId(null)}
-                      placement="top"
-                      showArrow
-                      classNames={{ content: "max-w-xs" }}
                     >
                       <PopoverTrigger>
                         <div
@@ -755,7 +727,7 @@ export default function DiscoverPage() {
                           {card}
                         </div>
                       </PopoverTrigger>
-                      <PopoverContent>
+                      <PopoverContent className="max-w-xs">
                         <div
                           className="px-3 py-3"
                           onMouseEnter={() => {
@@ -774,7 +746,7 @@ export default function DiscoverPage() {
                           </p>
                           <Button
                             size="sm"
-                            color="primary"
+                           
                             className="w-full"
                             onPress={() => {
                               setMafiaPopoverProfileId(null);
@@ -794,10 +766,10 @@ export default function DiscoverPage() {
             {hasMore && (
               <div className="flex justify-center mt-6">
                 <Button
-                  color="primary"
-                  variant="flat"
+                 
+                  variant="secondary"
                   onPress={loadMore}
-                  isLoading={isLoading}
+                  isPending={isLoading}
                 >
                   Load More
                 </Button>
@@ -808,16 +780,13 @@ export default function DiscoverPage() {
       </div>
 
       {/* Filter and Sort Modal */}
-      <Modal isOpen={isFilterModalOpen} onOpenChange={onFilterModalOpenChange} size="2xl" scrollBehavior="inside">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">
+      <ModalCompat isOpen={isFilterModalOpen} onOpenChange={onFilterModalOpenChange} size="lg">
+        <ModalHeader className="flex flex-col gap-1">
                 <div className="flex items-center justify-between w-full">
                   <h2 className="text-xl font-semibold">Filter & Sort</h2>
                   <Button
                     size="sm"
-                    variant="light"
+                    variant="ghost"
                     onPress={() => {
                       setSortBy("");
                       setDistanceRange([0, 5000]);
@@ -830,15 +799,15 @@ export default function DiscoverPage() {
                     Reset
                   </Button>
                 </div>
-              </ModalHeader>
-              <ModalBody>
+        </ModalHeader>
+        <ModalBody>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Sort Section */}
                   <div className="flex flex-col gap-2">
                     <h3 className="text-sm font-semibold">Sort By</h3>
                     <RadioGroup
                       value={sortBy}
-                      onValueChange={(value) => {
+                      onChange={(value) => {
                         setSortBy(value);
                         setOffset(0);
                       }}
@@ -858,7 +827,6 @@ export default function DiscoverPage() {
                     {/* Age Range */}
                     <div className="flex flex-col gap-2">
                       <Slider
-                        label="Age Range"
                         minValue={18}
                         maxValue={100}
                         step={1}
@@ -869,7 +837,20 @@ export default function DiscoverPage() {
                         }}
                         formatOptions={{style: "decimal"}}
                         className="max-w-md"
-                      />
+                      >
+                        <Label>Age Range</Label>
+                        <Slider.Output />
+                        <Slider.Track>
+                          {({state}) => (
+                            <>
+                              <Slider.Fill />
+                              {state.values.map((_, i) => (
+                                <Slider.Thumb key={i} index={i} />
+                              ))}
+                            </>
+                          )}
+                        </Slider.Track>
+                      </Slider>
                       <p className="text-xs text-default-500">
                         {ageRange[0]} - {ageRange[1]} years
                       </p>
@@ -878,7 +859,6 @@ export default function DiscoverPage() {
                     {/* Distance Range */}
                     <div className="flex flex-col gap-2">
                       <Slider
-                        label="Distance Range (km)"
                         minValue={0}
                         maxValue={5000}
                         step={10}
@@ -889,7 +869,20 @@ export default function DiscoverPage() {
                         }}
                         formatOptions={{style: "decimal", maximumFractionDigits: 0}}
                         className="max-w-md"
-                      />
+                      >
+                        <Label>Distance Range (km)</Label>
+                        <Slider.Output />
+                        <Slider.Track>
+                          {({state}) => (
+                            <>
+                              <Slider.Fill />
+                              {state.values.map((_, i) => (
+                                <Slider.Thumb key={i} index={i} />
+                              ))}
+                            </>
+                          )}
+                        </Slider.Track>
+                      </Slider>
                       <p className="text-xs text-default-500">
                         {distanceRange[0]} - {distanceRange[1]} km
                       </p>
@@ -898,7 +891,6 @@ export default function DiscoverPage() {
                     {/* Fame Rating Minimum */}
                     <div className="flex flex-col gap-2">
                       <Slider
-                        label="Minimum Fame Level"
                         minValue={0}
                         maxValue={100}
                         step={1}
@@ -909,7 +901,14 @@ export default function DiscoverPage() {
                         }}
                         formatOptions={{style: "decimal", maximumFractionDigits: 0}}
                         className="max-w-md"
-                      />
+                      >
+                        <Label>Minimum Fame Level</Label>
+                        <Slider.Output />
+                        <Slider.Track>
+                          <Slider.Fill />
+                          <Slider.Thumb />
+                        </Slider.Track>
+                      </Slider>
                       <p className="text-xs text-default-500">
                         Level {fameRatingMin} and above
                       </p>
@@ -918,7 +917,7 @@ export default function DiscoverPage() {
                     {/* Only Common Tags Checkbox */}
                     <Checkbox
                       isSelected={onlyCommonTags}
-                      onValueChange={(checked) => {
+                      onChange={(checked) => {
                         setOnlyCommonTags(checked);
                         setOffset(0);
                       }}
@@ -927,19 +926,16 @@ export default function DiscoverPage() {
                     </Checkbox>
                   </div>
                 </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Cancel
-                </Button>
-                <Button color="primary" onPress={onClose}>
-                  Apply
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onPress={() => onFilterModalOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onPress={() => onFilterModalOpenChange(false)}>
+            Apply
+          </Button>
+        </ModalFooter>
+      </ModalCompat>
     </ProtectedRoute>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@heroui/button";
+import { Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
 
 export function LoginStatus() {
@@ -28,7 +28,7 @@ export function LoginStatus() {
         </span>
         <Button
           size="sm"
-          variant="light"
+          variant="ghost"
           onPress={handleLogout}
           className="text-xs"
         >

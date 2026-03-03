@@ -61,6 +61,11 @@ RUN CGO_ENABLED=1 GOOS=linux \
     CGO_CFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE" \
     go build -o matcha-generate-users ./cmd/generate-users
 
+# Build the bot-simulator (traffic simulation)
+RUN CGO_ENABLED=1 GOOS=linux \
+    CGO_CFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE" \
+    go build -o matcha-bot-simulator ./cmd/bot-simulator
+
 # Stage 3: Runtime
 FROM node:18-alpine
 
@@ -79,6 +84,7 @@ WORKDIR /app
 # Copy Go binaries
 COPY --from=backend-builder /app/matcha .
 COPY --from=backend-builder /app/matcha-generate-users .
+COPY --from=backend-builder /app/matcha-bot-simulator .
 
 # Copy Next.js standalone build
 # Next.js standalone outputs to .next/standalone/static/heroUi/

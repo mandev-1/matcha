@@ -2,8 +2,7 @@
 
 import React from "react";
 import { Icon } from "@iconify/react";
-import { Button } from "@heroui/button";
-import { Spinner } from "@heroui/spinner";
+import { Button, Spinner } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, m, LazyMotion, domAnimation } from "framer-motion";
 import { useNotifications } from "@/contexts/NotificationContext";
@@ -65,10 +64,9 @@ function NotificationItem({
         )}
         <div onClick={(e) => e.stopPropagation()}>
           <Button
-            isIconOnly
             size="sm"
-            variant="light"
-            className="opacity-70 group-hover:opacity-100 min-w-8 w-8 h-8"
+            variant="ghost"
+            className="opacity-70 group-hover:opacity-100 min-w-8 w-8 h-8 p-0"
             aria-label="Clear notification"
             onPress={() => onClear(notification.id)}
           >
@@ -142,10 +140,9 @@ export function NotificationPanel() {
             <span className="text-xs text-default-500">{unreadCount} unread</span>
           )}
           <Button
-            isIconOnly
             size="sm"
-            variant="light"
-            className="md:ml-0 shrink-0"
+            variant="ghost"
+            className="md:ml-0 shrink-0 min-w-8 w-8 h-8 p-0"
             aria-label="Close notifications"
             onPress={() => setIsOpen(false)}
           >
@@ -155,13 +152,12 @@ export function NotificationPanel() {
         {unreadCount > 0 && typeof markAllAsRead === "function" && (
           <Button
             size="sm"
-            variant="flat"
-            color="primary"
+            variant="secondary"
             className="w-full sm:w-auto shrink-0"
             onPress={handleMarkAllAsRead}
-            isLoading={markingAll}
-            startContent={<Icon icon="solar:check-read-linear" className="text-lg" />}
+            isPending={markingAll}
           >
+            <Icon icon="solar:check-read-linear" className="text-lg mr-1" />
             Mark all as read
           </Button>
         )}
@@ -231,11 +227,11 @@ export function NotificationPanel() {
             {hasMore && (
               <div className="p-3 border-t border-default-100">
                 <Button
-                  variant="flat"
+                  variant="secondary"
                   size="sm"
                   className="w-full"
                   onPress={loadOlder}
-                  isLoading={isLoading}
+                  isPending={isLoading}
                 >
                   Load older
                 </Button>

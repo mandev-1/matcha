@@ -241,6 +241,9 @@ make build-all  # Builds both frontend and backend
 
 ```bash
 make test
+make smoke         # Phase 1 HTTP smoke checks (requires running services)
+make smoke-docker  # After docker compose up; waits for services
+make smoke-dev    # Local dev (backend + frontend-dev); skips MailHog
 ```
 
 ## 📦 Build

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
-import { addToast } from "@heroui/toast";
+import { addToast } from "@/lib/addToast";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { Notification } from "@/types";
 import { useChatHint } from "@/contexts/ChatHintContext";

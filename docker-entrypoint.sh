@@ -1,85 +1,76 @@
 #!/bin/sh
 set -e
 
-echo "Starting Matcha application..."
+# Phase 2: Single entrypoint for Docker deployment.
+# Idempotent: DB bootstrap only when missing, user gen only when < 542, bot sim starts once.
 
-# Ensure data directory exists
-mkdir -p data
+echo "Starting Matcha..."
 
-# Run migrations if database doesn't exist or migrations are available
-if [ ! -f "data/matcha.db" ] || [ -n "$(ls -A migrations/*.sql 2>/dev/null)" ]; then
-  echo "Running database migrations..."
-  
-  # Create database if it doesn't exist
-  if [ ! -f "data/matcha.db" ]; then
-    echo "Creating database..."
-    sqlite3 data/matcha.db < migrations/schema.sql || true
-  fi
-  
-  # Run migrations (idempotent - safe to run multiple times)
-  sqlite3 data/matcha.db < migrations/add_username_and_verification.sql 2>/dev/null || true
-  sqlite3 data/matcha.db < migrations/add_is_setup.sql 2>/dev/null || true
-  sqlite3 data/matcha.db < migrations/add_personality_fields.sql 2>/dev/null || true
-  sqlite3 data/matcha.db < migrations/add_location_updated_at.sql 2>/dev/null || true
-  sqlite3 data/matcha.db < migrations/add_is_bot.sql 2>/dev/null || true
-  sqlite3 data/matcha.db < migrations/add_blocks_and_reports.sql 2>/dev/null || true
-  sqlite3 data/matcha.db < migrations/add_notifications_related_user_id.sql 2>/dev/null || true
-  sqlite3 data/matcha.db < migrations/add_bot_activity_log.sql 2>/dev/null || true
-  sqlite3 data/matcha.db < migrations/remove_set_up_column.sql 2>/dev/null || true
-  
-  echo "Migrations complete."
+mkdir -p data uploads
+
+# --- 1. Database: bootstrap if missing, then run migrations ---
+if [ ! -f "data/matcha.db" ]; then
+  echo "Creating database..."
+  sqlite3 data/matcha.db < migrations/schema.sql
 fi
 
-# Check if bot users exist, if not generate 500 bot users with placeholder images
+echo "Running migrations..."
+for m in migrations/add_username_and_verification.sql migrations/add_is_setup.sql \
+         migrations/add_personality_fields.sql migrations/add_location_updated_at.sql \
+         migrations/add_is_bot.sql migrations/add_blocks_and_reports.sql \
+         migrations/add_notifications_related_user_id.sql migrations/add_bot_activity_log.sql \
+         migrations/remove_set_up_column.sql; do
+  [ -f "$m" ] && sqlite3 data/matcha.db < "$m" 2>/dev/null || true
+done
+
+# --- 2. Generate users only if bot count < 500 ---
 BOT_COUNT=$(sqlite3 data/matcha.db "SELECT COUNT(*) FROM users WHERE is_bot = 1;" 2>/dev/null || echo "0")
-if [ "$BOT_COUNT" -eq "0" ]; then
-  echo "No bot users found. Generating 500 bot users with placeholder images..."
-  # Ensure data/extracted_images directory exists
+if [ "$BOT_COUNT" -lt "500" ]; then
+  echo "Generating users (found $BOT_COUNT bots, need 500)..."
   mkdir -p data/extracted_images
-  # Generate placeholder image if it doesn't exist
   if [ ! -f "data/extracted_images/placeholder_bot.jpg" ]; then
-    echo "Generating placeholder bot image..."
-    python3 scripts/generate_bot_placeholder.py -o data/extracted_images/placeholder_bot.jpg || \
-    python scripts/generate_bot_placeholder.py -o data/extracted_images/placeholder_bot.jpg || \
-    echo "Warning: Could not generate placeholder image. Users will be created without images."
+    python3 scripts/generate_bot_placeholder.py -o data/extracted_images/placeholder_bot.jpg 2>/dev/null || \
+    python scripts/generate_bot_placeholder.py -o data/extracted_images/placeholder_bot.jpg 2>/dev/null || true
   fi
-  # Run user generation
-  ./matcha-generate-users || echo "Warning: User generation failed. Continuing anyway..."
+  ./matcha-generate-users 2>/dev/null || echo "Warning: User generation failed."
 else
-  echo "Found $BOT_COUNT bot users in database."
+  echo "Found $BOT_COUNT bot users."
 fi
 
-# Start Go backend server in background
-echo "Starting Go backend server on port 8080..."
+# --- 3. Start Go backend ---
+echo "Starting backend on :8080..."
 ./matcha &
 GO_PID=$!
 
-# Start Next.js standalone server
-echo "Starting Next.js server on port 3000..."
-# Next.js standalone server.js is at the root of standalone directory
-# The structure is: /app/static/heroUi/.next/standalone/static/heroUi/server.js
-# But we copied standalone to /app, so server.js should be at /app/static/heroUi/server.js
+# --- 4. Start Next.js frontend ---
+echo "Starting frontend on :3000..."
 if [ -f "static/heroUi/server.js" ]; then
-  cd static/heroUi
-  PORT=3000 NODE_ENV=production DOCKER_ENV=true node server.js &
+  (cd static/heroUi && PORT=3000 NODE_ENV=production DOCKER_ENV=true node server.js) &
 elif [ -f "server.js" ]; then
   PORT=3000 NODE_ENV=production DOCKER_ENV=true node server.js &
 else
-  echo "ERROR: Next.js server.js not found. Available files:"
-  find . -name "server.js" -type f 2>/dev/null || echo "No server.js found"
+  echo "ERROR: Next.js server.js not found. Run: find . -name server.js"
   exit 1
 fi
 NEXTJS_PID=$!
 
-# Function to handle shutdown
+# --- 5. Start bot simulator (traffic simulation) ---
+if [ -f "./matcha-bot-simulator" ]; then
+  echo "Starting bot simulator..."
+  ./matcha-bot-simulator -server http://localhost:8080 -db ./data/matcha.db -bots 20 -interval 15s -concurrency 10 &
+  BOT_PID=$!
+else
+  BOT_PID=""
+fi
+
 cleanup() {
   echo "Shutting down..."
   kill $GO_PID $NEXTJS_PID 2>/dev/null || true
+  [ -n "$BOT_PID" ] && kill $BOT_PID 2>/dev/null || true
   wait $GO_PID $NEXTJS_PID 2>/dev/null || true
+  [ -n "$BOT_PID" ] && wait $BOT_PID 2>/dev/null || true
   exit 0
 }
-
 trap cleanup SIGTERM SIGINT
 
-# Wait for either process to exit
 wait $GO_PID $NEXTJS_PID

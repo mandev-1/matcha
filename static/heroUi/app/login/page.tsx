@@ -3,11 +3,7 @@
 import React, { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getApiUrl } from "@/lib/apiUrl";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Checkbox } from "@heroui/checkbox";
-import { Link } from "@heroui/link";
-import { Form } from "@heroui/form";
+import { Button, Input, InputGroup, Checkbox, Link, Form, TextField, Label } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -169,68 +165,65 @@ function LoginContent() {
         )}
 
         <Form className="flex flex-col gap-4" validationBehavior="native" onSubmit={handleSubmit}>
-          <Input
+          <TextField
             isRequired
-            label="Username"
-            labelPlacement="outside"
             name="username"
-            placeholder="Enter your username"
-            type="text"
-            variant="bordered"
             value={username}
-            onChange={(e) => {
-              setUsername(e.target.value);
+            onChange={(v) => {
+              setUsername(v);
               if (error) setError("");
               if (success) setSuccess("");
             }}
-            autoComplete="username"
-          />
-          <Input
+          >
+            <Label>Username</Label>
+            <Input
+              placeholder="Enter your username"
+              type="text"
+              variant="secondary"
+              autoComplete="username"
+            />
+          </TextField>
+          <TextField
             isRequired
-            inputMode="text"
-            endContent={
-              <button type="button" onClick={toggleVisibility}>
-                {isVisible ? (
-                  <Icon
-                    className="text-default-400 pointer-events-none text-2xl"
-                    icon="solar:eye-closed-linear"
-                  />
-                ) : (
-                  <Icon
-                    className="text-default-400 pointer-events-none text-2xl"
-                    icon="solar:eye-bold"
-                  />
-                )}
-              </button>
-            }
-            label="Password"
-            labelPlacement="outside"
             name="password"
-            placeholder="Enter your password"
-            type={isVisible ? "text" : "password"}
-            variant="bordered"
             value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
+            onChange={(v) => {
+              setPassword(v);
               if (error) setError("");
               if (success) setSuccess("");
             }}
-            autoComplete="current-password"
-          />
+          >
+            <Label>Password</Label>
+            <InputGroup variant="secondary">
+              <InputGroup.Input
+                placeholder="Enter your password"
+                type={isVisible ? "text" : "password"}
+                autoComplete="current-password"
+              />
+              <InputGroup.Suffix>
+                <Button type="button" size="sm" variant="ghost" onPress={toggleVisibility} className="min-w-8 w-8 h-8 p-0">
+                  <Icon
+                    className="text-default-400 text-2xl"
+                    icon={isVisible ? "solar:eye-closed-linear" : "solar:eye-bold"}
+                  />
+                </Button>
+              </InputGroup.Suffix>
+            </InputGroup>
+          </TextField>
           <div className="flex w-full items-center justify-between px-1 py-2">
-            <Checkbox defaultSelected name="remember" size="sm">
+            <Checkbox defaultSelected name="remember">
               Remember me
             </Checkbox>
-            <Link className="text-default-500" href="#" size="sm">
+            <Link className="text-default-500" href="#">
               Forgot password?
             </Link>
           </div>
-          <Button className="w-full bg-pink-500 text-white hover:bg-pink-600" type="submit" isLoading={loading}>
+          <Button className="w-full bg-pink-500 text-white hover:bg-pink-600" type="submit" isPending={loading}>
             Log In
           </Button>
         </Form>
         <p className="text-small text-center">
-          <Link href="/register" size="sm">
+          <Link href="/register">
             Create an account
           </Link>
         </p>

@@ -205,6 +205,14 @@ func BrowseAPI(w http.ResponseWriter, r *http.Request) {
 			)
 		)`
 		args = append(args, currentUserID, currentUserID)
+
+		// Exclude blocked users: neither I block them nor they block me
+		query += ` AND NOT EXISTS (
+			SELECT 1 FROM blocks b
+			WHERE (b.blocker_id = ? AND b.blocked_id = u.id)
+			OR (b.blocker_id = u.id AND b.blocked_id = ?)
+		)`
+		args = append(args, currentUserID, currentUserID)
 	}
 
 	// Orientation filtering: limit results by current user's sexual preference (and optionally gender) from profile
@@ -608,13 +616,338 @@ func BrowseAPI(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// SearchAPI handles GET /api/search
+// SearchAPI handles GET /api/search - advanced search with filters
+// Params: minAge, maxAge, minDistance, maxDistance, fameRatingMin, onlyCommonTags,
+//         tags (comma-separated), location (text search), sort, limit, offset
+// Reuses browse logic with optional tag and location filters.
 func SearchAPI(w http.ResponseWriter, r *http.Request) {
-	// TODO: Get search criteria from query params
-	// TODO: Return matching profiles
+	// Delegate to BrowseAPI logic - search uses same base query with optional extras
+	// For now we add tags and location filters by wrapping the request
+	q := r.URL.Query()
+	tagsParam := strings.TrimSpace(q.Get("tags"))
+	locationParam := strings.TrimSpace(q.Get("location"))
+
+	// If no search-specific params, BrowseAPI handles it; otherwise we need custom logic
+	// We'll call a shared internal function. For simplicity, duplicate the browse flow
+	// with two extra filters. Create a copy of the request with modified query for the
+	// shared code path. Actually: just run the same BrowseAPI logic - BrowseAPI doesn't
+	// support tags or location. So we need to add those filters.
+
+	// Reuse BrowseAPI by temporarily adding our params to a clone of the request
+	// The cleanest approach: extract buildBrowseQuery + processResults, call from both.
+	// For minimal change: implement SearchAPI inline, reusing the query structure.
+
+	currentUserID, _ := getUserIDFromRequest(r)
+	if currentUserID > 0 {
+		ensureUserIsOnline(currentUserID)
+		updateLastSeenSporadically(currentUserID)
+	}
+
+	sortParam := q.Get("sort")
+	minAge := q.Get("minAge")
+	maxAge := q.Get("maxAge")
+	minDistanceStr := q.Get("minDistance")
+	maxDistanceStr := q.Get("maxDistance")
+	onlyCommonTagsStr := q.Get("onlyCommonTags")
+	fameRatingMinStr := q.Get("fameRatingMin")
+	limitStr := q.Get("limit")
+	offsetStr := q.Get("offset")
+
+	limit := 50
+	offset := 0
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
+	}
+	if offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			offset = o
+		}
+	}
+
+	var currentUserLat, currentUserLon sql.NullFloat64
+	var currentUserMBTI sql.NullString
+	var currentUserGender, currentUserSexualPreference sql.NullString
+	var currentUserTags []string
+
+	if currentUserID > 0 {
+		err := database.DB.QueryRow(`
+			SELECT latitude, longitude, mbti, gender, sexual_preference
+			FROM users WHERE id = ?
+		`, currentUserID).Scan(&currentUserLat, &currentUserLon, &currentUserMBTI, &currentUserGender, &currentUserSexualPreference)
+		if err == nil {
+			tagRows, err := database.DB.Query("SELECT tag FROM user_tags WHERE user_id = ?", currentUserID)
+			if err == nil {
+				defer tagRows.Close()
+				for tagRows.Next() {
+					var tag string
+					if err := tagRows.Scan(&tag); err == nil {
+						currentUserTags = append(currentUserTags, tag)
+					}
+				}
+			}
+		}
+	}
+
+	query := `
+		SELECT u.id, u.username, u.first_name, u.last_name, u.gender, u.biography,
+			u.birth_date, u.location, u.fame_rating, u.is_online, u.last_seen,
+			u.latitude, u.longitude, u.mbti, u.sexual_preference,
+			(SELECT file_path FROM user_pictures WHERE user_id = u.id AND is_profile = 1 AND order_index = 0 LIMIT 1) as profile_picture
+		FROM users u
+		WHERE u.is_setup = 1 AND u.is_email_verified = 1
+	`
+	args := []interface{}{}
+
+	if currentUserID > 0 {
+		query += " AND u.id != ?"
+		args = append(args, currentUserID)
+		query += ` AND NOT EXISTS (
+			SELECT 1 FROM likes l1 WHERE l1.from_user_id = ? AND l1.to_user_id = u.id
+			AND EXISTS (SELECT 1 FROM likes l2 WHERE l2.from_user_id = u.id AND l2.to_user_id = ?)
+		)`
+		args = append(args, currentUserID, currentUserID)
+		query += ` AND NOT EXISTS (
+			SELECT 1 FROM blocks b
+			WHERE (b.blocker_id = ? AND b.blocked_id = u.id) OR (b.blocker_id = u.id AND b.blocked_id = ?)
+		)`
+		args = append(args, currentUserID, currentUserID)
+	}
+
+	if currentUserID > 0 {
+		currentUserPref := strings.ToLower(strings.TrimSpace(currentUserSexualPreference.String))
+		currentUserGen := ""
+		if currentUserGender.Valid {
+			currentUserGen = strings.ToLower(strings.TrimSpace(currentUserGender.String))
+		}
+		if currentUserPref == "" {
+			currentUserPref = "both"
+		}
+		if currentUserPref == "male" {
+			query += " AND u.gender = 'male'"
+			if currentUserGen != "" {
+				query += " AND (u.sexual_preference = ? OR u.sexual_preference = 'both' OR u.sexual_preference IS NULL OR u.sexual_preference = '')"
+				args = append(args, currentUserGen)
+			}
+		} else if currentUserPref == "female" {
+			query += " AND u.gender = 'female'"
+			if currentUserGen != "" {
+				query += " AND (u.sexual_preference = ? OR u.sexual_preference = 'both' OR u.sexual_preference IS NULL OR u.sexual_preference = '')"
+				args = append(args, currentUserGen)
+			}
+		} else {
+			if currentUserGen != "" {
+				query += " AND (u.sexual_preference = ? OR u.sexual_preference = 'both' OR u.sexual_preference IS NULL OR u.sexual_preference = '')"
+				args = append(args, currentUserGen)
+			}
+		}
+	}
+
+	if minAge != "" {
+		if minAgeInt, err := strconv.Atoi(minAge); err == nil {
+			maxBirthYear := time.Now().Year() - minAgeInt
+			query += " AND (u.birth_date IS NULL OR CAST(strftime('%Y', u.birth_date) AS INTEGER) <= ?)"
+			args = append(args, maxBirthYear)
+		}
+	}
+	if maxAge != "" {
+		if maxAgeInt, err := strconv.Atoi(maxAge); err == nil {
+			minBirthYear := time.Now().Year() - maxAgeInt
+			query += " AND (u.birth_date IS NULL OR CAST(strftime('%Y', u.birth_date) AS INTEGER) >= ?)"
+			args = append(args, minBirthYear)
+		}
+	}
+	if fameRatingMinStr != "" {
+		if fameRatingMin, err := strconv.ParseFloat(fameRatingMinStr, 64); err == nil && fameRatingMin > 0 {
+			query += " AND u.fame_rating >= ?"
+			args = append(args, fameRatingMin)
+		}
+	}
+
+	// Search-specific: filter by tags (user must have at least one)
+	if tagsParam != "" {
+		tagList := strings.Split(tagsParam, ",")
+		var validTags []string
+		for _, t := range tagList {
+			t = strings.TrimSpace(strings.ToLower(t))
+			if t != "" {
+				validTags = append(validTags, t)
+			}
+		}
+		if len(validTags) > 0 {
+			placeholders := make([]string, len(validTags))
+			for i := range validTags {
+				placeholders[i] = "?"
+				args = append(args, validTags[i])
+			}
+			query += " AND EXISTS (SELECT 1 FROM user_tags ut WHERE ut.user_id = u.id AND LOWER(ut.tag) IN (" + strings.Join(placeholders, ",") + "))"
+		}
+	}
+
+	// Search-specific: filter by location (case-insensitive contains)
+	if locationParam != "" {
+		query += " AND (u.location IS NOT NULL AND u.location != '' AND LOWER(u.location) LIKE ?)"
+		args = append(args, "%"+strings.ToLower(locationParam)+"%")
+	}
+
+	if sortParam == "fame" {
+		query += " ORDER BY u.fame_rating DESC"
+	}
+
+	rows, err := database.DB.Query(query, args...)
+	if err != nil {
+		log.Printf("SearchAPI: query error %v", err)
+		SendError(w, http.StatusInternalServerError, "Failed to search")
+		return
+	}
+	defer rows.Close()
+
+	profilesWithScores := []profileWithScore{}
+	for rows.Next() {
+		var user struct {
+			ID               int64
+			Username         string
+			FirstName        string
+			LastName         string
+			Gender           sql.NullString
+			Biography        sql.NullString
+			BirthDate        sql.NullString
+			Location         sql.NullString
+			FameRating       float64
+			IsOnline         bool
+			LastSeen         sql.NullString
+			Latitude         sql.NullFloat64
+			Longitude        sql.NullFloat64
+			MBTI             sql.NullString
+			SexualPreference sql.NullString
+			ProfilePicture   sql.NullString
+		}
+		err := rows.Scan(
+			&user.ID, &user.Username, &user.FirstName, &user.LastName,
+			&user.Gender, &user.Biography, &user.BirthDate, &user.Location,
+			&user.FameRating, &user.IsOnline, &user.LastSeen,
+			&user.Latitude, &user.Longitude, &user.MBTI, &user.SexualPreference, &user.ProfilePicture,
+		)
+		if err != nil {
+			continue
+		}
+		age := 0
+		if user.BirthDate.Valid {
+			if birthDate, err := time.Parse("2006-01-02", user.BirthDate.String); err == nil {
+				age = time.Now().Year() - birthDate.Year()
+				if time.Now().Before(time.Date(time.Now().Year(), birthDate.Month(), birthDate.Day(), 0, 0, 0, 0, time.UTC)) {
+					age--
+				}
+			}
+		}
+		tagRows, _ := database.DB.Query("SELECT tag FROM user_tags WHERE user_id = ?", user.ID)
+		tags := []string{}
+		if tagRows != nil {
+			for tagRows.Next() {
+				var tag string
+				if tagRows.Scan(&tag) == nil {
+					tags = append(tags, tag)
+				}
+			}
+			tagRows.Close()
+		}
+		distanceKm := 0.0
+		distanceZone := 3
+		tagMatches := 0
+		hasCommonTags := false
+		mbtiHarmonic := false
+		if currentUserLat.Valid && currentUserLon.Valid && user.Latitude.Valid && user.Longitude.Valid {
+			distanceKm = haversineDistance(currentUserLat.Float64, currentUserLon.Float64, user.Latitude.Float64, user.Longitude.Float64)
+			distanceZone = getDistanceZone(distanceKm)
+		}
+		tagMatches, hasCommonTags = calculateTagSimilarity(currentUserTags, tags)
+		if currentUserMBTI.Valid && user.MBTI.Valid {
+			mbtiHarmonic = isMBTIHarmonic(currentUserMBTI.String, user.MBTI.String)
+		}
+		if onlyCommonTagsStr == "true" && !hasCommonTags {
+			continue
+		}
+		minDist, maxDist := 0.0, 10000.0
+		if minDistanceStr != "" {
+			if d, err := strconv.ParseFloat(minDistanceStr, 64); err == nil {
+				minDist = d
+			}
+		}
+		if maxDistanceStr != "" {
+			if d, err := strconv.ParseFloat(maxDistanceStr, 64); err == nil {
+				maxDist = d
+			}
+		}
+		if distanceKm < minDist || (maxDist < 10000 && distanceKm > maxDist) {
+			continue
+		}
+		profilePic := ""
+		if user.ProfilePicture.Valid {
+			profilePic = normalizeEmptyString(user.ProfilePicture.String)
+		}
+		profileMap := map[string]interface{}{
+			"id": user.ID, "username": user.Username, "first_name": user.FirstName, "last_name": user.LastName,
+			"age": age, "location": normalizeEmptyString(user.Location.String), "biography": normalizeEmptyString(user.Biography.String),
+			"fame_rating": user.FameRating, "is_online": user.IsOnline, "last_seen": user.LastSeen.String,
+			"profile_picture": profilePic,
+			"tags": tags, "gender": normalizeEmptyString(user.Gender.String),
+			"distance_km": math.Round(distanceKm*10) / 10,
+		}
+		profilesWithScores = append(profilesWithScores, profileWithScore{
+			profile: profileMap, distanceZone: distanceZone, distanceKm: distanceKm,
+			tagMatches: tagMatches, hasCommonTags: hasCommonTags, isMBTIHarmonic: mbtiHarmonic,
+		})
+	}
+
+	// Sort
+	if sortParam == "age_asc" {
+		sort.Slice(profilesWithScores, func(i, j int) bool {
+			return profilesWithScores[i].profile["age"].(int) < profilesWithScores[j].profile["age"].(int)
+		})
+	} else if sortParam == "age_desc" {
+		sort.Slice(profilesWithScores, func(i, j int) bool {
+			return profilesWithScores[i].profile["age"].(int) > profilesWithScores[j].profile["age"].(int)
+		})
+	} else if sortParam == "location" {
+		sort.Slice(profilesWithScores, func(i, j int) bool {
+			dzI, dzJ := profilesWithScores[i].distanceZone, profilesWithScores[j].distanceZone
+			if dzI != dzJ {
+				return dzI < dzJ
+			}
+			return profilesWithScores[i].distanceKm < profilesWithScores[j].distanceKm
+		})
+	} else if sortParam == "tags" {
+		sort.Slice(profilesWithScores, func(i, j int) bool {
+			tmI, tmJ := profilesWithScores[i].tagMatches, profilesWithScores[j].tagMatches
+			if tmI != tmJ {
+				return tmI > tmJ
+			}
+			return profilesWithScores[i].profile["fame_rating"].(float64) > profilesWithScores[j].profile["fame_rating"].(float64)
+		})
+	}
+
+	profiles := []map[string]interface{}{}
+	start, end := offset, offset+limit
+	if start > len(profilesWithScores) {
+		start = len(profilesWithScores)
+	}
+	if end > len(profilesWithScores) {
+		end = len(profilesWithScores)
+	}
+	for i := start; i < end; i++ {
+		profiles = append(profiles, profilesWithScores[i].profile)
+	}
 
 	SendSuccess(w, map[string]interface{}{
-		"profiles": []interface{}{},
+		"profiles": profiles,
+		"sort":     sortParam,
+		"minAge":   minAge,
+		"maxAge":   maxAge,
+		"tags":     tagsParam,
+		"location": locationParam,
+		"limit":    limit,
+		"offset":   offset,
 	})
 }
 

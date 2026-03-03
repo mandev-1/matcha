@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
-import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Image } from "@heroui/image";
+import { Card, Button } from "@heroui/react";
+import { Image } from "@/components/Image";
 import { Icon } from "@iconify/react";
-import { addToast } from "@heroui/toast";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
+import { addToast } from "@/lib/addToast";
+import { useOverlayState } from "@heroui/react";
+import { ModalCompat, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
 import LocationMap, { LocationMapRef } from "@/components/LocationMap";
 import { getApiUrl } from "@/lib/apiUrl";
 
@@ -36,7 +36,8 @@ export default function CardOther({
   const mapRef = useRef<LocationMapRef>(null);
   const [hasMoved, setHasMoved] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
-  const { isOpen: isAbortModalOpen, onOpen: onAbortModalOpen, onOpenChange: onAbortModalOpenChange } = useDisclosure();
+  const abortModalOverlay = useOverlayState({ defaultOpen: false });
+  const { isOpen: isAbortModalOpen, open: onAbortModalOpen, setOpen: onAbortModalOpenChange } = abortModalOverlay;
 
   // Handle beforeunload to warn user if they're leaving with unsaved changes
   useEffect(() => {
@@ -104,11 +105,11 @@ export default function CardOther({
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-2 md:px-4">
       {/* Location Preview */}
-      <Card className="w-full" radius="lg">
-        <CardHeader>
+      <Card className="w-full">
+        <Card.Header>
           <h3 className="text-xl font-semibold text-sky-300">Location</h3>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-4">
+        </Card.Header>
+        <Card.Content className="flex flex-col gap-4">
           {latitude && longitude ? (
             <>
               <div className="flex flex-col gap-2">
@@ -141,19 +142,18 @@ export default function CardOther({
               </div>
               <div className="flex gap-2">
                 <Button
-                  color="primary"
-                  variant="flat"
+                 
+                  variant="secondary"
                   size="sm"
                   isDisabled={!hasMoved}
-                  isLoading={isUpdating}
+                  isPending={isUpdating}
                   onPress={handleUpdateLocation}
-                  startContent={!isUpdating ? <Icon icon="solar:map-point-add-linear" /> : undefined}
                 >
                   Update Location
                 </Button>
                 <Button
-                  color="default"
-                  variant="flat"
+                 
+                  variant="secondary"
                   size="sm"
                   onPress={async () => {
                     if (!("geolocation" in navigator)) {
@@ -221,8 +221,8 @@ export default function CardOther({
                       }
                     );
                   }}
-                  startContent={<Icon icon="solar:refresh-linear" />}
                 >
+                  <Icon icon="solar:refresh-linear" className="mr-1" />
                   Refresh Location
                 </Button>
               </div>
@@ -232,20 +232,20 @@ export default function CardOther({
               <Icon icon="solar:map-point-linear" className="text-4xl text-default-400" />
               <p className="text-default-500 text-center">No location set</p>
               <Button
-                color="primary"
+               
                 onPress={onLocationModalOpen}
-                startContent={<Icon icon="solar:map-point-add-linear" />}
               >
+                <Icon icon="solar:map-point-add-linear" className="mr-1" />
                 Set Location
               </Button>
             </div>
           )}
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Reset Profile Card */}
       <div className="flex justify-center items-center">
-        <Card isFooterBlurred className="border-none" radius="lg">
+        <Card className="border-none">
           <Image
             alt="Wipe profile"
             className="object-cover"
@@ -253,30 +253,29 @@ export default function CardOther({
             src="https://heroui.com/images/hero-card.jpeg"
             width={200}
           />
-          <CardFooter className="justify-between before:bg-white/10 border-white/20 border-1 overflow-hidden py-1 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
+          <Card.Footer className="justify-between before:bg-white/10 border-white/20 border-1 overflow-hidden py-1 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
             <p className="text-tiny text-white/80">Wipe profile (dev)?</p>
             <Button
               className="text-tiny text-white bg-black/20"
-              color="default"
-              radius="lg"
+             
+             
               size="sm"
-              variant="flat"
+              variant="secondary"
               onPress={onResetModalOpen}
             >
               Reset
             </Button>
-          </CardFooter>
+          </Card.Footer>
         </Card>
       </div>
 
       {/* Abort Dialog */}
-      <Modal 
+      <ModalCompat 
         isOpen={isAbortModalOpen} 
         onOpenChange={onAbortModalOpenChange}
         isDismissable={false}
         hideCloseButton
       >
-        <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
             <h2 className="text-xl font-bold">Unsaved Location Changes</h2>
           </ModalHeader>
@@ -285,27 +284,26 @@ export default function CardOther({
           </ModalBody>
           <ModalFooter>
             <Button
-              color="default"
-              variant="flat"
+             
+              variant="secondary"
               onPress={() => {
                 setHasMoved(false);
-                onAbortModalOpenChange();
+                onAbortModalOpenChange(false);
               }}
             >
               Abort
             </Button>
             <Button
-              color="primary"
+             
               onPress={() => {
-                onAbortModalOpenChange();
+                onAbortModalOpenChange(false);
                 handleUpdateLocation();
               }}
             >
               Save Changes
             </Button>
           </ModalFooter>
-        </ModalContent>
-      </Modal>
+      </ModalCompat>
     </div>
   );
 }
