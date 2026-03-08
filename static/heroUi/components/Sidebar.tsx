@@ -17,19 +17,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    label: "Matcha",
-    href: "/matcha",
-    icon: "solar:heart-bold",
-  },
-  {
     label: "Discover",
     href: "/discover",
     icon: "solar:users-group-rounded-bold",
-  },
-  {
-    label: "Search",
-    href: "/search",
-    icon: "solar:magnifer-bold",
   },
   {
     label: "Chats",

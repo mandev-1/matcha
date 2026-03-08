@@ -52,12 +52,13 @@ export function SelectCompat({
   const items = React.useMemo(() => {
     const childArray = React.Children.toArray(children);
     return childArray
-      .filter((c) => React.isValidElement(c) && (c as React.ReactElement<{ key?: string }>).props?.key != null)
+      .filter((c) => React.isValidElement(c) && (c as React.ReactElement).key != null)
       .map((c) => {
-        const el = c as React.ReactElement<{ key: string; children?: React.ReactNode }>;
+        const el = c as React.ReactElement<{ children?: React.ReactNode }>;
+        const id = String((el as React.ReactElement & { key?: React.Key }).key);
         return {
-          id: el.props.key,
-          textValue: typeof el.props.children === "string" ? el.props.children : String(el.props.key),
+          id,
+          textValue: typeof el.props.children === "string" ? el.props.children : id,
           children: el.props.children,
         };
       });

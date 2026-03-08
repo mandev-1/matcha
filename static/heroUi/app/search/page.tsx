@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, Button, Chip, Skeleton, Input, Slider, useOverlayState } from "@heroui/react";
+import { Card, Button, Chip, Skeleton, Input, Slider, Label, Checkbox, useOverlayState } from "@heroui/react";
 import { ModalCompat, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
 import { SelectCompat } from "@/components/SelectCompat";
 import { SelectItem } from "@/components/SelectItem";
@@ -227,52 +227,92 @@ export default function SearchPage() {
         {/* Filter modal */}
         <ModalCompat isOpen={isFilterOpen} onOpenChange={onFilterOpenChange} size="lg">
             <ModalHeader>Advanced filters</ModalHeader>
-            <ModalBody className="gap-6">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Age range</label>
+            <ModalBody className="gap-6 pb-2">
+              <div className="flex flex-col gap-2">
                 <Slider
                   step={1}
                   minValue={18}
                   maxValue={100}
                   value={ageRange}
                   onChange={(v) => setAgeRange(v as number[])}
-                  className="max-w-full"
-                />
-                <p className="text-xs text-default-500 mt-1">
+                  formatOptions={{ style: "decimal" }}
+                  className="w-full"
+                  aria-label="Age range"
+                >
+                  <Label>Age range</Label>
+                  <Slider.Output className="text-default-500 text-sm" />
+                  <Slider.Track>
+                    {({ state }) => (
+                      <>
+                        <Slider.Fill />
+                        {state.values.map((_, i) => (
+                          <Slider.Thumb key={i} index={i} />
+                        ))}
+                      </>
+                    )}
+                  </Slider.Track>
+                </Slider>
+                <p className="text-xs text-default-500">
                   {ageRange[0]} – {ageRange[1]} years
                 </p>
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Distance (km)</label>
+              <div className="flex flex-col gap-2">
                 <Slider
                   step={50}
                   minValue={0}
                   maxValue={5000}
                   value={distanceRange}
                   onChange={(v) => setDistanceRange(v as number[])}
-                  className="max-w-full"
-                />
-                <p className="text-xs text-default-500 mt-1">
+                  formatOptions={{ style: "decimal", maximumFractionDigits: 0 }}
+                  className="w-full"
+                  aria-label="Distance in km"
+                >
+                  <Label>Distance (km)</Label>
+                  <Slider.Output className="text-default-500 text-sm" />
+                  <Slider.Track>
+                    {({ state }) => (
+                      <>
+                        <Slider.Fill />
+                        {state.values.map((_, i) => (
+                          <Slider.Thumb key={i} index={i} />
+                        ))}
+                      </>
+                    )}
+                  </Slider.Track>
+                </Slider>
+                <p className="text-xs text-default-500">
                   {distanceRange[0]} – {distanceRange[1]} km
                 </p>
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Min fame rating</label>
+              <div className="flex flex-col gap-2">
                 <Slider
                   step={0.5}
                   minValue={0}
                   maxValue={50}
                   value={fameRatingMin}
                   onChange={(v) => setFameRatingMin(v as number)}
-                  className="max-w-full"
-                />
+                  formatOptions={{ style: "decimal", minimumFractionDigits: 1 }}
+                  className="w-full"
+                  aria-label="Minimum fame rating"
+                >
+                  <Label>Min fame rating</Label>
+                  <Slider.Output className="text-default-500 text-sm" />
+                  <Slider.Track>
+                    <Slider.Fill />
+                    <Slider.Thumb />
+                  </Slider.Track>
+                </Slider>
+                <p className="text-xs text-default-500">
+                  {fameRatingMin > 0 ? `${fameRatingMin} and above` : "Any"}
+                </p>
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Sort by</label>
+              <div className="flex flex-col gap-2">
+                <Label className="text-sm font-medium">Sort by</Label>
                 <SelectCompat
                   placeholder="Default"
                   selectedKeys={sortBy ? [sortBy] : []}
-                  onSelectionChange={(keys) => setSortBy(Array.from(keys)[0] as string || "")}
+                  onSelectionChange={(keys) => setSortBy((Array.from(keys)[0] as string) || "")}
+                  fullWidth
                 >
                   <SelectItem key="">Default</SelectItem>
                   <SelectItem key="age_asc">Age (ascending)</SelectItem>
@@ -282,19 +322,17 @@ export default function SearchPage() {
                   <SelectItem key="tags">Common tags</SelectItem>
                 </SelectCompat>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="onlyCommonTags"
-                  checked={onlyCommonTags}
-                  onChange={(e) => setOnlyCommonTags(e.target.checked)}
-                />
-                <label htmlFor="onlyCommonTags" className="text-sm">
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox
+                  isSelected={onlyCommonTags}
+                  onChange={(checked) => setOnlyCommonTags(!!checked)}
+                  aria-label="Only show profiles with common tags"
+                >
                   Only show profiles with common tags
-                </label>
+                </Checkbox>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="gap-2">
               <Button variant="secondary" onPress={() => onFilterOpenChange(false)}>
                 Cancel
               </Button>

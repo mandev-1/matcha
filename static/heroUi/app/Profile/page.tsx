@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Avatar, Tabs, Tab, Button, Link, Tooltip, Modal, Card, Input, InputGroup, TextArea, Form, Chip, Skeleton, Spinner, useOverlayState, TextField, Label } from "@heroui/react";
+import { Avatar, Tabs, Button, Link, Tooltip, Modal, Card, Input, InputGroup, TextArea, Form, Chip, Skeleton, Spinner, useOverlayState, TextField, Label } from "@heroui/react";
 import { ModalCompat, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
 import { Image } from "@/components/Image";
 import { Spacer } from "@/components/Spacer";
@@ -423,14 +423,18 @@ export default function Component() {
     <>
       <div className="profile-page-100 flex h-dvh w-full max-w-full flex-col gap-8">
         <div className="flex items-center justify-center gap-2">
-          <Tabs 
+          <Tabs
             className="flex-1 justify-center"
             selectedKey={selectedTab}
             onSelectionChange={(key) => setSelectedTab(key as string)}
           >
-            <Tab key="card-preview">My Card</Tab>
-            <Tab key="basics">Basics</Tab>
-            <Tab key="settings">Settings</Tab>
+            <Tabs.ListContainer>
+              <Tabs.List aria-label="Profile sections">
+                <Tabs.Tab id="card-preview">My Card</Tabs.Tab>
+                <Tabs.Tab id="basics">Basics</Tabs.Tab>
+                <Tabs.Tab id="settings">Settings</Tabs.Tab>
+              </Tabs.List>
+            </Tabs.ListContainer>
           </Tabs>
           <Button className="justify-center" size="sm" variant="secondary" onPress={onOpen}>
             Help

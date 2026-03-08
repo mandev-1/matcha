@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { Modal } from "@heroui/react";
+import { Modal, useOverlayState } from "@heroui/react";
 
 /**
  * HeroUI v3 compatibility: v2 Modal used isOpen, onClose, ModalContent, ModalHeader, ModalBody, ModalFooter.
- * This wrapper provides the v2 API.
+ * This wrapper provides the v2 API. Passes overlay state to Modal root so backdrop and dialog stay in sync.
  */
 export interface ModalCompatProps {
   isOpen: boolean;
@@ -38,24 +38,25 @@ export function ModalCompat({
     [onClose, onOpenChange]
   );
 
+  const state = useOverlayState({ isOpen, onOpenChange: handleOpenChange });
+
   // v3 Modal.Container placement is "auto" | "top" | "center" | "bottom" (no left/right)
   const placementProp: "auto" | "top" | "center" | "bottom" =
     placement === "left" || placement === "right" ? "center" : placement;
 
   return (
-    <Modal>
+    <Modal state={state}>
       <Modal.Backdrop
-        isOpen={isOpen}
-        onOpenChange={handleOpenChange}
         isDismissable={isDismissable}
         isKeyboardDismissDisabled={!isDismissable}
         className={classNames?.base}
-      />
-      <Modal.Container placement={placementProp} size={size}>
-        <Modal.Dialog className={classNames?.base}>
-          {children}
-        </Modal.Dialog>
-      </Modal.Container>
+      >
+        <Modal.Container placement={placementProp} size={size}>
+          <Modal.Dialog className={classNames?.base}>
+            {children}
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }

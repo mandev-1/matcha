@@ -1,13 +1,16 @@
 "use client";
 
 import {
-  Button,
   Link,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
   DropdownSection,
+  Avatar,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
 } from "@heroui/react";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,6 +21,15 @@ import { HeartFilledIcon, Logo } from "@/components/icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHelpDrawer } from "@/contexts/HelpDrawerContext";
 import { NotificationBell } from "@/components/NotificationBell";
+
+const DEFAULT_AVATAR =
+  "https://heroui.com/images/hero-card.jpeg";
+
+function getInitials(username: string): string {
+  if (!username || username.length === 0) return "?";
+  if (username.length >= 2) return username.slice(0, 2).toUpperCase();
+  return username.charAt(0).toUpperCase();
+}
 
 export const Navbar = () => {
   const router = useRouter();
@@ -31,10 +43,10 @@ export const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-default-200 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto max-w-7xl flex h-14 items-center justify-between px-3 sm:px-4 md:px-6">
+    <header className="sticky top-0 z-40 w-full min-w-0 border-b border-default-200 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto max-w-7xl min-w-0 flex h-14 items-center justify-between gap-3 px-3 sm:px-4 md:px-6">
         {/* Brand */}
-        <div className="flex basis-1/5 sm:basis-full min-w-0 shrink-0">
+        <div className="flex shrink-0 min-w-0 overflow-hidden">
           <NextLink
             className="flex justify-start items-center gap-1"
             href={isAuthenticated && user ? (user.is_setup ? "/matcha" : "/runway") : "/"}
@@ -52,11 +64,15 @@ export const Navbar = () => {
               </div>
               <Dropdown>
                 <DropdownTrigger>
-                  <Button variant="ghost" aria-label="Menu" className="min-w-8 w-8 h-8 p-0">
+                  <span
+                    className="min-w-8 w-8 h-8 p-0 inline-flex items-center justify-center rounded-lg hover:bg-default-100 cursor-pointer"
+                    aria-label="Menu"
+                  >
                     <Icon icon="solar:menu-dots-linear" className="text-xl" />
-                  </Button>
+                  </span>
                 </DropdownTrigger>
-                <DropdownMenu aria-label="Mobile menu" className="py-1 px-1 border border-default-200 bg-content1">
+                <Dropdown.Popover placement="bottom end" className="min-w-[11rem] py-1 px-1 border border-default-200 bg-content1 shadow-lg rounded-medium">
+                <DropdownMenu aria-label="Mobile menu">
                   <DropdownSection>
                     <DropdownItem
                       key="my-profile"
@@ -103,6 +119,7 @@ export const Navbar = () => {
                     </DropdownItem>
                   </DropdownSection>
                 </DropdownMenu>
+                </Dropdown.Popover>
               </Dropdown>
             </>
           ) : (
@@ -114,62 +131,105 @@ export const Navbar = () => {
         </div>
 
         {/* Desktop: full nav */}
-        <div className="hidden md:flex basis-1/5 sm:basis-full justify-end gap-2">
+        <div className="hidden md:flex min-w-0 items-center justify-end gap-2">
           {isAuthenticated ? (
             <>
-              <div className="flex items-center">
+              <div className="flex shrink-0 items-center">
                 <NotificationBell />
               </div>
-              <Dropdown>
-                <DropdownTrigger>
-                  <Button
-                    variant="ghost"
-                    className="text-sm font-normal text-default-600"
+              <Popover placement="bottom end">
+                <PopoverTrigger>
+                  <span
+                    className="rounded-full inline-flex cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-default-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    aria-label="Profile menu"
+                    role="button"
+                    tabIndex={0}
                   >
-                    Profile
-                    <Icon icon="solar:alt-arrow-down-linear" className="text-default-500 ml-1" width={16} />
-                  </Button>
-                </DropdownTrigger>
-                <DropdownMenu aria-label="Profile menu" className="py-1 px-1 border border-default-200 bg-content1">
-                  <DropdownSection>
-                    <DropdownItem
-                      key="my-profile"
-                      onPress={() => router.push("/Profile")}
+                    <Avatar size="sm" className="ring-2 ring-transparent hover:ring-default-200 transition-shadow">
+                      <Avatar.Image
+                        alt={user?.username ?? "User"}
+                        src={DEFAULT_AVATAR}
+                      />
+                      <Avatar.Fallback delayMs={600}>
+                        {user ? getInitials(user.username) : "?"}
+                      </Avatar.Fallback>
+                    </Avatar>
+                  </span>
+                </PopoverTrigger>
+                <PopoverContent className="min-w-[12rem] p-0 border border-default-200 bg-content1 shadow-lg rounded-medium z-50 overflow-hidden">
+                  <div className="px-3 pt-3 pb-2 border-b border-default-200">
+                    <div className="flex items-center gap-2">
+                      <Avatar size="sm">
+                        <Avatar.Image
+                          alt={user?.username ?? "User"}
+                          src={DEFAULT_AVATAR}
+                        />
+                        <Avatar.Fallback delayMs={600}>
+                          {user ? getInitials(user.username) : "?"}
+                        </Avatar.Fallback>
+                      </Avatar>
+                      <div className="flex flex-col gap-0 min-w-0">
+                        <p className="text-sm leading-5 font-medium truncate">
+                          {user?.username ?? "User"}
+                        </p>
+                        {user?.email && (
+                          <p className="text-xs leading-none text-default-500 truncate">
+                            {user.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <nav className="py-1" aria-label="Profile menu">
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-default-100 rounded-none outline-none"
+                      onClick={() => router.push("/Profile")}
                     >
-                      <Icon icon="solar:user-linear" className="text-default-500 mr-2" width={18} />
+                      <Icon icon="solar:user-linear" className="text-default-500" width={18} />
                       My Profile
-                    </DropdownItem>
-                    <DropdownItem
-                      key="dark-mode"
-                      onPress={() => setTheme((theme ?? "dark") === "light" ? "dark" : "light")}
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-default-100 rounded-none outline-none"
+                      onClick={() => setTheme((theme ?? "dark") === "light" ? "dark" : "light")}
                     >
                       {(theme ?? "dark") === "dark" ? (
-                        <Icon icon="solar:sun-linear" className="text-default-500 mr-2" width={18} />
+                        <Icon icon="solar:sun-linear" className="text-default-500" width={18} />
                       ) : (
-                        <Icon icon="solar:moon-linear" className="text-default-500 mr-2" width={18} />
+                        <Icon icon="solar:moon-linear" className="text-default-500" width={18} />
                       )}
                       Toggle Dark Mode
-                    </DropdownItem>
-                    <DropdownItem
-                      key="help"
-                      onPress={openHelpDrawer}
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-default-100 rounded-none outline-none"
+                      onClick={openHelpDrawer}
                     >
-                      <Icon icon="solar:question-circle-linear" className="text-default-500 mr-2" width={18} />
+                      <Icon icon="solar:question-circle-linear" className="text-default-500" width={18} />
                       Help
-                    </DropdownItem>
-                    <DropdownItem
-                      key="logout"
-                      className="text-danger"
-                      onPress={handleLogout}
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-default-100 rounded-none outline-none text-pink-500"
+                      onClick={() => router.push("/matcha")}
                     >
-                      <Icon icon="solar:logout-2-linear" className="text-danger mr-2" width={18} />
+                      <HeartFilledIcon className="text-danger" />
+                      Find Love
+                    </button>
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-danger-50 hover:text-danger text-danger rounded-none outline-none"
+                      onClick={handleLogout}
+                    >
+                      <Icon icon="solar:logout-2-linear" width={18} />
                       Logout
-                    </DropdownItem>
-                  </DropdownSection>
-                </DropdownMenu>
-              </Dropdown>
-              <Link href="/matcha" className="inline-flex items-center gap-1.5 min-h-9 px-4 rounded-lg text-sm font-normal text-white bg-pink-500 hover:bg-pink-600">
-                <HeartFilledIcon className="text-white" />
+                    </button>
+                  </nav>
+                </PopoverContent>
+              </Popover>
+              <Link href="/matcha" className="inline-flex shrink-0 items-center gap-1.5 min-h-9 px-3 py-2 rounded-lg text-sm font-normal text-white bg-pink-500 hover:bg-pink-600 whitespace-nowrap">
+                <HeartFilledIcon className="text-white shrink-0" />
                 Find Love
               </Link>
             </>

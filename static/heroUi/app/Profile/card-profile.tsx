@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, Button, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner } from "@heroui/react";
+import { Card, Button, Chip, Spinner } from "@heroui/react";
 import { Image } from "@/components/Image";
 import { Progress } from "@/components/Progress";
 import { Icon } from "@iconify/react";
@@ -502,68 +502,57 @@ function ConnectionsTable() {
           </Button>
         </div>
 
-        <Table aria-label="Connections table">
-          <Table.Content>
-          <TableHeader>
-            <TableColumn>NAME</TableColumn>
-            <TableColumn>AGE</TableColumn>
-            <TableColumn>LOCATION</TableColumn>
-            <TableColumn>STATUS</TableColumn>
-            <TableColumn>FAME</TableColumn>
-          </TableHeader>
-          <TableBody renderEmptyState={() => "No connections found."}>
+        <div className="overflow-x-auto rounded-lg border border-default-200" role="region" aria-label="Connections table">
+          <div className="min-w-[600px]">
+            <div className="grid grid-cols-[1fr_auto_1fr_auto_auto] gap-3 px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider border-b border-default-200 bg-default-100/50">
+              <div>Name</div>
+              <div>Age</div>
+              <div>Location</div>
+              <div>Status</div>
+              <div>Fame</div>
+            </div>
             {connections.map((connection) => (
-              <TableRow
+              <button
                 key={connection.id}
-                className="cursor-pointer hover:bg-default-100"
+                type="button"
                 onClick={() => router.push(`/discover/${connection.id}`)}
+                className="grid grid-cols-[1fr_auto_1fr_auto_auto] gap-3 px-4 py-3 w-full text-left items-center rounded-none hover:bg-default-100 border-b border-default-100 last:border-b-0 transition-colors"
               >
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Image
-                      alt={connection.first_name}
-                      className="w-10 h-10 rounded-full object-cover"
-                      src={connection.profile_picture && connection.profile_picture !== "-" ? getUploadUrl(connection.profile_picture) : "https://heroui.com/images/hero-card.jpeg"}
-                    />
-                    <div>
-                      <p className="font-semibold">
-                        {connection.first_name} {connection.last_name}
-                      </p>
-                      <p className="text-xs text-default-500">@{connection.username}</p>
-                    </div>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Image
+                    alt={connection.first_name}
+                    className="w-10 h-10 rounded-full object-cover shrink-0"
+                    src={connection.profile_picture && connection.profile_picture !== "-" ? getUploadUrl(connection.profile_picture) : "https://heroui.com/images/hero-card.jpeg"}
+                  />
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">
+                      {connection.first_name} {connection.last_name}
+                    </p>
+                    <p className="text-xs text-default-500 truncate">@{connection.username}</p>
                   </div>
-                </TableCell>
-                <TableCell>
-                  {connection.age > 0 ? `${connection.age} years` : "-"}
-                </TableCell>
-                <TableCell>
-                  {connection.location || "-"}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
-                    {connection.is_online ? (
-                      <Chip size="sm" variant="secondary">
-                        Online
-                      </Chip>
-                    ) : (
-                      <span className="text-xs text-default-500">
-                        {formatLastSeen(connection.last_seen)}
-                      </span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
+                </div>
+                <div className="text-sm">{connection.age > 0 ? `${connection.age} years` : "-"}</div>
+                <div className="text-sm truncate">{connection.location || "-"}</div>
+                <div className="flex flex-col gap-1">
+                  {connection.is_online ? (
                     <Chip size="sm" variant="secondary">
-                      Level {Math.floor(connection.fame_rating)}
+                      Online
                     </Chip>
-                  </div>
-                </TableCell>
-              </TableRow>
+                  ) : (
+                    <span className="text-xs text-default-500">
+                      {formatLastSeen(connection.last_seen)}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <Chip size="sm" variant="secondary">
+                    Level {Math.floor(connection.fame_rating)}
+                  </Chip>
+                </div>
+              </button>
             ))}
-          </TableBody>
-          </Table.Content>
-        </Table>
+          </div>
+        </div>
       </Card.Content>
     </Card>
   );

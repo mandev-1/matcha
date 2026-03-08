@@ -123,8 +123,10 @@ function BotActivityPageContent() {
       <Table aria-label="Bot activity log table">
         <Table.Content>
         <TableHeader>
-          {columns.map((column) => (
-            <TableColumn key={column.key}>{column.label}</TableColumn>
+          {columns.map((column, index) => (
+            <TableColumn key={column.key} isRowHeader={index === 0}>
+              {column.label}
+            </TableColumn>
           ))}
         </TableHeader>
         <TableBody items={data?.data.activities ?? []}>

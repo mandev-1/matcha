@@ -252,7 +252,7 @@ export default function MatchaPage() {
 
   return (
     <ProtectedRoute requireAuth={true} requireSetup={true}>
-      <div className="flex flex-col gap-6 w-full px-2 md:px-4 py-8">
+      <div className="flex flex-col gap-6 w-full max-w-full min-w-0 px-2 md:px-4 py-8">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold">Welcome to Matcha</h1>
@@ -373,7 +373,7 @@ export default function MatchaPage() {
         )}
 
         {isLoading && !matchActive && profiles.length === 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 w-full min-w-0">
             {[...Array(12)].map((_, i) => (
               <Card key={i} className="w-full">
                 <Skeleton className="rounded-lg h-64 w-full" />
@@ -395,7 +395,7 @@ export default function MatchaPage() {
         ) : (inMatchMode || profiles.length > 0) && !matchComplete ? (
           <>
             {round < MATCH_ROUNDS && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 w-full min-w-0">
               {displayProfiles.map((profile) => {
                 const isKept = profile.id === keptProfileId;
                 const handlePictureClick = (e: React.MouseEvent) => {

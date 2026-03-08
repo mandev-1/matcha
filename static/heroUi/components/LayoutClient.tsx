@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { ScrollShadow, Toast } from "@heroui/react";
 import { Navbar } from "@/components/navbar";
 import { Sidebar } from "@/components/Sidebar";
@@ -8,19 +9,31 @@ import { LocationMiddleware } from "@/components/LocationMiddleware";
 import { HelpDrawer } from "@/components/HelpDrawer";
 import { NotificationPanel } from "@/components/NotificationPanel";
 import { SetupGuard } from "@/components/SetupGuard";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function LayoutClient({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
+
+  const sidebarVisible =
+    isAuthenticated &&
+    !pathname?.startsWith("/login") &&
+    !pathname?.startsWith("/register") &&
+    !pathname?.startsWith("/sign-up");
+
   return (
     <>
       <Toast.Provider />
       <LocationMiddleware>
         <SetupGuard>
-          <div className="relative flex flex-row h-full min-w-0">
+          <div className="relative flex flex-row h-full min-h-screen w-full max-w-[100vw] overflow-x-hidden">
             <Sidebar />
-            <div className="flex-1 flex flex-col ml-0 md:ml-20 h-full min-w-0 pb-20 md:pb-0">
+            <div
+              className={`flex-1 flex flex-col min-w-0 w-full max-w-full h-full pb-20 md:pb-0 overflow-x-hidden ${sidebarVisible ? "md:ml-20" : ""}`}
+            >
               <Navbar />
-              <ScrollShadow className="flex-1 overflow-y-auto" size={100}>
-                <main className="container mx-auto max-w-7xl px-3 sm:px-4 md:px-6 h-full min-h-0">
+              <ScrollShadow className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden" size={100}>
+                <main className="container mx-auto max-w-7xl w-full px-3 sm:px-4 md:px-6 py-4 min-h-0">
                   {children}
                 </main>
               </ScrollShadow>

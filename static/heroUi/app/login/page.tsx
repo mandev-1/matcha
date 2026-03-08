@@ -123,7 +123,7 @@ function LoginContent() {
 
   return (
     <ProtectedRoute redirectIfAuth="/matcha">
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex min-h-[80vh] w-full items-center justify-center py-8">
       <div className="rounded-large flex w-full max-w-sm flex-col gap-4 px-8 pt-6 pb-10">
         <p className="text-left text-3xl font-semibold">
           Log In
@@ -214,7 +214,7 @@ function LoginContent() {
             <Checkbox defaultSelected name="remember">
               Remember me
             </Checkbox>
-            <Link className="text-default-500" href="#">
+            <Link className="text-default-500" href="/forgot-password">
               Forgot password?
             </Link>
           </div>
@@ -235,7 +235,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="flex h-full w-full items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="flex min-h-[calc(100vh-10rem)] w-full items-center justify-center">Loading...</div>}>
       <LoginContent />
     </Suspense>
   );

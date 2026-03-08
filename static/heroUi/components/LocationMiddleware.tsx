@@ -5,7 +5,7 @@ import { Button, Input, TextField, Label, useOverlayState } from "@heroui/react"
 import { ModalCompat, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
 import { addToast } from "@/lib/addToast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { getApiUrl } from "@/lib/apiUrl";
 
@@ -16,6 +16,7 @@ interface LocationMiddlewareProps {
 export function LocationMiddleware({ children }: LocationMiddlewareProps) {
   const { isAuthenticated, logout, token } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const overlayState = useOverlayState({ defaultOpen: false });
   const { isOpen, open: onOpen, setOpen } = overlayState;
   const setModalOpen = (open: boolean) => setOpen(open);
@@ -61,11 +62,11 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
         const locationUpdatedAt = data.data?.location_updated_at;
         const hasLocation = data.data?.latitude && data.data?.longitude;
 
-        // If no location, prompt immediately (new user)
+        // If no location, prompt immediately (new user) — but not on runway (profile setup)
         if (!hasLocation) {
           setIsNewUser(true);
           setIsChecking(false);
-          onOpen();
+          if (pathname !== "/runway") onOpen();
           return;
         }
 
@@ -75,7 +76,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
           const now = new Date();
           const diffMinutes = (now.getTime() - updatedAt.getTime()) / (1000 * 60);
 
-          if (diffMinutes >= 30) {
+          if (diffMinutes >= 30 && pathname !== "/runway") {
             setIsNewUser(false);
             setIsChecking(false);
             onOpen();
@@ -96,7 +97,7 @@ export function LocationMiddleware({ children }: LocationMiddlewareProps) {
     const interval = setInterval(checkLocation, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, token, onOpen]);
+  }, [isAuthenticated, token, onOpen, pathname]);
 
   const handleConsent = async () => {
     // If Try Again was clicked twice, set to Prague

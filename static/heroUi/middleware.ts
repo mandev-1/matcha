@@ -4,10 +4,14 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Redirect /match (typo) and /Matcha (wrong case) to /matcha
-  // Fixes 404 on case-sensitive systems and common typos
+  // Disabled routes: redirect to home
+  if (pathname === "/matcha" || pathname === "/search") {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // Redirect /match (typo) and /Matcha (wrong case) to home (matcha is disabled)
   if (pathname === "/match" || pathname === "/Matcha") {
-    return NextResponse.redirect(new URL("/matcha", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

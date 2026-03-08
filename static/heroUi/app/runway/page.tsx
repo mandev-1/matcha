@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Form, Tabs, Tab, RadioGroup, Radio, Slider, ScrollShadow, Chip, TextArea, Input } from "@heroui/react";
+import { Button, Card, Form, Tabs, Tab, RadioGroup, Radio, Slider, Chip, TextArea, Input } from "@heroui/react";
 import { Spacer } from "@/components/Spacer";
 import { Divider } from "@/components/Divider";
 import { SelectCompat } from "@/components/SelectCompat";
@@ -271,9 +271,9 @@ export default function RunwayPage() {
       case 0: // Create
         return (
           <div className="flex justify-center w-full">
-            <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col">
+            <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col shadow-none border border-default-200">
               <Card.Content className="px-4 flex-1 min-h-0 overflow-hidden p-0">
-                <ScrollShadow className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch" size={100}>
+                <div className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch">
                 <div className="flex w-full flex-col mb-6">
                   <h4 className="text-large mb-4">My Gender</h4>
                   <RadioGroup
@@ -410,7 +410,7 @@ export default function RunwayPage() {
                     </div>
                   </div>
                 </Form>
-                </ScrollShadow>
+                </div>
               </Card.Content>
             </Card>
           </div>
@@ -418,9 +418,9 @@ export default function RunwayPage() {
       case 1: // Review
         return (
           <div className="flex justify-center w-full">
-            <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col">
+            <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col shadow-none border border-default-200">
               <Card.Content className="px-4 flex-1 min-h-0 overflow-hidden p-0">
-                <ScrollShadow className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch" size={100}>
+                <div className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch">
                   <h2 className="text-2xl font-semibold mb-4">Review Your Profile</h2>
                   <p className="text-default-600 mb-6">
                     Review all the information you've entered before publishing your profile.
@@ -618,7 +618,7 @@ export default function RunwayPage() {
                       Continue to Publish
                     </Button>
                   </div>
-                </ScrollShadow>
+                </div>
               </Card.Content>
             </Card>
           </div>
@@ -626,9 +626,9 @@ export default function RunwayPage() {
       case 2: // Publish
         return (
           <div className="flex justify-center w-full">
-            <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col">
+            <Card className="w-full max-w-[500px] h-[420px] min-h-[280px] max-h-[85vh] flex flex-col shadow-none border border-default-200">
               <Card.Content className="px-4 flex-1 min-h-0 overflow-hidden p-0">
-                <ScrollShadow className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch" size={100}>
+                <div className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 scroll-touch">
                   <h2 className="text-2xl font-semibold mb-4">Publish Your Profile</h2>
                   <p className="text-default-600 mb-6">
                     You're all set! Upload your photos and publish your profile to start matching with other users.
@@ -733,7 +733,7 @@ isPending={loading}
                       </p>
                     )}
                   </div>
-                </ScrollShadow>
+                </div>
               </Card.Content>
             </Card>
           </div>

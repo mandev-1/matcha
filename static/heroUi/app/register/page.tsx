@@ -190,10 +190,15 @@ export default function Component() {
             </InputGroup>
           </TextField>
           <Checkbox isRequired className="py-4">
-            I agree with the&nbsp;
-            <Link className="relative z-1" href="#">Terms</Link>
-            &nbsp; and&nbsp;
-            <Link className="relative z-1" href="#">Privacy Policy</Link>
+            <Checkbox.Control>
+              <Checkbox.Indicator />
+            </Checkbox.Control>
+            <Checkbox.Content>
+              I agree with the&nbsp;
+              <Link className="relative z-10" href="#">Terms</Link>
+              &nbsp;and&nbsp;
+              <Link className="relative z-10" href="#">Privacy Policy</Link>
+            </Checkbox.Content>
           </Checkbox>
           <Button className="w-full bg-pink-500 text-white hover:bg-pink-600" type="submit" isPending={loading}>
             Sign Up

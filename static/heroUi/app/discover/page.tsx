@@ -669,7 +669,7 @@ export default function DiscoverPage() {
                               key={tag}
                               size="sm"
                               variant="secondary"
-                              color={showSharedAsYellow ? "warning" : "default"}
+                              color={showSharedAsYellow ? "warning" : undefined}
                               className={showSharedAsYellow ? "bg-warning/20 text-warning border-warning/30" : "text-default-700 dark:text-default-300"}
                             >
                               {tag}
