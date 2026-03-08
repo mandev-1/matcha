@@ -137,7 +137,7 @@ export const Navbar = () => {
               <div className="flex shrink-0 items-center">
                 <NotificationBell />
               </div>
-              <Popover placement="bottom end">
+              <Popover>
                 <PopoverTrigger>
                   <span
                     className="rounded-full inline-flex cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-default-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
