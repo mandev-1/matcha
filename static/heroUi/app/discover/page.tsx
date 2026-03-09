@@ -785,7 +785,7 @@ export default function DiscoverPage() {
           <h2 className="text-lg font-semibold text-foreground">Filter & Sort</h2>
           <Button
             size="sm"
-            variant="light"
+            variant="ghost"
             className="text-default-500 min-w-0"
             onPress={() => {
               setSortBy("");
@@ -944,7 +944,7 @@ export default function DiscoverPage() {
           </section>
         </ModalBody>
         <ModalFooter className="border-t border-default-200 gap-2">
-          <Button variant="flat" onPress={() => onFilterModalOpenChange(false)}>
+          <Button variant="ghost" onPress={() => onFilterModalOpenChange(false)}>
             Cancel
           </Button>
           <Button color="primary" onPress={() => onFilterModalOpenChange(false)}>
