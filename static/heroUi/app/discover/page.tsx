@@ -45,6 +45,14 @@ interface TagMatchStatus {
 /** Level at which a user is shown as "mafia boss" (rainbow glow + hover dialog). Use 100 to match max level in docs, or 1000 for a future tier. */
 const MAFIA_BOSS_LEVEL = 100;
 
+const SORT_LABELS: Record<string, string> = {
+  age_asc: "Age (youngest first)",
+  age_desc: "Age (oldest first)",
+  location: "Location (closest first)",
+  fame: "Fame rating (highest first)",
+  tags: "Common tags (most first)",
+};
+
 export default function DiscoverPage() {
   const { token } = useAuth();
   const router = useRouter();
@@ -466,13 +474,20 @@ export default function DiscoverPage() {
   return (
     <ProtectedRoute requireAuth={true} requireSetup={true}>
       <div className="flex flex-col gap-6 max-w-7xl mx-auto w-full px-2 md:px-4 py-8">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <h1 
-            onClick={onFilterModalOpen}
-            className="text-3xl md:text-4xl font-bold underline decoration-blue-500 text-default-900 dark:text-default-100 hover:decoration-blue-600 transition-colors cursor-pointer"
-          >
-            Discover
-          </h1>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <h1 
+              onClick={onFilterModalOpen}
+              className="text-3xl md:text-4xl font-bold underline decoration-blue-500 text-default-900 dark:text-default-100 hover:decoration-blue-600 transition-colors cursor-pointer"
+            >
+              Discover
+            </h1>
+          </div>
+          {sortBy && SORT_LABELS[sortBy] && (
+            <p className="text-sm italic text-default-500 dark:text-default-400">
+              Sorting by {SORT_LABELS[sortBy]}
+            </p>
+          )}
         </div>
 
         {/* Tag Alert */}

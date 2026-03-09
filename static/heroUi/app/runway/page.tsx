@@ -68,6 +68,16 @@ export default function RunwayPage() {
       return;
     }
 
+    const tagsToValidate = tags.slice(0, 5).map((t) => normalizeTag(t)).filter(Boolean);
+    if (tagsToValidate.length < 3) {
+      addToast({
+        title: "At least 3 tags required",
+        description: "Please add at least 3 interest tags before publishing your profile.",
+        color: "danger",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Save profile (gender, preference, bio, tags with same sanitization as Profile, plus personality fields)
@@ -682,8 +692,8 @@ export default function RunwayPage() {
                       <Button
                         className="flex-1 bg-pink-500 text-white hover:bg-pink-600"
                         onPress={handleFinalStep}
-isPending={loading}
-                        isDisabled={!hasAtLeastOnePhoto}
+                        isPending={loading}
+                        isDisabled={!hasAtLeastOnePhoto || tags.filter((t) => normalizeTag(t).trim()).length < 3}
                       >
                         Who will I find on Matcha?
                       </Button>
@@ -691,6 +701,11 @@ isPending={loading}
                     {!hasAtLeastOnePhoto && (
                       <p className="text-sm text-warning text-center">
                         Add at least one photo (e.g. profile picture in the first card) to publish.
+                      </p>
+                    )}
+                    {hasAtLeastOnePhoto && tags.filter((t) => normalizeTag(t).trim()).length < 3 && (
+                      <p className="text-sm text-warning text-center">
+                        Add at least 3 interest tags to publish.
                       </p>
                     )}
                   </div>
