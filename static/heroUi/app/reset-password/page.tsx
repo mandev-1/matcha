@@ -92,7 +92,7 @@ function ResetPasswordContent() {
             onChange={(v) => { setNewPassword(v); setError(""); }}
           >
             <Label>New password</Label>
-            <InputGroup variant="bordered">
+            <InputGroup variant="secondary">
               <InputGroup.Input
                 placeholder="Enter new password"
                 type={isVisible ? "text" : "password"}
@@ -120,7 +120,7 @@ function ResetPasswordContent() {
             isInvalid={!!confirmPassword && newPassword !== confirmPassword}
           >
             <Label>Confirm new password</Label>
-            <InputGroup variant="bordered">
+            <InputGroup variant="secondary">
               <InputGroup.Input
                 placeholder="Confirm new password"
                 type={isConfirmVisible ? "text" : "password"}
@@ -145,7 +145,7 @@ function ResetPasswordContent() {
           )}
           <Button
             type="submit"
-            color="primary"
+            variant="primary"
             className="w-full"
             isPending={loading}
             isDisabled={!newPassword || !confirmPassword || newPassword !== confirmPassword || newPassword.length < 8}
