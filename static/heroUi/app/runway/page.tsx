@@ -282,7 +282,7 @@ export default function RunwayPage() {
                 <Spacer y={4} />
 
                 <div className="flex w-full flex-col mb-6">
-                  <h4 className="text-large mb-4">What I want:</h4>
+                  <h4 className="text-large mb-4">What I want to see on this app:</h4>
                   <ListBox
                     aria-label="Interest preference"
                     className="w-full max-w-full"
