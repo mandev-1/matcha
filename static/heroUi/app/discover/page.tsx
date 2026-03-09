@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useTransition } from "react";
-import { Card, Button, Chip, Skeleton, Link, Alert, Popover, PopoverTrigger, PopoverContent, Slider, Label, Checkbox, RadioGroup, Radio, useOverlayState } from "@heroui/react";
-import clsx from "clsx";
+import { Card, Button, Chip, Skeleton, Link, Alert, Popover, PopoverTrigger, PopoverContent, Slider, Label, Description, Checkbox, ListBox, useOverlayState } from "@heroui/react";
 import { ModalCompat, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
 import { Image } from "@/components/Image";
 import { Icon } from "@iconify/react";
@@ -802,147 +801,146 @@ export default function DiscoverPage() {
         </ModalHeader>
         <ModalBody className="gap-6 py-6">
           {/* Sort By */}
-          <section className="flex flex-col gap-3">
+          <section className="flex flex-col gap-2">
             <h3 className="text-sm font-medium text-foreground">Sort by</h3>
-            <RadioGroup
-              value={sortBy}
-              onChange={(value) => {
-                setSortBy(value);
+            <ListBox
+              aria-label="Sort order"
+              className="w-full max-w-full overflow-visible"
+              selectedKeys={sortBy === "" ? ["default"] : [sortBy]}
+              onSelectionChange={(keys) => {
+                const key = Array.from(keys)[0] as string;
+                setSortBy(key === "default" ? "" : key ?? "");
                 setOffset(0);
               }}
-              orientation="vertical"
-              className="gap-1.5"
+              selectionMode="single"
             >
-              {[
-                { value: "", label: "Default (distance & tags)" },
-                { value: "age_asc", label: "Age (youngest first)" },
-                { value: "age_desc", label: "Age (oldest first)" },
-                { value: "location", label: "Location (closest first)" },
-                { value: "fame", label: "Fame rating (highest first)" },
-                { value: "tags", label: "Common tags (most first)" },
-              ].map(({ value, label }) => (
-                <Radio
-                  key={value || "default"}
-                  value={value}
-                  classNames={{
-                    base: clsx(
-                      "m-0 rounded-lg border border-transparent bg-default-100/50 px-3 py-2.5 max-w-full",
-                      "data-[selected=true]:border-primary data-[selected=true]:bg-primary/5"
-                    ),
-                    control: "border-default-300",
-                  }}
-                >
-                  {label}
-                </Radio>
-              ))}
-            </RadioGroup>
+              <ListBox.Item id="default" textValue="Default (distance & tags)">
+                <div className="flex flex-col gap-0.5">
+                  <Label className="text-sm font-medium">Default</Label>
+                  <Description className="text-xs">Distance & tags</Description>
+                </div>
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="age_asc" textValue="Age (youngest first)">
+                <div className="flex flex-col gap-0.5">
+                  <Label className="text-sm font-medium">Age (youngest first)</Label>
+                  <Description className="text-xs">Show younger profiles first</Description>
+                </div>
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="age_desc" textValue="Age (oldest first)">
+                <div className="flex flex-col gap-0.5">
+                  <Label className="text-sm font-medium">Age (oldest first)</Label>
+                  <Description className="text-xs">Show older profiles first</Description>
+                </div>
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="location" textValue="Location (closest first)">
+                <div className="flex flex-col gap-0.5">
+                  <Label className="text-sm font-medium">Location (closest first)</Label>
+                  <Description className="text-xs">Nearest profiles first</Description>
+                </div>
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="fame" textValue="Fame rating (highest first)">
+                <div className="flex flex-col gap-0.5">
+                  <Label className="text-sm font-medium">Fame rating (highest first)</Label>
+                  <Description className="text-xs">Most popular first</Description>
+                </div>
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+              <ListBox.Item id="tags" textValue="Common tags (most first)">
+                <div className="flex flex-col gap-0.5">
+                  <Label className="text-sm font-medium">Common tags (most first)</Label>
+                  <Description className="text-xs">Best tag match first</Description>
+                </div>
+                <ListBox.ItemIndicator />
+              </ListBox.Item>
+            </ListBox>
           </section>
 
           {/* Filters */}
-          <section className="flex flex-col gap-5 border-t border-default-200 pt-4">
+          <section className="flex flex-col gap-4 border-t border-default-200 pt-4">
             <h3 className="text-sm font-medium text-foreground">Filters</h3>
 
-            <div className="flex flex-col gap-3">
-              <div className="flex items-baseline justify-between gap-2">
-                <Label className="text-sm font-normal text-foreground">Age range</Label>
-                <span className="text-xs text-default-500 tabular-nums">{ageRange[0]} – {ageRange[1]} years</span>
-              </div>
-              <Slider
-                minValue={18}
-                maxValue={100}
-                step={1}
-                value={ageRange}
-                onChange={(value) => {
-                  setAgeRange(value as number[]);
-                  setOffset(0);
-                }}
-                formatOptions={{ style: "decimal" }}
-                size="sm"
-                className="w-full"
-              >
-                <Slider.Track>
-                  {({ state }) => (
-                    <>
-                      <Slider.Fill />
-                      {state.values.map((_, i) => (
-                        <Slider.Thumb key={i} index={i} />
-                      ))}
-                    </>
-                  )}
-                </Slider.Track>
-              </Slider>
-            </div>
+            <Slider
+              minValue={18}
+              maxValue={100}
+              step={1}
+              value={ageRange}
+              onChange={(value) => {
+                setAgeRange(value as number[]);
+                setOffset(0);
+              }}
+              formatOptions={{ style: "decimal" }}
+            >
+              <Label>Age range</Label>
+              <Slider.Output />
+              <Slider.Track>
+                {({ state }) => (
+                  <>
+                    <Slider.Fill />
+                    {state.values.map((_, i) => (
+                      <Slider.Thumb key={i} index={i} />
+                    ))}
+                  </>
+                )}
+              </Slider.Track>
+            </Slider>
 
-            <div className="flex flex-col gap-3">
-              <div className="flex items-baseline justify-between gap-2">
-                <Label className="text-sm font-normal text-foreground">Distance (km)</Label>
-                <span className="text-xs text-default-500 tabular-nums">{distanceRange[0]} – {distanceRange[1]} km</span>
-              </div>
-              <Slider
-                minValue={0}
-                maxValue={5000}
-                step={10}
-                value={distanceRange}
-                onChange={(value) => {
-                  setDistanceRange(value as number[]);
-                  setOffset(0);
-                }}
-                formatOptions={{ style: "decimal", maximumFractionDigits: 0 }}
-                size="sm"
-                className="w-full"
-              >
-                <Slider.Track>
-                  {({ state }) => (
-                    <>
-                      <Slider.Fill />
-                      {state.values.map((_, i) => (
-                        <Slider.Thumb key={i} index={i} />
-                      ))}
-                    </>
-                  )}
-                </Slider.Track>
-              </Slider>
-            </div>
+            <Slider
+              minValue={0}
+              maxValue={5000}
+              step={10}
+              value={distanceRange}
+              onChange={(value) => {
+                setDistanceRange(value as number[]);
+                setOffset(0);
+              }}
+              formatOptions={{ style: "decimal", maximumFractionDigits: 0 }}
+            >
+              <Label>Distance (km)</Label>
+              <Slider.Output />
+              <Slider.Track>
+                {({ state }) => (
+                  <>
+                    <Slider.Fill />
+                    {state.values.map((_, i) => (
+                      <Slider.Thumb key={i} index={i} />
+                    ))}
+                  </>
+                )}
+              </Slider.Track>
+            </Slider>
 
-            <div className="flex flex-col gap-3">
-              <div className="flex items-baseline justify-between gap-2">
-                <Label className="text-sm font-normal text-foreground">Minimum fame level</Label>
-                <span className="text-xs text-default-500 tabular-nums">Level {fameRatingMin}+</span>
-              </div>
-              <Slider
-                minValue={0}
-                maxValue={100}
-                step={1}
-                value={fameRatingMin}
-                onChange={(value) => {
-                  setFameRatingMin(value as number);
-                  setOffset(0);
-                }}
-                formatOptions={{ style: "decimal", maximumFractionDigits: 0 }}
-                size="sm"
-                className="w-full"
-              >
-                <Slider.Track>
-                  <Slider.Fill />
-                  <Slider.Thumb />
-                </Slider.Track>
-              </Slider>
-            </div>
+            <Slider
+              minValue={0}
+              maxValue={100}
+              step={1}
+              value={fameRatingMin}
+              onChange={(value) => {
+                setFameRatingMin(value as number);
+                setOffset(0);
+              }}
+              formatOptions={{ style: "decimal", maximumFractionDigits: 0 }}
+            >
+              <Label>Minimum fame level</Label>
+              <Slider.Output />
+              <Slider.Track>
+                <Slider.Fill />
+                <Slider.Thumb />
+              </Slider.Track>
+            </Slider>
 
-            <div className="flex flex-row items-center justify-between gap-3 rounded-lg border border-default-200 bg-default-50/50 px-3 py-2.5">
-              <Label className="text-sm font-normal text-foreground cursor-pointer flex-1">
-                Only show profiles with common tags
-              </Label>
-              <Checkbox
-                isSelected={onlyCommonTags}
-                onChange={(checked) => {
-                  setOnlyCommonTags(checked);
-                  setOffset(0);
-                }}
-                aria-label="Only show profiles with common tags"
-                classNames={{ base: "m-0" }}
-              />
-            </div>
+            <Checkbox
+              isSelected={onlyCommonTags}
+              onChange={(checked) => {
+                setOnlyCommonTags(checked);
+                setOffset(0);
+              }}
+            >
+              Only show profiles with common tags
+            </Checkbox>
           </section>
         </ModalBody>
         <ModalFooter className="border-t border-default-200 gap-2">

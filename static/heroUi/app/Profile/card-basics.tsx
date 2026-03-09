@@ -115,14 +115,14 @@ export default function CardBasics({
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full px-4 py-8">
+      <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full py-6">
         <p className="text-default-500">Loading profile...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-2xl mx-auto w-full px-4 pb-24">
+    <div className="flex flex-col gap-8 max-w-2xl mx-auto w-full py-6 pb-20 md:pb-6">
       <Form onSubmit={handleSave} className="flex flex-col gap-8">
         {/* Personal information */}
         <section className="flex flex-col gap-4">
@@ -357,11 +357,11 @@ export default function CardBasics({
         </section>
 
         {/* Actions */}
-        <section className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-default-200">
-            <Button type="button" variant="secondary" onPress={() => window.history.back()}>
+        <section className="flex flex-wrap items-center justify-end gap-3 border-t border-default-200 pt-6">
+          <Button type="button" variant="flat" onPress={() => window.history.back()}>
             Cancel
           </Button>
-          <Button type="submit" variant="secondary" isPending={isSaving}>
+          <Button type="submit" color="primary" isPending={isSaving}>
             Save changes
           </Button>
         </section>

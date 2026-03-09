@@ -33,13 +33,14 @@ export function LayoutClient({ children }: { children: React.ReactNode }) {
             >
               <Navbar />
               <ScrollShadow className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden" size={100}>
-                <main className="container mx-auto max-w-7xl w-full px-3 sm:px-4 md:px-6 py-4 min-h-0">
+                <main className="container mx-auto max-w-7xl w-full px-3 sm:px-4 md:px-6 py-4 min-h-0 pb-24 md:pb-4">
                   {children}
                 </main>
               </ScrollShadow>
-              <footer className="w-full border-t border-default-200 dark:border-default-100 py-4 mt-auto">
-                <div className="container mx-auto max-w-7xl px-1 md:px-6">
-                  <p className="text-xs text-default-500 text-center">
+              {/* Mobile: fixed above bottom nav. Desktop: in flow at end of content. */}
+              <footer className="md:relative fixed bottom-16 left-0 right-0 z-30 md:bottom-auto md:mt-auto w-full border-t border-default-200 dark:border-default-100 bg-background/95 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none py-2 md:py-4">
+                <div className="container mx-auto max-w-7xl px-3 md:px-6">
+                  <p className="text-[10px] md:text-xs text-default-500 text-center leading-tight">
                     © 2026 Matcha Project. This is a matcha project created in 2026, all data is collected just for exploration purposes and accounts may be AI generated to simulate traffic. Please do not enter your information as it may be sent to LLMs or leaked on internet as a result. Thank you.
                   </p>
                 </div>

@@ -86,6 +86,11 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    /*
+     * Run middleware for page navigation only. Exclude:
+     * - api, _next/static, _next/image, favicon.ico
+     * - static assets (e.g. .svg, .png, .jpg so /matcha_logo2.svg is served)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|css|js)$).*)",
   ],
 };
