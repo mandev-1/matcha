@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Avatar, Tabs, Button, Link, Tooltip, Modal, Card, Input, InputGroup, TextArea, Form, Chip, Skeleton, Spinner, useOverlayState, TextField, Label } from "@heroui/react";
 import { ModalCompat, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/ModalCompat";
 import { Image } from "@/components/Image";
@@ -41,7 +42,20 @@ const LockIcon = (props: React.SVGProps<SVGSVGElement>) => {
   );
 };
 
+const PROFILE_SECTIONS = ["card-preview", "basics", "settings"] as const;
+type ProfileSection = (typeof PROFILE_SECTIONS)[number];
+
+function isValidSection(s: string | null): s is ProfileSection {
+  return s !== null && PROFILE_SECTIONS.includes(s as ProfileSection);
+}
+
 export default function Component() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const sectionFromUrl = searchParams.get("section");
+  const initialSection: ProfileSection = isValidSection(sectionFromUrl) ? sectionFromUrl : "card-preview";
+
   const editDrawerOverlay = useOverlayState({ defaultOpen: false });
   const resetModalOverlay = useOverlayState({ defaultOpen: false });
   const passwordResetModalOverlay = useOverlayState({ defaultOpen: false });
@@ -80,7 +94,30 @@ export default function Component() {
       document.head.removeChild(style);
     };
   }, []);
-  const [selectedTab, setSelectedTab] = React.useState<string>("card-preview");
+  const [selectedTab, setSelectedTab] = React.useState<string>(initialSection);
+
+  React.useEffect(() => {
+    const s = searchParams.get("section");
+    if (isValidSection(s)) setSelectedTab(s);
+    else if (!s || s === "") setSelectedTab("card-preview");
+  }, [searchParams]);
+
+  const handleTabChange = React.useCallback(
+    (key: React.Key) => {
+      const section = String(key);
+      setSelectedTab(section);
+      const params = new URLSearchParams(searchParams.toString());
+      if (section === "card-preview") {
+        params.delete("section");
+      } else {
+        params.set("section", section);
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
   const [isResetting, setIsResetting] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -100,6 +137,7 @@ export default function Component() {
   // Image state
   const [userImages, setUserImages] = React.useState<(string | null)[]>(Array(5).fill(null));
   const [isUploadingImages, setIsUploadingImages] = React.useState(false);
+  const justDraggedRef = React.useRef(false);
   
   // Form state
   const [firstName, setFirstName] = React.useState<string>("");
@@ -426,7 +464,7 @@ export default function Component() {
           <Tabs
             className="flex-1 justify-center"
             selectedKey={selectedTab}
-            onSelectionChange={(key) => setSelectedTab(key as string)}
+            onSelectionChange={handleTabChange}
           >
             <Tabs.ListContainer>
               <Tabs.List aria-label="Profile sections">
@@ -461,7 +499,7 @@ export default function Component() {
             lastSeen={lastSeen}
             likesReceivedCount={likesReceivedCount}
             onImageUploadModalOpen={onImageUploadModalOpen}
-            onEditClick={() => setSelectedTab("basics")}
+            onEditClick={() => handleTabChange("basics")}
           />
         )}
         {selectedTab === "basics" && (
@@ -849,188 +887,181 @@ export default function Component() {
             <span>Upload & Manage Images</span>
           </div>
           <p className="text-sm text-default-500 font-normal mt-1">
-            Click on any slot to upload an image. Slot 1 is your profile picture.
+            Click a slot to upload or change an image. Drag a slot onto another to reorder. Slot 1 is your profile picture.
           </p>
         </ModalHeader>
         <ModalBody>
-                <div className="flex flex-col gap-4">
-                  {/* Image Carousel/Grid */}
-                  <div className="grid grid-cols-5 gap-3">
-                    {userImages.map((imageUrl, index) => (
-                      <div
-                        key={index}
-                        className={`relative aspect-square rounded-lg overflow-hidden border-2 ${
-                          index === 0 
-                            ? "border-primary border-dashed" 
-                            : "border-default-200"
-                        } cursor-pointer hover:border-primary transition-colors`}
-                        onClick={() => {
-                          const input = document.createElement("input");
-                          input.type = "file";
-                          input.accept = "image/*";
-                          input.onchange = async (e) => {
-                            const file = (e.target as HTMLInputElement).files?.[0];
-                            if (!file) return;
+          <div className="grid grid-cols-5 gap-3">
+            {userImages.map((imageUrl, index) => {
+              const displaySrc = imageUrl && !imageUrl.startsWith("data:") ? getUploadUrl(imageUrl) : imageUrl;
+              return (
+                <div
+                  key={index}
+                  draggable
+                  className={clsx(
+                    "relative aspect-square rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing transition-colors",
+                    index === 0 ? "border-primary border-dashed" : "border-default-200 hover:border-primary"
+                  )}
+                  onClick={() => {
+                    if (justDraggedRef.current) return;
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/*";
+                    input.onchange = async (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (!file) return;
 
-                            // Show preview
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              const newImages = [...userImages];
-                              newImages[index] = event.target?.result as string;
-                              setUserImages(newImages);
-                            };
-                            reader.readAsDataURL(file);
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        const newImages = [...userImages];
+                        newImages[index] = event.target?.result as string;
+                        setUserImages(newImages);
+                      };
+                      reader.readAsDataURL(file);
 
-                            // Upload image
-                            setIsUploadingImages(true);
-                            try {
-                              const formData = new FormData();
-                              formData.append("image", file);
-                              formData.append("slot", index.toString());
-                              formData.append("is_profile", index === 0 ? "1" : "0");
+                      setIsUploadingImages(true);
+                      try {
+                        const formData = new FormData();
+                        formData.append("image", file);
+                        formData.append("slot", index.toString());
+                        formData.append("is_profile", index === 0 ? "1" : "0");
 
-                              const token = localStorage.getItem("token");
-                              const response = await fetch(getApiUrl("/api/profile/upload-image"), {
-                                method: "POST",
-                                headers: {
-                                  Authorization: `Bearer ${token}`,
-                                },
-                                body: formData,
-                              });
+                        const token = localStorage.getItem("token");
+                        const response = await fetch(getApiUrl("/api/profile/upload-image"), {
+                          method: "POST",
+                          headers: { Authorization: `Bearer ${token}` },
+                          body: formData,
+                        });
 
-                              // Check if response is JSON
-                              const contentType = response.headers.get("content-type");
-                              if (!contentType || !contentType.includes("application/json")) {
-                                const text = await response.text();
-                                throw new Error(`Server error: ${text.substring(0, 100)}`);
-                              }
+                        const contentType = response.headers.get("content-type");
+                        if (!contentType || !contentType.includes("application/json")) {
+                          const text = await response.text();
+                          throw new Error(`Server error: ${text.substring(0, 100)}`);
+                        }
 
-                              const data = await response.json();
-                              if (response.ok && data.success) {
-                                const updatedImages = [...userImages];
-                                updatedImages[index] = data.data.file_path;
-                                setUserImages(updatedImages);
-                                addToast({
-                                  title: "Image uploaded",
-                                  description: index === 0 ? "Profile image updated" : `Image ${index + 1} uploaded`,
-                                  color: "success",
-                                });
-                              } else {
-                                throw new Error(data.error || "Failed to upload image");
-                              }
-                            } catch (error) {
-                              console.error("Error uploading image:", error);
-                              addToast({
-                                title: "Upload failed",
-                                description: error instanceof Error ? error.message : "Failed to upload image",
-                                color: "danger",
-                              });
-                              // Revert preview
-                              const revertedImages = [...userImages];
-                              revertedImages[index] = imageUrl;
-                              setUserImages(revertedImages);
-                            } finally {
-                              setIsUploadingImages(false);
-                            }
-                          };
-                          input.click();
-                        }}
-                      >
-                        {imageUrl ? (
-                          <>
-                            <Image
-                              src={imageUrl}
-                              alt={`Slot ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Icon icon="solar:camera-add-linear" className="text-3xl text-white" />
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-default-100">
-                            <Icon icon="solar:gallery-add-linear" className="text-4xl text-default-400 mb-2" />
-                            <span className="text-xs text-default-500">Click to upload</span>
-                          </div>
-                        )}
-                        {index === 0 && (
-                          <div className="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-1 rounded">
-                            Profile
-                          </div>
-                        )}
-                        <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                          {index + 1}
-                        </div>
+                        const data = await response.json();
+                        if (response.ok && data.success) {
+                          const updatedImages = [...userImages];
+                          updatedImages[index] = data.data.file_path;
+                          setUserImages(updatedImages);
+                          addToast({
+                            title: "Image uploaded",
+                            description: index === 0 ? "Profile image updated" : `Image ${index + 1} uploaded`,
+                            color: "success",
+                          });
+                        } else {
+                          throw new Error(data.error || "Failed to upload image");
+                        }
+                      } catch (error) {
+                        console.error("Error uploading image:", error);
+                        addToast({
+                          title: "Upload failed",
+                          description: error instanceof Error ? error.message : "Failed to upload image",
+                          color: "danger",
+                        });
+                        const revertedImages = [...userImages];
+                        revertedImages[index] = imageUrl;
+                        setUserImages(revertedImages);
+                      } finally {
+                        setIsUploadingImages(false);
+                      }
+                    };
+                    input.click();
+                  }}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("text/plain", String(index));
+                    e.dataTransfer.effectAllowed = "move";
+                    (e.target as HTMLElement).classList.add("opacity-60");
+                  }}
+                  onDragEnd={(e) => {
+                    (e.target as HTMLElement).classList.remove("opacity-60");
+                    justDraggedRef.current = true;
+                    setTimeout(() => { justDraggedRef.current = false; }, 100);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const dragIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
+                    const dropIndex = index;
+                    if (dragIndex === dropIndex) return;
+
+                    const newImages = [...userImages];
+                    const temp = newImages[dragIndex];
+                    newImages[dragIndex] = newImages[dropIndex];
+                    newImages[dropIndex] = temp;
+                    setUserImages(newImages);
+
+                    (async () => {
+                      const from = Math.min(dragIndex, dropIndex);
+                      const to = Math.max(dragIndex, dropIndex);
+                      try {
+                        const token = localStorage.getItem("token");
+                        const response = await fetch(getApiUrl("/api/profile/reorder-images"), {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                          },
+                          body: JSON.stringify({ slot1: from, slot2: to }),
+                        });
+                        const data = await response.json();
+                        if (response.ok && data.success) {
+                          addToast({
+                            title: "Images reordered",
+                            description: `Slots ${from + 1} and ${to + 1} swapped`,
+                            color: "success",
+                          });
+                        } else {
+                          throw new Error(data.error || "Failed to reorder");
+                        }
+                      } catch (error) {
+                        console.error("Error reordering images:", error);
+                        addToast({
+                          title: "Reorder failed",
+                          description: error instanceof Error ? error.message : "Failed to reorder images",
+                          color: "danger",
+                        });
+                        const reverted = [...userImages];
+                        const t = reverted[dragIndex];
+                        reverted[dragIndex] = reverted[dropIndex];
+                        reverted[dropIndex] = t;
+                        setUserImages(reverted);
+                      }
+                    })();
+                  }}
+                >
+                  {displaySrc ? (
+                    <>
+                      <Image
+                        src={displaySrc}
+                        alt={`Slot ${index + 1}`}
+                        className="w-full h-full object-cover pointer-events-none"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <Icon icon="solar:camera-add-linear" className="text-3xl text-white" />
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Swap Controls */}
-                  <div className="flex flex-col gap-2">
-                    <p className="text-sm font-semibold">Reorder Images</p>
-                    <div className="flex flex-wrap gap-2">
-                      {[0, 1, 2, 3].map((index) => (
-                        <Button
-                          key={index}
-                          size="sm"
-                          variant="secondary"
-                         
-                          onPress={async () => {
-                            // Swap images at index and index+1
-                            const newImages = [...userImages];
-                            const temp = newImages[index];
-                            newImages[index] = newImages[index + 1];
-                            newImages[index + 1] = temp;
-                            setUserImages(newImages);
-
-                            // Update backend
-                            try {
-                              const token = localStorage.getItem("token");
-                              const response = await fetch(getApiUrl("/api/profile/reorder-images"), {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  Authorization: `Bearer ${token}`,
-                                },
-                                body: JSON.stringify({
-                                  slot1: index,
-                                  slot2: index + 1,
-                                }),
-                              });
-
-                              const data = await response.json();
-                              if (response.ok && data.success) {
-                                addToast({
-                                  title: "Images reordered",
-                                  description: `Swapped slots ${index + 1} and ${index + 2}`,
-                                  color: "success",
-                                });
-                              } else {
-                                throw new Error(data.error || "Failed to reorder images");
-                              }
-                            } catch (error) {
-                              console.error("Error reordering images:", error);
-                              addToast({
-                                title: "Reorder failed",
-                                description: error instanceof Error ? error.message : "Failed to reorder images",
-                                color: "danger",
-                              });
-                              // Revert swap
-                              const revertedImages = [...userImages];
-                              const temp = revertedImages[index];
-                              revertedImages[index] = revertedImages[index + 1];
-                              revertedImages[index + 1] = temp;
-                              setUserImages(revertedImages);
-                            }
-                          }}
-                          >
-                          <Icon icon="solar:swap-linear" className="text-sm mr-1" />
-                          Swap {index + 1} ↔ {index + 2}
-                        </Button>
-                      ))}
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-default-100 pointer-events-none">
+                      <Icon icon="solar:gallery-add-linear" className="text-4xl text-default-400 mb-2" />
+                      <span className="text-xs text-default-500">Click to upload</span>
                     </div>
+                  )}
+                  {index === 0 && (
+                    <div className="absolute top-1 left-1 bg-primary text-white text-xs px-2 py-1 rounded pointer-events-none">
+                      Profile
+                    </div>
+                  )}
+                  <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                    {index + 1}
                   </div>
                 </div>
+              );
+            })}
+          </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" onPress={() => onImageUploadModalOpenChange(false)}>

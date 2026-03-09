@@ -253,8 +253,8 @@ export default function CardOther({
             src="https://heroui.com/images/hero-card.jpeg"
             width={200}
           />
-          <Card.Footer className="justify-between before:bg-white/10 border-white/20 border-1 overflow-hidden py-1 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
-            <p className="text-tiny text-white/80">Wipe profile (dev)?</p>
+          <Card.Footer className="justify-between bg-white/20 dark:bg-black/30 backdrop-blur-md backdrop-saturate-150 border-white/20 border-1 overflow-hidden py-1 absolute rounded-xl rounded-large bottom-1 left-2 right-2 shadow-small z-10">
+            <p className="text-tiny text-white/80">Fully reset profile?</p>
             <Button
               className="text-tiny text-white bg-black/20"
              

@@ -102,8 +102,8 @@ export default function CardProfile({
               </div>
             </div>
           </div>
-          <Card.Footer className="justify-between before:bg-white/10 border-white/20 border-1 overflow-hidden py-1 absolute before:rounded-xl rounded-large bottom-1 w-[calc(100%_-_8px)] shadow-small ml-1 z-10">
-            <p className="text-tiny text-white/80">{likesReceivedCount === 1 ? "1 like." : `${likesReceivedCount} likes.`}</p>
+          <Card.Footer className="justify-between bg-white/20 dark:bg-black/30 backdrop-blur-md backdrop-saturate-150 border-white/20 border-1 overflow-hidden py-1 absolute rounded-xl rounded-large bottom-1 left-2 right-2 shadow-small z-10">
+            <p className="text-tiny text-white font-medium [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">{likesReceivedCount === 1 ? "1 like." : `${likesReceivedCount} likes.`}</p>
             <Button
               className="text-tiny text-white bg-black/20"
              
@@ -560,37 +560,40 @@ function ConnectionsTable() {
 
 
 
+function formatChartDate(d: Date): string {
+  const now = new Date();
+  const isSameYear = d.getFullYear() === now.getFullYear();
+  if (isSameYear) return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return d.toLocaleDateString(undefined, { month: "short", year: "2-digit" });
+}
+
 function FameRatingEvolutionCard() {
   const { token } = useAuth();
   const [fameRating, setFameRating] = React.useState<number>(0);
+  const [createdAt, setCreatedAt] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const loadFameRating = async () => {
+    const load = async () => {
       try {
         setIsLoading(true);
         const response = await fetch(getApiUrl("/api/profile"), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.data && data.data.fame_rating !== undefined) {
-            setFameRating(data.data.fame_rating);
+          if (data.success && data.data) {
+            if (data.data.fame_rating !== undefined) setFameRating(data.data.fame_rating);
+            if (data.data.created_at) setCreatedAt(data.data.created_at);
           }
         }
       } catch (error) {
-        console.error("Error loading fame rating:", error);
+        console.error("Error loading profile for chart:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
-    if (token) {
-      loadFameRating();
-    }
+    if (token) load();
   }, [token]);
 
   if (isLoading) {
@@ -610,32 +613,37 @@ function FameRatingEvolutionCard() {
   const progressInCurrentLevel = fameRating - currentLevel;
   const progressPercentage = progressInCurrentLevel * 100;
 
-  const chartData = [];
-  const maxLevel = Math.min(currentLevel + 5, 100);
-  for (let i = Math.max(1, currentLevel - 4); i <= maxLevel; i++) {
-    if (i < currentLevel) {
-      chartData.push({ level: i, value: 1.0 });
-    } else if (i === currentLevel) {
-      chartData.push({ level: i, value: progressInCurrentLevel });
-    } else {
-      chartData.push({ level: i, value: 0 });
-    }
+  const now = new Date();
+  const start = createdAt ? new Date(createdAt) : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const startXP = 1.0;
+  const numPoints = 8;
+  const chartData: { date: Date; xp: number }[] = [];
+  for (let i = 0; i <= numPoints; i++) {
+    const t = i / numPoints;
+    const date = new Date(start.getTime() + t * (now.getTime() - start.getTime()));
+    const xp = startXP + t * (fameRating - startXP);
+    chartData.push({ date, xp });
   }
 
-  const maxValue = Math.max(...chartData.map(d => d.value), 0.1);
-  const chartHeight = 120;
+  const minXP = Math.min(startXP, fameRating, ...chartData.map((d) => d.xp));
+  const maxXP = Math.max(startXP, fameRating, ...chartData.map((d) => d.xp), minXP + 0.5);
+  const chartHeight = 140;
   const chartWidth = 400;
-  const padding = 20;
-  const chartInnerWidth = chartWidth - padding * 2;
-  const chartInnerHeight = chartHeight - padding * 2;
+  const paddingLeft = 36;
+  const paddingRight = 12;
+  const paddingTop = 8;
+  const paddingBottom = 24;
+  const chartInnerWidth = chartWidth - paddingLeft - paddingRight;
+  const chartInnerHeight = chartHeight - paddingTop - paddingBottom;
 
-  const points = chartData.map((d, i) => {
-    const x = padding + (i / (chartData.length - 1 || 1)) * chartInnerWidth;
-    const y = padding + chartInnerHeight - (d.value / maxValue) * chartInnerHeight;
-    return `${x},${y}`;
-  });
+  const xScale = (i: number) => paddingLeft + (i / (chartData.length - 1 || 1)) * chartInnerWidth;
+  const yScale = (xp: number) =>
+    paddingTop + chartInnerHeight - ((xp - minXP) / (maxXP - minXP)) * chartInnerHeight;
 
-  const pathData = `M ${points.join(' L ')}`;
+  const points = chartData.map((d, i) => `${xScale(i)},${yScale(d.xp)}`);
+  const pathData = `M ${points.join(" L ")}`;
+
+  const yTicks = [minXP, (minXP + maxXP) / 2, maxXP].filter((v, i, a) => a.indexOf(v) === i);
 
   return (
     <Card className="w-full">
@@ -667,74 +675,82 @@ function FameRatingEvolutionCard() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <h4 className="text-sm font-semibold text-default-600">Level Progression</h4>
+          <h4 className="text-sm font-semibold text-default-600">Level over time</h4>
           <div className="w-full overflow-x-auto">
             <svg
               width={chartWidth}
               height={chartHeight}
-              className="w-full"
+              className="w-full min-w-[320px]"
               viewBox={`0 0 ${chartWidth} ${chartHeight}`}
             >
-              {[0, 0.25, 0.5, 0.75, 1.0].map((val, i) => {
-                const y = padding + chartInnerHeight - (val / maxValue) * chartInnerHeight;
+              {/* Y-axis labels (XP / Level) */}
+              {yTicks.map((xp, i) => {
+                const y = yScale(xp);
                 return (
-                  <line
-                    key={i}
-                    x1={padding}
-                    y1={y}
-                    x2={chartWidth - padding}
-                    y2={y}
-                    stroke="currentColor"
-                    strokeWidth="0.5"
-                    className="text-default-200"
-                    strokeDasharray="2,2"
-                  />
+                  <g key={i}>
+                    <line
+                      x1={paddingLeft}
+                      y1={y}
+                      x2={chartWidth - paddingRight}
+                      y2={y}
+                      stroke="currentColor"
+                      strokeWidth="0.5"
+                      className="text-default-200"
+                      strokeDasharray="2,2"
+                    />
+                    <text
+                      x={paddingLeft - 6}
+                      y={y + 4}
+                      textAnchor="end"
+                      className="text-[10px] fill-default-500"
+                    >
+                      {xp.toFixed(1)}
+                    </text>
+                  </g>
                 );
               })}
 
+              {/* Area fill */}
               <path
-                d={`${pathData} L ${chartWidth - padding},${padding + chartInnerHeight} L ${padding},${padding + chartInnerHeight} Z`}
-                fill="url(#gradient)"
+                d={`${pathData} L ${chartWidth - paddingRight},${paddingTop + chartInnerHeight} L ${paddingLeft},${paddingTop + chartInnerHeight} Z`}
+                fill="url(#fameChartGradient)"
                 opacity="0.3"
               />
-
+              {/* Line */}
               <path
                 d={pathData}
                 fill="none"
                 stroke="hsl(var(--heroui-primary))"
-                strokeWidth="3"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-
-              {chartData.map((d, i) => {
-                const x = padding + (i / (chartData.length - 1 || 1)) * chartInnerWidth;
-                const y = padding + chartInnerHeight - (d.value / maxValue) * chartInnerHeight;
-                return (
-                  <circle
-                    key={i}
-                    cx={x}
-                    cy={y}
-                    r="4"
-                    fill="hsl(var(--heroui-primary))"
-                    className="drop-shadow-sm"
-                  />
-                );
-              })}
+              {/* Data points */}
+              {chartData.map((d, i) => (
+                <circle
+                  key={i}
+                  cx={xScale(i)}
+                  cy={yScale(d.xp)}
+                  r="3"
+                  fill="hsl(var(--heroui-primary))"
+                  className="drop-shadow-sm"
+                />
+              ))}
 
               <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <linearGradient id="fameChartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor="hsl(var(--heroui-primary))" stopOpacity="0.4" />
                   <stop offset="100%" stopColor="hsl(var(--heroui-primary))" stopOpacity="0.1" />
                 </linearGradient>
               </defs>
             </svg>
           </div>
-          <div className="flex justify-between text-xs text-default-500 px-2">
-            {chartData.map((d, i) => (
-              <span key={i}>L{d.level}</span>
-            ))}
+          {/* X-axis: time labels */}
+          <div className="flex justify-between text-xs text-default-500 pl-9 pr-3 -mt-1" style={{ width: chartWidth }}>
+            <span>{formatChartDate(chartData[0].date)}</span>
+            <span>{formatChartDate(chartData[chartData.length - 1].date)}</span>
           </div>
+          <p className="text-xs text-default-400 pl-9">Time → (X) · Y = XP / Level</p>
         </div>
       </Card.Content>
     </Card>

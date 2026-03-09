@@ -1,13 +1,21 @@
 "use client";
 
 import React from "react";
-import { Card, Button, Input, TextArea, Form, RadioGroup, Chip, Tabs, Tab, Slider, TextField, Label, Description } from "@heroui/react";
+import {
+  Button,
+  Input,
+  TextArea,
+  Form,
+  RadioGroup,
+  Radio,
+  TextField,
+  Label,
+  Description,
+} from "@heroui/react";
 import { SelectCompat } from "@/components/SelectCompat";
 import { SelectItem } from "@/components/SelectItem";
-import { Image } from "@/components/Image";
 import { Icon } from "@iconify/react";
-import { addToast } from "@/lib/addToast";
-import CustomRadio from "./CustomRadio";
+import clsx from "clsx";
 
 interface CardBasicsProps {
   isLoading: boolean;
@@ -54,6 +62,12 @@ interface CardBasicsProps {
   onPasswordResetModalOpen: () => void;
 }
 
+const radioCardClass = clsx(
+  "group relative flex-col gap-2 rounded-lg border border-default-200 bg-default-50/50 dark:bg-default-100/30 px-4 py-3 transition-colors",
+  "data-[selected=true]:border-primary data-[selected=true]:bg-primary/5",
+  "data-[focus-visible=true]:border-primary data-[focus-visible=true]:ring-2 data-[focus-visible=true]:ring-primary/20"
+);
+
 export default function CardBasics({
   isLoading,
   isSaving,
@@ -86,468 +100,270 @@ export default function CardBasics({
   handleSave,
   onPasswordResetModalOpen,
 }: CardBasicsProps) {
-  // Convert preference string to slider values
-  const getSliderValues = (pref: string): { male: number; female: number } => {
-    if (pref === "male") return { male: 100, female: 0 };
-    if (pref === "female") return { male: 0, female: 100 };
-    if (pref === "both") return { male: 100, female: 100 };
-    // Default to both (bisexuality) if nothing selected
-    return { male: 100, female: 100 };
-  };
+  const preferenceOptions = [
+    { value: "male", title: "Men", description: "Interested in men" },
+    { value: "female", title: "Women", description: "Interested in women" },
+    { value: "both", title: "Both", description: "Interested in men and women" },
+  ];
 
-  // Initialize slider values from preference
-  const [preferMale, setPreferMale] = React.useState<number>(() => getSliderValues(selectedPreference).male);
-  const [preferFemale, setPreferFemale] = React.useState<number>(() => getSliderValues(selectedPreference).female);
-
-  // Update sliders when preference changes externally (e.g., from server)
-  React.useEffect(() => {
-    const values = getSliderValues(selectedPreference);
-    setPreferMale(values.male);
-    setPreferFemale(values.female);
-  }, [selectedPreference]);
-
-  // Update preference string when sliders change
-  const updatePreference = React.useCallback((male: number, female: number) => {
-    const maleSelected = male > 0;
-    const femaleSelected = female > 0;
-    let newPreference: string;
-    if (maleSelected && femaleSelected) {
-      newPreference = "both";
-    } else if (maleSelected) {
-      newPreference = "male";
-    } else if (femaleSelected) {
-      newPreference = "female";
-    } else {
-      newPreference = "both"; // Default to both if nothing selected
-    }
-    setSelectedPreference(newPreference);
-  }, [setSelectedPreference]);
-
-  const handleMaleSliderChange = (value: number | number[]) => {
-    const newValue = Array.isArray(value) ? value[0] : value;
-    setPreferMale(newValue);
-    updatePreference(newValue, preferFemale);
-  };
-
-  const handleFemaleSliderChange = (value: number | number[]) => {
-    const newValue = Array.isArray(value) ? value[0] : value;
-    setPreferFemale(newValue);
-    updatePreference(preferMale, newValue);
-  };
+  const genderOptions = [
+    { value: "male", title: "Male", description: "I identify as male" },
+    { value: "female", title: "Female", description: "I identify as female" },
+  ];
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-4">
+      <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full px-4 py-8">
         <p className="text-default-500">Loading profile...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full px-4">
-      <Form onSubmit={handleSave} className="flex flex-col gap-6">
-        <div className="max-w-[900px] gap-2 grid grid-cols-12 grid-rows-2 px-8">
-          {/* Basic Information */}
-          <Card className="w-full h-[300px] col-span-12 sm:col-span-7">
-            <Card.Header>
-              <h3 className="text-xl font-semibold text-sky-300">Basic Information</h3>
-            </Card.Header>
-            <Card.Content className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField isRequired name="firstName" value={firstName} onChange={setFirstName}>
-                  <Label>First Name</Label>
-                  <Input variant="secondary" placeholder="First name" />
-                </TextField>
-                <TextField isRequired name="lastName" value={lastName} onChange={setLastName}>
-                  <Label>Last Name</Label>
-                  <Input variant="secondary" placeholder="Last name" />
-                </TextField>
-              </div>
-              <TextField isRequired name="email" type="email" value={email} onChange={setEmail}>
-                <Label>Email</Label>
-                <Input variant="secondary" placeholder="Email" type="email" />
-              </TextField>
-            </Card.Content>
-            <Card.Footer className="absolute bg-black/40 bottom-0 z-10 border-t-1 border-default-600 dark:border-default-100">
-              <div className="flex grow gap-2 items-center">
-                <Image
-                  alt="Breathing app icon"
-                  className="rounded-full w-10 h-11 bg-black"
-                  src="https://heroui.com/images/breathing-app-icon.jpeg"
-                />
-                <div className="flex flex-col">
-                  <p className="text-tiny text-white/60">Tinder Garden</p>
-                  <p className="text-tiny text-white/60">Want a young wife (guaranteed)? Book in advance!</p>
-                </div>
-              </div>
-              <Button size="sm">
-                Try now
+    <div className="flex flex-col gap-8 max-w-2xl mx-auto w-full px-4 pb-24">
+      <Form onSubmit={handleSave} className="flex flex-col gap-8">
+        {/* Personal information */}
+        <section className="flex flex-col gap-4">
+          <h2 className="text-base font-semibold text-foreground border-b border-default-200 pb-2">
+            Personal information
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <TextField isRequired name="firstName" value={firstName} onChange={setFirstName}>
+              <Label>First name</Label>
+              <Input variant="bordered" placeholder="First name" />
+            </TextField>
+            <TextField isRequired name="lastName" value={lastName} onChange={setLastName}>
+              <Label>Last name</Label>
+              <Input variant="bordered" placeholder="Last name" />
+            </TextField>
+          </div>
+          <TextField isRequired name="email" type="email" value={email} onChange={setEmail}>
+            <Label>Email</Label>
+            <Input variant="bordered" placeholder="Email" type="email" />
+          </TextField>
+        </section>
+
+        {/* Account security */}
+        <section className="flex flex-col gap-4">
+          <h2 className="text-base font-semibold text-foreground border-b border-default-200 pb-2">
+            Account security
+          </h2>
+          <TextField name="username" value={user?.username ?? ""} isReadOnly>
+            <Label>Username</Label>
+            <Input variant="bordered" readOnly />
+            <Description>Username cannot be changed</Description>
+          </TextField>
+          <div className="flex flex-col gap-2">
+            <Label>Password</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input variant="bordered" type="password" value="••••••••" readOnly className="flex-1 min-w-0 max-w-xs" />
+              <Button type="button" variant="flat" size="sm" onPress={onPasswordResetModalOpen}>
+                Reset password
               </Button>
-            </Card.Footer>
-          </Card>
+            </div>
+            <Description>Use the reset link to set a new password via email</Description>
+          </div>
+        </section>
 
-          {/* Account Security */}
-          <Card className="w-full h-[300px] col-span-12 sm:col-span-5">
-            <Card.Header>
-              <h3 className="text-xl font-semibold text-sky-300">Account Security</h3>
-            </Card.Header>
-            <Card.Content className="flex flex-col gap-4">
-              <TextField name="username" value={user?.username || ""} isReadOnly>
-                <Label>Username</Label>
-                <Input variant="secondary" readOnly />
-                <Description>Your username cannot be changed</Description>
-              </TextField>
-              <TextField name="password" value="••••••••" isReadOnly>
-                <Label>Password</Label>
-                <Input variant="secondary" type="password" readOnly />
-                <Description>Click below to reset your password</Description>
-              </TextField>
-            </Card.Content>
-            <Card.Footer className="justify-end">
-              <Button 
-                
-                variant="secondary"
-                onPress={onPasswordResetModalOpen}
-              >
-                Reset Password
+        {/* Dating preferences */}
+        <section className="flex flex-col gap-4">
+          <h2 className="text-base font-semibold text-foreground border-b border-default-200 pb-2">
+            Dating preferences
+          </h2>
+          <div className="flex flex-col gap-3">
+            <Label>I'm looking for</Label>
+            <RadioGroup value={selectedPreference} onChange={setSelectedPreference} name="preference" orientation="horizontal" className="gap-3">
+              {preferenceOptions.map((option) => (
+                <Radio key={option.value} value={option.value} className={radioCardClass}>
+                  <Radio.Control className="absolute top-3 right-3 size-4">
+                    <Radio.Indicator />
+                  </Radio.Control>
+                  <Radio.Content className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">{option.title}</span>
+                    <Description className="text-xs">{option.description}</Description>
+                  </Radio.Content>
+                </Radio>
+              ))}
+            </RadioGroup>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Label>My gender</Label>
+            <RadioGroup value={selectedGender} onChange={setSelectedGender} name="gender" orientation="horizontal" className="gap-3">
+              {genderOptions.map((option) => (
+                <Radio key={option.value} value={option.value} className={radioCardClass}>
+                  <Radio.Control className="absolute top-3 right-3 size-4">
+                    <Radio.Indicator />
+                  </Radio.Control>
+                  <Radio.Content className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">{option.title}</span>
+                    <Description className="text-xs">{option.description}</Description>
+                  </Radio.Content>
+                </Radio>
+              ))}
+            </RadioGroup>
+          </div>
+        </section>
+
+        {/* Bio */}
+        <section className="flex flex-col gap-4">
+          <h2 className="text-base font-semibold text-foreground border-b border-default-200 pb-2">
+            Bio
+          </h2>
+          <TextField value={bio} onChange={setBio}>
+            <Label>About you</Label>
+            <TextArea
+              maxLength={250}
+              variant="bordered"
+              placeholder="Short biography: where you're at in life, what matters to you..."
+              className="min-h-[120px]"
+            />
+            <Description>Max 250 characters. {bio.length}/250</Description>
+          </TextField>
+        </section>
+
+        {/* Tags */}
+        <section className="flex flex-col gap-4">
+          <h2 className="text-base font-semibold text-foreground border-b border-default-200 pb-2">
+            Interests
+          </h2>
+          <div className="flex flex-col gap-2">
+            <Label>Tags (max 5)</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. #hiking #music"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                variant="bordered"
+                className="flex-1"
+                disabled={tags.length >= 5}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTag();
+                  }
+                }}
+              />
+              <Button type="button" onPress={addTag} variant="flat" isDisabled={tags.length >= 5 || !tagInput.trim()}>
+                Add
               </Button>
-            </Card.Footer>
-          </Card>
-
-          {/* Sexual Preference */}
-          <Card className="col-span-12 sm:col-span-4 min-h-[300px]">
-            <Card.Header>
-              <h3 className="text-xl font-semibold text-sky-300">What I want:</h3>
-            </Card.Header>
-            <Card.Content className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Male</span>
-                  <span className="text-xs text-default-500">{preferMale > 0 ? "Interested" : "Not interested"}</span>
-                </div>
-                <Slider
-                  aria-label="Interest in males"
-                  value={preferMale}
-                  onChange={handleMaleSliderChange}
-                  minValue={0}
-                  maxValue={100}
-                  step={1}
-                  className="w-full"
+            </div>
+            {tags.length >= 5 && (
+              <Description className="text-warning">Maximum of 5 tags.</Description>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-md border border-default-200 bg-default-100 px-2.5 py-1 text-sm"
                 >
-                  <Slider.Track>
-                    <Slider.Fill />
-                    <Slider.Thumb />
-                  </Slider.Track>
-                </Slider>
-                {preferMale > 0 && (
-                  <p className="text-xs text-default-500 mt-1">
-                    I will be shown people who identify as male. These people vouched for being responsible and respectful.
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Female</span>
-                  <span className="text-xs text-default-500">{preferFemale > 0 ? "Interested" : "Not interested"}</span>
-                </div>
-                <Slider
-                  aria-label="Interest in females"
-                  value={preferFemale}
-                  onChange={handleFemaleSliderChange}
-                  minValue={0}
-                  maxValue={100}
-                  step={1}
-                  className="w-full"
-                >
-                  <Slider.Track>
-                    <Slider.Fill />
-                    <Slider.Thumb />
-                  </Slider.Track>
-                </Slider>
-                {preferFemale > 0 && (
-                  <p className="text-xs text-default-500 mt-1">
-                    I will be shown females only. (Nice)
-                  </p>
-                )}
-              </div>
-              {selectedPreference === "both" && (
-                <div className="bg-sky-50 dark:bg-sky-950/20 p-3 rounded-lg border border-sky-200 dark:border-sky-800">
-                  <p className="text-xs text-sky-700 dark:text-sky-300">
-                    🚲 You're interested in both - you're bisexual!
-                  </p>
-                </div>
-              )}
-            </Card.Content>
-          </Card>
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="opacity-70 hover:opacity-100 rounded p-0.5 -mr-0.5"
+                    aria-label={`Remove ${tag}`}
+                  >
+                    <Icon icon="solar:close-circle-linear" className="text-base" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
 
-          {/* My Gender */}
-          <Card className="col-span-12 sm:col-span-4 h-[300px]">
-            <Card.Header className=" z-10 top-1 flex-col items-start!">
-              <h3 className="text-xl font-semibold text-sky-300">My Gender</h3>
-            </Card.Header>
-            <Card.Content>
-              <RadioGroup
-                value={selectedGender}
-                onChange={setSelectedGender}
-                orientation="horizontal"
-                className="flex flex-row gap-3 w-full [&>div[data-value=female]>div>span>span[data-selected=true]]:!bg-pink-500 [&>div[data-value=female]>div>span>span[data-selected=true]]:!border-pink-500"
-              >
-                <CustomRadio className="flex-1 w-1/2" value="male" description="Lorem Ipsum dolor sit amet">
-                  I'm a guy / boy
-                </CustomRadio>
-                <CustomRadio className="flex-1 w-1/2" value="female" description="I identify as Female">
-                  Female gender (no penis)
-                </CustomRadio>
-              </RadioGroup>
-            </Card.Content>
-          </Card>
-
-          {/* Siblings */}
-          <Card className="col-span-12 sm:col-span-4 h-[300px]">
-            <Card.Header>
-              <h3 className="text-xl font-semibold text-sky-300">Siblings</h3>
-            </Card.Header>
-            <Card.Content>
+        {/* Personality (optional) */}
+        <section className="flex flex-col gap-4">
+          <h2 className="text-base font-semibold text-foreground border-b border-default-200 pb-2">
+            Personality (optional)
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SelectCompat
+              label="Siblings"
+              placeholder="Select"
+              selectedKeys={siblings ? [siblings] : []}
+              onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as string;
+                setSiblings(value ?? "");
+              }}
+            >
+              <SelectItem key="only_child">Only child</SelectItem>
+              <SelectItem key="oldest_child">Oldest</SelectItem>
+              <SelectItem key="youngest_child">Youngest</SelectItem>
+              <SelectItem key="middle_child">Middle</SelectItem>
+              <SelectItem key="slightly_older_siblings">Slightly older siblings</SelectItem>
+              <SelectItem key="twin">Twin</SelectItem>
+            </SelectCompat>
+            <SelectCompat
+              label="MBTI"
+              placeholder="Select type"
+              selectedKeys={mbti ? [mbti] : []}
+              onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as string;
+                setMbti(value ?? "");
+              }}
+            >
+              <SelectItem key="INTJ">INTJ</SelectItem>
+              <SelectItem key="INTP">INTP</SelectItem>
+              <SelectItem key="ENTJ">ENTJ</SelectItem>
+              <SelectItem key="ENTP">ENTP</SelectItem>
+              <SelectItem key="INFJ">INFJ</SelectItem>
+              <SelectItem key="INFP">INFP</SelectItem>
+              <SelectItem key="ENFJ">ENFJ</SelectItem>
+              <SelectItem key="ENFP">ENFP</SelectItem>
+              <SelectItem key="ISTJ">ISTJ</SelectItem>
+              <SelectItem key="ISFJ">ISFJ</SelectItem>
+              <SelectItem key="ESTJ">ESTJ</SelectItem>
+              <SelectItem key="ESFJ">ESFJ</SelectItem>
+              <SelectItem key="ISTP">ISTP</SelectItem>
+              <SelectItem key="ISFP">ISFP</SelectItem>
+              <SelectItem key="ESTP">ESTP</SelectItem>
+              <SelectItem key="ESFP">ESFP</SelectItem>
+            </SelectCompat>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"] as const).map((trait) => (
               <SelectCompat
-                label="Siblings"
-                placeholder="Select your sibling position"
-                selectedKeys={siblings ? [siblings] : []}
+                key={trait}
+                label={trait.charAt(0).toUpperCase() + trait.slice(1)}
+                placeholder="Select"
+                selectedKeys={bigFive[trait] ? [bigFive[trait]] : []}
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0] as string;
-                  setSiblings(value);
-                }}
-              >
-                <SelectItem key="middle_child">Middle child</SelectItem>
-                <SelectItem key="slightly_older_siblings">Slightly older siblings</SelectItem>
-                <SelectItem key="oldest_child">I'm the oldest child</SelectItem>
-                <SelectItem key="youngest_child">I'm the youngest child</SelectItem>
-                <SelectItem key="only_child">Only child</SelectItem>
-                <SelectItem key="twin">Twin</SelectItem>
-              </SelectCompat>
-            </Card.Content>
-          </Card>
-
-          {/* Big Five Personality Traits */}
-          <Card className="col-span-12 sm:col-span-8 h-[300px]">
-            <Card.Header>
-              <h3 className="text-xl font-semibold text-sky-300">Big Five Personality Traits</h3>
-            </Card.Header>
-            <Card.Content className="flex flex-col gap-4">
-              <SelectCompat
-                label="Openness"
-                placeholder="Select openness level"
-                selectedKeys={bigFive.openness ? [bigFive.openness] : []}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
-                  setBigFive({ ...bigFive, openness: value });
+                  setBigFive({ ...bigFive, [trait]: value ?? "" });
                 }}
               >
                 <SelectItem key="low">Low</SelectItem>
                 <SelectItem key="medium">Medium</SelectItem>
                 <SelectItem key="high">High</SelectItem>
               </SelectCompat>
-              <SelectCompat
-                label="Conscientiousness"
-                placeholder="Select conscientiousness level"
-                selectedKeys={bigFive.conscientiousness ? [bigFive.conscientiousness] : []}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
-                  setBigFive({ ...bigFive, conscientiousness: value });
-                }}
-              >
-                <SelectItem key="low">Low</SelectItem>
-                <SelectItem key="medium">Medium</SelectItem>
-                <SelectItem key="high">High</SelectItem>
-              </SelectCompat>
-              <SelectCompat
-                label="Extraversion"
-                placeholder="Select extraversion level"
-                selectedKeys={bigFive.extraversion ? [bigFive.extraversion] : []}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
-                  setBigFive({ ...bigFive, extraversion: value });
-                }}
-              >
-                <SelectItem key="low">Low</SelectItem>
-                <SelectItem key="medium">Medium</SelectItem>
-                <SelectItem key="high">High</SelectItem>
-              </SelectCompat>
-              <SelectCompat
-                label="Agreeableness"
-                placeholder="Select agreeableness level"
-                selectedKeys={bigFive.agreeableness ? [bigFive.agreeableness] : []}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
-                  setBigFive({ ...bigFive, agreeableness: value });
-                }}
-              >
-                <SelectItem key="low">Low</SelectItem>
-                <SelectItem key="medium">Medium</SelectItem>
-                <SelectItem key="high">High</SelectItem>
-              </SelectCompat>
-              <SelectCompat
-                label="Neuroticism"
-                placeholder="Select neuroticism level"
-                selectedKeys={bigFive.neuroticism ? [bigFive.neuroticism] : []}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
-                  setBigFive({ ...bigFive, neuroticism: value });
-                }}
-              >
-                <SelectItem key="low">Low</SelectItem>
-                <SelectItem key="medium">Medium</SelectItem>
-                <SelectItem key="high">High</SelectItem>
-              </SelectCompat>
-            </Card.Content>
-          </Card>
+            ))}
+          </div>
+          <SelectCompat
+            label="Caliper profile"
+            placeholder="Select"
+            selectedKeys={caliper ? [caliper] : []}
+            onSelectionChange={(keys) => {
+              const value = Array.from(keys)[0] as string;
+              setCaliper(value ?? "");
+            }}
+          >
+            <SelectItem key="analytical">Analytical</SelectItem>
+            <SelectItem key="conceptual">Conceptual</SelectItem>
+            <SelectItem key="social">Social</SelectItem>
+            <SelectItem key="structured">Structured</SelectItem>
+          </SelectCompat>
+        </section>
 
-          {/* Caliper Profile */}
-          <Card className="col-span-12 sm:col-span-4 h-[300px]">
-            <Card.Header>
-              <h3 className="text-xl font-semibold text-sky-300">Caliper Profile</h3>
-            </Card.Header>
-            <Card.Content>
-              <SelectCompat
-                label="Caliper Profile"
-                placeholder="Select your Caliper profile"
-                selectedKeys={caliper ? [caliper] : []}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
-                  setCaliper(value);
-                }}
-              >
-                <SelectItem key="analytical">Analytical</SelectItem>
-                <SelectItem key="conceptual">Conceptual</SelectItem>
-                <SelectItem key="social">Social</SelectItem>
-                <SelectItem key="structured">Structured</SelectItem>
-              </SelectCompat>
-            </Card.Content>
-          </Card>
-
-          {/* Bio */}
-          <Card className="w-full h-[300px] col-span-12 sm:col-span-12">
-            <Card.Header>
-              <div className="flex flex-col items-start">
-                <h3 className="text-xl font-semibold text-sky-300">Bio</h3>
-                <p className="text-small text-default-500">
-                  Write a short biography of your situation right now, what stage of life you are entering, where are you coming from and what is important and filling for you right now
-                </p>
-              </div>
-            </Card.Header>
-            <Card.Content>
-              <TextField value={bio} onChange={setBio}>
-                <Label>Bio</Label>
-                <TextArea
-                  maxLength={250}
-                  variant="secondary"
-                  placeholder="Write your bio..."
-                  className="min-h-[100px]"
-                />
-              </TextField>
-              <p className="text-small text-default-400 mt-2">
-                Max. 250 characters. <span className="text-default-500">{bio.length}/250</span>
-              </p>
-            </Card.Content>
-          </Card>
-
-          {/* Hobbies & Interests */}
-          <Card className="w-full h-[300px] col-span-7 sm:col-span-7">
-            <Card.Header>
-              <h3 className="text-xl font-semibold text-sky-300">Hobbies & Interests</h3>
-            </Card.Header>
-            <Card.Content className="flex flex-col gap-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a tag (e.g., #vegan, #geek)"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  variant="secondary"
-                  className="flex-1"
-                  disabled={tags.length >= 5}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addTag();
-                    }
-                  }}
-                />
-                <Button 
-                  onPress={addTag} 
-                  variant="secondary"
-                  isDisabled={tags.length >= 5 || !tagInput.trim()}
-                  className="shrink-0"
-                >
-                  Add
-                </Button>
-              </div>
-              {tags.length >= 5 && (
-                <p className="text-small text-warning">Maximum of 5 tags reached</p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-default-200 bg-default-100 px-3 py-1 text-sm">
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="opacity-70 hover:opacity-100 rounded-full p-0.5 -mr-1"
-                      aria-label={`Remove ${tag}`}
-                    >
-                      <Icon icon="solar:close-circle-linear" className="text-lg" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </Card.Content>
-          </Card>
-
-          {/* MBTI */}
-          <Card className="w-full h-[300px] col-span-5 sm:col-span-5">
-            <Card.Header>
-              <h3 className="text-xl font-semibold text-sky-300">MBTI (Myers-Briggs Type Indicator)</h3>
-            </Card.Header>
-            <Card.Content>
-              <SelectCompat
-                label="MBTI Type"
-                placeholder="Select your MBTI type"
-                selectedKeys={mbti ? [mbti] : []}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
-                  setMbti(value);
-                }}
-              >
-                <SelectItem key="INTJ">INTJ - Architect</SelectItem>
-                <SelectItem key="INTP">INTP - Thinker</SelectItem>
-                <SelectItem key="ENTJ">ENTJ - Commander</SelectItem>
-                <SelectItem key="ENTP">ENTP - Debater</SelectItem>
-                <SelectItem key="INFJ">INFJ - Advocate</SelectItem>
-                <SelectItem key="INFP">INFP - Mediator</SelectItem>
-                <SelectItem key="ENFJ">ENFJ - Protagonist</SelectItem>
-                <SelectItem key="ENFP">ENFP - Campaigner</SelectItem>
-                <SelectItem key="ISTJ">ISTJ - Logistician</SelectItem>
-                <SelectItem key="ISFJ">ISFJ - Protector</SelectItem>
-                <SelectItem key="ESTJ">ESTJ - Executive</SelectItem>
-                <SelectItem key="ESFJ">ESFJ - Consul</SelectItem>
-                <SelectItem key="ISTP">ISTP - Virtuoso</SelectItem>
-                <SelectItem key="ISFP">ISFP - Adventurer</SelectItem>
-                <SelectItem key="ESTP">ESTP - Entrepreneur</SelectItem>
-                <SelectItem key="ESFP">ESFP - Entertainer</SelectItem>
-              </SelectCompat>
-            </Card.Content>
-          </Card>
-        </div>
-
-        {/* Save Button */}
-        <div className="flex w-full justify-end gap-4 pb-72">
-          <Button type="button" variant="secondary" onPress={() => window.location.reload()}>
+        {/* Actions */}
+        <section className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-default-200">
+          <Button type="button" variant="flat" onPress={() => window.history.back()}>
             Cancel
           </Button>
-          <Button type="submit" isPending={isSaving} className="bg-pink-500 text-white hover:bg-pink-600">
-            Save Changes
+          <Button type="submit" color="primary" isPending={isSaving}>
+            Save changes
           </Button>
-        </div>
+        </section>
       </Form>
     </div>
   );
 }
-

@@ -1,11 +1,21 @@
 "use client";
 
 import React from "react";
-import { Modal, Button, Link, Tooltip } from "@heroui/react";
+import { Modal, Button, Link, Tooltip, useOverlayState } from "@heroui/react";
 import { useHelpDrawer } from "@/contexts/HelpDrawerContext";
 
 export function HelpDrawer() {
   const { isOpen, onOpenChange, onClose } = useHelpDrawer();
+
+  const handleOpenChange = React.useCallback(
+    (open: boolean) => {
+      onOpenChange(open);
+      if (!open) onClose();
+    },
+    [onClose, onOpenChange]
+  );
+
+  const state = useOverlayState({ isOpen, onOpenChange: handleOpenChange });
 
   const handleClose = () => {
     onClose();
@@ -13,16 +23,14 @@ export function HelpDrawer() {
   };
 
   return (
-    <Modal>
+    <Modal state={state}>
       <Modal.Backdrop
-        isOpen={isOpen}
-        onOpenChange={onOpenChange}
         variant="blur"
         className="sm:m-2 sm:rounded-medium"
-      />
-      <Modal.Container placement="bottom" size="full" className="sm:max-h-[85vh] sm:rounded-t-2xl">
-        <Modal.Dialog className="bg-content1">
-          <div className="flex flex-row gap-2 px-2 py-2 border-b border-default-200/50 justify-between bg-content1/50 backdrop-saturate-150 backdrop-blur-lg">
+      >
+        <Modal.Container placement="bottom" size="full" className="relative z-10 sm:max-h-[85vh] sm:rounded-t-2xl [&>*]:pointer-events-auto">
+          <Modal.Dialog className="bg-content1 pointer-events-auto">
+            <div className="flex flex-row gap-2 px-2 py-2 border-b border-default-200/50 justify-between bg-content1/50 backdrop-saturate-150 backdrop-blur-lg">
             <Tooltip>
               <Tooltip.Trigger>
                 <Button
@@ -49,8 +57,8 @@ export function HelpDrawer() {
               <Tooltip.Content>Close</Tooltip.Content>
             </Tooltip>
             <span className="font-semibold text-default-700">Help</span>
-          </div>
-          <div className="flex flex-col gap-4 py-4 pt-4 px-4 overflow-y-auto max-h-[70vh]">
+            </div>
+            <div className="flex flex-col gap-4 py-4 pt-4 px-4 overflow-y-auto max-h-[70vh]">
             <div className="flex flex-col gap-2">
               <span className="text-medium font-medium">Developer resources</span>
               <div className="flex flex-col gap-2">
@@ -111,9 +119,10 @@ export function HelpDrawer() {
             <p className="mt-4 text-default-400 italic text-sm">
               Thanks for all the fish!
             </p>
-          </div>
-        </Modal.Dialog>
-      </Modal.Container>
+            </div>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
     </Modal>
   );
 }
