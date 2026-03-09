@@ -8,20 +8,30 @@ echo "Starting Matcha..."
 
 mkdir -p data uploads
 
-# --- 1. Database: bootstrap if missing, then run migrations ---
+# --- 1. Database: bootstrap if missing, then run all migrations (same order as Makefile run-migrations) ---
 if [ ! -f "data/matcha.db" ]; then
   echo "Creating database..."
   sqlite3 data/matcha.db < migrations/schema.sql
 fi
 
 echo "Running migrations..."
-for m in migrations/add_username_and_verification.sql migrations/add_is_setup.sql \
-         migrations/add_personality_fields.sql migrations/add_location_updated_at.sql \
-         migrations/add_is_bot.sql migrations/add_blocks_and_reports.sql \
-         migrations/add_notifications_related_user_id.sql migrations/add_bot_activity_log.sql \
+for m in migrations/schema.sql \
+         migrations/add_username_and_verification.sql \
+         migrations/add_is_setup.sql \
+         migrations/add_personality_fields.sql \
+         migrations/add_location_updated_at.sql \
+         migrations/add_is_bot.sql \
+         migrations/add_blocks_and_reports.sql \
+         migrations/add_notifications_related_user_id.sql \
+         migrations/add_bot_activity_log.sql \
          migrations/remove_set_up_column.sql; do
   [ -f "$m" ] && sqlite3 data/matcha.db < "$m" 2>/dev/null || true
 done
+# Password reset columns (idempotent: run each ALTER separately so "duplicate column" does not block others)
+sqlite3 data/matcha.db "ALTER TABLE users ADD COLUMN password_reset_code TEXT;" 2>/dev/null || true
+sqlite3 data/matcha.db "ALTER TABLE users ADD COLUMN password_reset_expires_at DATETIME;" 2>/dev/null || true
+sqlite3 data/matcha.db "ALTER TABLE users ADD COLUMN password_reset_token TEXT;" 2>/dev/null || true
+echo "Migrations complete."
 
 # --- 2. Generate users only if bot count < 500 ---
 BOT_COUNT=$(sqlite3 data/matcha.db "SELECT COUNT(*) FROM users WHERE is_bot = 1;" 2>/dev/null || echo "0")
