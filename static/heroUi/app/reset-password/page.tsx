@@ -64,7 +64,7 @@ function ResetPasswordContent() {
           <p className="text-default-500 text-sm">
             This link is invalid or has expired. From your profile, use &quot;Reset password&quot; to receive a new link by email.
           </p>
-          <Button as={Link} href="/login" variant="flat">
+          <Button as={Link} href="/login" variant="secondary">
             Back to login
           </Button>
         </div>

@@ -947,7 +947,7 @@ export default function DiscoverPage() {
           <Button variant="ghost" onPress={() => onFilterModalOpenChange(false)}>
             Cancel
           </Button>
-          <Button color="primary" onPress={() => onFilterModalOpenChange(false)}>
+          <Button variant="primary" onPress={() => onFilterModalOpenChange(false)}>
             Apply
           </Button>
         </ModalFooter>

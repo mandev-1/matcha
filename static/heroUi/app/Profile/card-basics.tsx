@@ -358,10 +358,10 @@ export default function CardBasics({
 
         {/* Actions */}
         <section className="flex flex-wrap items-center justify-end gap-3 border-t border-default-200 pt-6">
-          <Button type="button" variant="flat" onPress={() => window.history.back()}>
+          <Button type="button" variant="secondary" onPress={() => window.history.back()}>
             Cancel
           </Button>
-          <Button type="submit" color="primary" isPending={isSaving}>
+          <Button type="submit" variant="primary" isPending={isSaving}>
             Save changes
           </Button>
         </section>
