@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Form, Tabs, Tab, RadioGroup, Radio, Slider, Chip, TextArea, Input } from "@heroui/react";
+import { Button, Card, Form, Tabs, Tab, RadioGroup, Radio, Chip, TextArea, Input, ListBox, Label, Description } from "@heroui/react";
 import { Spacer } from "@/components/Spacer";
 import { Divider } from "@/components/Divider";
 import { SelectCompat } from "@/components/SelectCompat";
@@ -168,19 +168,7 @@ export default function RunwayPage() {
   const [bio, setBio] = React.useState<string>("");
   const [errors, setErrors] = React.useState<string[]>([]);
   const [selectedGender, setSelectedGender] = React.useState<string>("");
-  // Slider values: 0 = not interested, 100 = very interested
-  const [preferMale, setPreferMale] = React.useState<number>(100); // Default to bisexuality (both selected)
-  const [preferFemale, setPreferFemale] = React.useState<number>(100); // Default to bisexuality (both selected)
-  
-  // Compute selectedPreference from slider values
-  const selectedPreference = React.useMemo(() => {
-    const maleSelected = preferMale > 0;
-    const femaleSelected = preferFemale > 0;
-    if (maleSelected && femaleSelected) return "both";
-    if (maleSelected) return "male";
-    if (femaleSelected) return "female";
-    return "both"; // Default to both if nothing selected
-  }, [preferMale, preferFemale]);
+  const [selectedPreference, setSelectedPreference] = React.useState<"male" | "female" | "both">("both");
   const [tags, setTags] = React.useState<string[]>([]);
   const [tagInput, setTagInput] = React.useState<string>("");
   const [bigFive, setBigFive] = React.useState({
@@ -282,11 +270,11 @@ export default function RunwayPage() {
                     orientation="horizontal"
                     className="flex flex-row gap-3 w-full"
                   >
-                    <CustomRadio className="flex-1 w-1/2" value="male" description="Lorem Ipsum dolor sit amet">
-                      I'm a guy / boy
+                    <CustomRadio className="flex-1 w-1/2" value="male" description="I identify as male">
+                      Man
                     </CustomRadio>
-                    <CustomRadio className="flex-1 w-1/2" value="female" description="Lorem Ipsum dolor sit amet">
-                      Female gender (no penis)
+                    <CustomRadio className="flex-1 w-1/2" value="female" description="I identify as female">
+                      Woman
                     </CustomRadio>
                   </RadioGroup>
                 </div>
@@ -295,65 +283,38 @@ export default function RunwayPage() {
 
                 <div className="flex w-full flex-col mb-6">
                   <h4 className="text-large mb-4">What I want:</h4>
-                  <div className="flex flex-col gap-6">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Male</span>
-                        <span className="text-xs text-default-500">{preferMale > 0 ? "Interested" : "Not interested"}</span>
+                  <ListBox
+                    aria-label="Interest preference"
+                    className="w-full max-w-full"
+                    selectionMode="single"
+                    selectedKeys={[selectedPreference]}
+                    onSelectionChange={(keys) => {
+                      const key = Array.from(keys)[0] as "male" | "female" | "both";
+                      if (key) setSelectedPreference(key);
+                    }}
+                  >
+                    <ListBox.Item id="male" textValue="Men - I am interested in Men" className="border-l-4 border-l-blue-500 data-[hover=true]:bg-default-100">
+                      <div className="flex flex-col gap-0.5">
+                        <Label className="text-sm font-medium text-blue-600 dark:text-blue-400">Men</Label>
+                        <Description className="text-xs">I am interested in Men</Description>
                       </div>
-                      <Slider
-                        aria-label="Interest in males"
-                        value={preferMale}
-                        onChange={(value) => setPreferMale(Array.isArray(value) ? value[0] : value)}
-                        minValue={0}
-                        maxValue={100}
-                        step={1}
-                        className="w-full"
-                      >
-                        <Slider.Track>
-                          <Slider.Fill className="bg-pink-500" />
-                          <Slider.Thumb />
-                        </Slider.Track>
-                      </Slider>
-                      {preferMale > 0 && (
-                        <p className="text-xs text-default-500 mt-1">
-                          I'm reading this because I want to find a guy / boy to date and chat with (and maybe more). I'm strong because I admit this, very horny, and desperate for some fun.
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Female</span>
-                        <span className="text-xs text-default-500">{preferFemale > 0 ? "Interested" : "Not interested"}</span>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    <ListBox.Item id="female" textValue="Women - I am interested in Women" className="border-l-4 border-l-red-500 data-[hover=true]:bg-default-100">
+                      <div className="flex flex-col gap-0.5">
+                        <Label className="text-sm font-medium text-red-600 dark:text-red-400">Women</Label>
+                        <Description className="text-xs">I am interested in Women</Description>
                       </div>
-                      <Slider
-                        aria-label="Interest in females"
-                        value={preferFemale}
-                        onChange={(value) => setPreferFemale(Array.isArray(value) ? value[0] : value)}
-                        minValue={0}
-                        maxValue={100}
-                        step={1}
-                        className="w-full"
-                      >
-                        <Slider.Track>
-                          <Slider.Fill className="bg-pink-500" />
-                          <Slider.Thumb />
-                        </Slider.Track>
-                      </Slider>
-                      {preferFemale > 0 && (
-                        <p className="text-xs text-default-500 mt-1">
-                          I clicked this because I'm down to meet a woman.. and I'm lowkey chill, serious, respectable and ready to be responsible.
-                        </p>
-                      )}
-                    </div>
-                    {selectedPreference === "both" && (
-                      <div className="bg-pink-50 dark:bg-pink-950/20 p-3 rounded-lg border border-pink-200 dark:border-pink-800">
-                        <p className="text-xs text-pink-700 dark:text-pink-300">
-                          🚲 You're interested in both - you're bisexual!
-                        </p>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    <ListBox.Item id="both" textValue="Both - I am interested in Men and Women" className="border-l-4 border-l-green-500 data-[hover=true]:bg-default-100">
+                      <div className="flex flex-col gap-0.5">
+                        <Label className="text-sm font-medium text-green-600 dark:text-green-400">Both</Label>
+                        <Description className="text-xs">I am interested in Men and Women</Description>
                       </div>
-                    )}
-                  </div>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  </ListBox>
                 </div>
 
                 <Divider className="mb-6" />
