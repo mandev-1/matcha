@@ -21,6 +21,11 @@ function LoginContent() {
   const [resending, setResending] = React.useState(false);
   const [emailNotVerified, setEmailNotVerified] = React.useState(false);
   const registered = searchParams.get("registered") === "true";
+  const resetSuccess = searchParams.get("reset") === "success";
+
+  React.useEffect(() => {
+    if (resetSuccess) setSuccess("Your password has been reset. You can now log in.");
+  }, [resetSuccess]);
 
   const toggleVisibility = () => setIsVisible(!isVisible);
 

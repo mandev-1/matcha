@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"matcha/internal/config"
 	"matcha/internal/database"
 	"matcha/internal/services"
 )
@@ -565,6 +566,25 @@ func ChangePasswordAPI(w http.ResponseWriter, r *http.Request) {
 
 	SendSuccess(w, map[string]interface{}{
 		"message": "Password updated successfully",
+	})
+}
+
+// SendPasswordResetLinkAPI handles POST /api/profile/send-password-reset-link
+// Sends an email to the current user with a link to set a new password (e.g. /reset-password?token=...).
+func SendPasswordResetLinkAPI(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserIDFromRequest(r)
+	if err != nil {
+		SendError(w, http.StatusUnauthorized, "Invalid or missing authentication token")
+		return
+	}
+	cfg := config.Load()
+	if err := services.SendPasswordResetLinkForUser(userID, cfg); err != nil {
+		log.Printf("Error sending password reset link: %v", err)
+		SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	SendSuccess(w, map[string]interface{}{
+		"message": "If an account exists with this email, you will receive a reset link shortly.",
 	})
 }
 

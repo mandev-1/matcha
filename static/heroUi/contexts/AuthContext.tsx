@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types";
+import { setAuthCookie, clearAuthCookie } from "@/lib/authCookie";
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
     localStorage.setItem("token", newToken);
     localStorage.setItem("user", JSON.stringify(userData));
+    setAuthCookie(newToken);
   };
 
   const logout = () => {
@@ -32,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    clearAuthCookie();
   };
 
   const checkAuth = async () => {
@@ -72,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         setToken(storedToken);
         setUser(userData);
+        setAuthCookie(storedToken);
         // Optionally verify token is still valid
         checkAuth();
       } catch (err) {

@@ -328,8 +328,9 @@ func ForgotPasswordReset(resetToken, newPassword string) error {
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %v", err)
 	}
+	// Only update if token exists and is not expired (expires_at NULL = no expiry, e.g. from code flow)
 	res, err := database.DB.Exec(
-		"UPDATE users SET password_hash = ?, password_reset_token = NULL WHERE password_reset_token = ?",
+		"UPDATE users SET password_hash = ?, password_reset_token = NULL, password_reset_expires_at = NULL WHERE password_reset_token = ? AND (password_reset_expires_at IS NULL OR password_reset_expires_at > datetime('now'))",
 		hash, resetToken,
 	)
 	if err != nil {
@@ -338,6 +339,32 @@ func ForgotPasswordReset(resetToken, newPassword string) error {
 	n, _ := res.RowsAffected()
 	if n == 0 {
 		return fmt.Errorf("invalid or expired reset link")
+	}
+	return nil
+}
+
+// SendPasswordResetLinkForUser generates a reset token for the given user, stores it with expiry, and sends an email with the reset link. Used when the user is logged in (e.g. from Profile).
+func SendPasswordResetLinkForUser(userID int64, cfg *config.Config) error {
+	var email string
+	err := database.DB.QueryRow("SELECT email FROM users WHERE id = ?", userID).Scan(&email)
+	if err != nil || email == "" {
+		return fmt.Errorf("user not found")
+	}
+	resetToken, err := GenerateVerificationToken()
+	if err != nil {
+		return fmt.Errorf("failed to generate reset token: %v", err)
+	}
+	expires := time.Now().UTC().Add(15 * time.Minute)
+	_, err = database.DB.Exec(
+		"UPDATE users SET password_reset_code = NULL, password_reset_expires_at = ?, password_reset_token = ? WHERE id = ?",
+		expires, resetToken, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("database error: %v", err)
+	}
+	resetLink := strings.TrimSuffix(cfg.FrontendURL, "/") + "/reset-password?token=" + resetToken
+	if err := SendPasswordResetLink(cfg, email, resetLink); err != nil {
+		return err
 	}
 	return nil
 }

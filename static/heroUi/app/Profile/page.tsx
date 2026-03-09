@@ -58,12 +58,10 @@ export default function Component() {
 
   const editDrawerOverlay = useOverlayState({ defaultOpen: false });
   const resetModalOverlay = useOverlayState({ defaultOpen: false });
-  const passwordResetModalOverlay = useOverlayState({ defaultOpen: false });
   const locationModalOverlay = useOverlayState({ defaultOpen: false });
   const imageUploadModalOverlay = useOverlayState({ defaultOpen: false });
   const { isOpen, open: onOpen, setOpen: onOpenChange } = editDrawerOverlay;
   const { isOpen: isResetModalOpen, open: onResetModalOpen, setOpen: onResetModalOpenChange } = resetModalOverlay;
-  const { isOpen: isPasswordResetModalOpen, open: onPasswordResetModalOpen, setOpen: onPasswordResetModalOpenChange } = passwordResetModalOverlay;
   const { isOpen: isLocationModalOpen, open: onLocationModalOpen, setOpen: onLocationModalOpenChange } = locationModalOverlay;
   const { isOpen: isImageUploadModalOpen, open: onImageUploadModalOpen, setOpen: onImageUploadModalOpenChange } = imageUploadModalOverlay;
   const { user, logout } = useAuth();
@@ -121,12 +119,7 @@ export default function Component() {
   const [isResetting, setIsResetting] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
-  const [isResettingPassword, setIsResettingPassword] = React.useState(false);
-  const [newPassword, setNewPassword] = React.useState("");
-  const [confirmPassword, setConfirmPassword] = React.useState("");
-  const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = React.useState(false);
-  const [passwordError, setPasswordError] = React.useState("");
+  const [isSendingPasswordResetLink, setIsSendingPasswordResetLink] = React.useState(false);
   const [latitude, setLatitude] = React.useState<number | null>(null);
   const [longitude, setLongitude] = React.useState<number | null>(null);
   const [location, setLocation] = React.useState<string>("");
@@ -350,80 +343,36 @@ export default function Component() {
     }
   };
 
-  const handlePasswordReset = async (onClose: () => void) => {
-    // Validate passwords
-    if (newPassword !== confirmPassword) {
-      setPasswordError("Passwords do not match");
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setPasswordError("Password must be at least 8 characters long");
-      return;
-    }
-
-    // Check for common words (any language)
-    const commonWords = [
-      "password", "password123", "12345678", "123456789", "qwerty", "abc123",
-      "password1", "welcome", "monkey", "1234567", "letmein", "trustno1",
-      "dragon", "baseball", "iloveyou", "master", "sunshine", "ashley",
-      "bailey", "passw0rd", "shadow", "123123", "654321", "superman",
-      "qazwsx", "michael", "football", "jesus", "ninja",
-      "mustang", "princess", "qwerty123", "solo", "starwars",
-      "hello", "hello123", "welcome123", "admin", "admin123", "root",
-      "test", "test123", "guest", "user", "demo", "sample",
-      "пароль", "пароль123", "привет", "привет123", "админ", "админ123",
-      "йцукен", "пользователь", "тест", "тест123",
-      "contraseña", "contrasena", "contraseña123", "hola", "hola123",
-      "motdepasse", "motdepasse123", "bonjour", "bonjour123",
-      "passwort", "passwort123", "hallo", "hallo123",
-      "mima", "mima123", "pasuwaado",
-    ];
-
-    const lowerPassword = newPassword.toLowerCase();
-    const isCommon = commonWords.some(word => lowerPassword === word || lowerPassword.includes(word));
-    
-    if (isCommon && newPassword !== "Test1234") {
-      setPasswordError("Password cannot be a commonly used word");
-      return;
-    }
-
-    setIsResettingPassword(true);
-    setPasswordError("");
-
+  const handleSendPasswordResetLink = async () => {
+    setIsSendingPasswordResetLink(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(getApiUrl("/api/profile/change-password"), {
+      const response = await fetch(getApiUrl("/api/profile/send-password-reset-link"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          new_password: newPassword,
-        }),
       });
-
       const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to reset password");
+      if (response.ok && data.success) {
+        addToast({
+          title: "Reset link sent",
+          description: "Check your email for a link to set a new password. The link expires in 15 minutes.",
+          color: "success",
+        });
+      } else {
+        throw new Error(data.error || "Failed to send reset link");
       }
-
-      // Clear form and close modal
-      setNewPassword("");
-      setConfirmPassword("");
-      onClose();
-      addToast({
-        title: "Password reset successfully",
-        description: "Your password has been updated.",
-        color: "success",
-      });
     } catch (error) {
-      console.error("Error resetting password:", error);
-      setPasswordError(error instanceof Error ? error.message : "Failed to reset password. Please try again.");
+      console.error("Error sending password reset link:", error);
+      addToast({
+        title: "Could not send link",
+        description: error instanceof Error ? error.message : "Please try again later.",
+        color: "danger",
+      });
     } finally {
-      setIsResettingPassword(false);
+      setIsSendingPasswordResetLink(false);
     }
   };
 
@@ -533,7 +482,8 @@ export default function Component() {
             addTag={addTag}
             removeTag={removeTag}
             handleSave={handleSave}
-            onPasswordResetModalOpen={onPasswordResetModalOpen}
+            onPasswordResetModalOpen={handleSendPasswordResetLink}
+            isSendingPasswordResetLink={isSendingPasswordResetLink}
           />
         )}
         
@@ -788,73 +738,6 @@ export default function Component() {
             isPending={isResetting}
           >
             Yes, Reset Profile
-          </Button>
-        </ModalFooter>
-      </ModalCompat>
-
-      {/* Password Reset Modal */}
-      <ModalCompat
-        isOpen={isPasswordResetModalOpen}
-        onOpenChange={onPasswordResetModalOpenChange}
-        placement="center"
-      >
-        <ModalHeader className="flex flex-col gap-1">Reset Password</ModalHeader>
-        <ModalBody>
-          <TextField
-            isRequired
-            name="newPassword"
-            value={newPassword}
-            onChange={(v) => { setNewPassword(v); setPasswordError(""); }}
-            isInvalid={!!passwordError}
-          >
-            <Label>New Password</Label>
-            <InputGroup variant="secondary">
-              <InputGroup.Input
-                placeholder="Enter your new password"
-                type={isPasswordVisible ? "text" : "password"}
-              />
-              <InputGroup.Suffix>
-                <Button type="button" size="sm" variant="ghost" onPress={() => setIsPasswordVisible(!isPasswordVisible)} className="min-w-8 w-8 h-8 p-0">
-                  <Icon className="text-2xl text-default-400" icon={isPasswordVisible ? "solar:eye-closed-linear" : "solar:eye-bold"} />
-                </Button>
-              </InputGroup.Suffix>
-            </InputGroup>
-            {passwordError && <p className="text-sm text-danger mt-1">{passwordError}</p>}
-          </TextField>
-          <TextField
-            isRequired
-            name="confirmPassword"
-            value={confirmPassword}
-            onChange={(v) => { setConfirmPassword(v); setPasswordError(""); }}
-            isInvalid={!!newPassword && !!confirmPassword && newPassword !== confirmPassword}
-          >
-            <Label>Confirm Password</Label>
-            <InputGroup variant="secondary">
-              <InputGroup.Input
-                placeholder="Confirm your new password"
-                type={isConfirmPasswordVisible ? "text" : "password"}
-              />
-              <InputGroup.Suffix>
-                <Button type="button" size="sm" variant="ghost" onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)} className="min-w-8 w-8 h-8 p-0">
-                  <Icon className="text-2xl text-default-400" icon={isConfirmPasswordVisible ? "solar:eye-closed-linear" : "solar:eye-bold"} />
-                </Button>
-              </InputGroup.Suffix>
-            </InputGroup>
-            {newPassword && confirmPassword && newPassword !== confirmPassword && (
-              <p className="text-sm text-danger mt-1">Passwords do not match</p>
-            )}
-          </TextField>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="secondary" onPress={() => onPasswordResetModalOpenChange(false)} isDisabled={isResettingPassword}>
-            Cancel
-          </Button>
-          <Button
-            onPress={() => handlePasswordReset(() => onPasswordResetModalOpenChange(false))}
-            isPending={isResettingPassword}
-            className="bg-pink-500 text-white hover:bg-pink-600"
-          >
-            Reset Password
           </Button>
         </ModalFooter>
       </ModalCompat>

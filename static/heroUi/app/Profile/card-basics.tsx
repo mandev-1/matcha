@@ -60,6 +60,7 @@ interface CardBasicsProps {
   removeTag: (tag: string) => void;
   handleSave: (e: React.FormEvent) => void;
   onPasswordResetModalOpen: () => void;
+  isSendingPasswordResetLink?: boolean;
 }
 
 const radioCardClass = clsx(
@@ -99,6 +100,7 @@ export default function CardBasics({
   removeTag,
   handleSave,
   onPasswordResetModalOpen,
+  isSendingPasswordResetLink = false,
 }: CardBasicsProps) {
   const preferenceOptions = [
     { value: "male", title: "Men", description: "Interested in men" },
@@ -130,16 +132,16 @@ export default function CardBasics({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <TextField isRequired name="firstName" value={firstName} onChange={setFirstName}>
               <Label>First name</Label>
-              <Input variant="bordered" placeholder="First name" />
+              <Input variant="secondary" placeholder="First name" />
             </TextField>
             <TextField isRequired name="lastName" value={lastName} onChange={setLastName}>
               <Label>Last name</Label>
-              <Input variant="bordered" placeholder="Last name" />
+              <Input variant="secondary" placeholder="Last name" />
             </TextField>
           </div>
           <TextField isRequired name="email" type="email" value={email} onChange={setEmail}>
             <Label>Email</Label>
-            <Input variant="bordered" placeholder="Email" type="email" />
+            <Input variant="secondary" placeholder="Email" type="email" />
           </TextField>
         </section>
 
@@ -150,18 +152,18 @@ export default function CardBasics({
           </h2>
           <TextField name="username" value={user?.username ?? ""} isReadOnly>
             <Label>Username</Label>
-            <Input variant="bordered" readOnly />
+            <Input variant="secondary" readOnly />
             <Description>Username cannot be changed</Description>
           </TextField>
           <div className="flex flex-col gap-2">
             <Label>Password</Label>
             <div className="flex flex-wrap items-center gap-2">
-              <Input variant="bordered" type="password" value="••••••••" readOnly className="flex-1 min-w-0 max-w-xs" />
-              <Button type="button" variant="flat" size="sm" onPress={onPasswordResetModalOpen}>
+              <Input variant="secondary" type="password" value="••••••••" readOnly className="flex-1 min-w-0 max-w-xs" />
+              <Button type="button" variant="secondary" size="sm" onPress={onPasswordResetModalOpen} isPending={isSendingPasswordResetLink}>
                 Reset password
               </Button>
             </div>
-            <Description>Use the reset link to set a new password via email</Description>
+            <Description>We&apos;ll send a link to your email to set a new password</Description>
           </div>
         </section>
 
@@ -213,7 +215,7 @@ export default function CardBasics({
             <Label>About you</Label>
             <TextArea
               maxLength={250}
-              variant="bordered"
+              variant="secondary"
               placeholder="Short biography: where you're at in life, what matters to you..."
               className="min-h-[120px]"
             />
@@ -233,7 +235,7 @@ export default function CardBasics({
                 placeholder="e.g. #hiking #music"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
-                variant="bordered"
+                variant="secondary"
                 className="flex-1"
                 disabled={tags.length >= 5}
                 onKeyDown={(e) => {
@@ -243,7 +245,7 @@ export default function CardBasics({
                   }
                 }}
               />
-              <Button type="button" onPress={addTag} variant="flat" isDisabled={tags.length >= 5 || !tagInput.trim()}>
+              <Button type="button" onPress={addTag} variant="secondary" isDisabled={tags.length >= 5 || !tagInput.trim()}>
                 Add
               </Button>
             </div>
@@ -356,10 +358,10 @@ export default function CardBasics({
 
         {/* Actions */}
         <section className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-default-200">
-          <Button type="button" variant="flat" onPress={() => window.history.back()}>
+            <Button type="button" variant="secondary" onPress={() => window.history.back()}>
             Cancel
           </Button>
-          <Button type="submit" color="primary" isPending={isSaving}>
+          <Button type="submit" variant="secondary" isPending={isSaving}>
             Save changes
           </Button>
         </section>

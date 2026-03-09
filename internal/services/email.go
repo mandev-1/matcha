@@ -70,3 +70,32 @@ The Matcha Team
 	return nil
 }
 
+// SendPasswordResetLink sends an email with a link to reset the password
+func SendPasswordResetLink(cfg *config.Config, email, resetLink string) error {
+	addr := fmt.Sprintf("%s:%s", cfg.SMTPHost, cfg.SMTPPort)
+	var auth smtp.Auth
+	if cfg.SMTPUser != "" && cfg.SMTPPass != "" {
+		auth = smtp.PlainAuth("", cfg.SMTPUser, cfg.SMTPPass, cfg.SMTPHost)
+	}
+	to := []string{email}
+	subject := "Matcha – Reset your password"
+	body := fmt.Sprintf(`
+Hi,
+
+You requested to reset your password. Click the link below to choose a new password:
+
+%s
+
+This link expires in 15 minutes. If you didn't request a reset, please ignore this email.
+
+Best regards,
+The Matcha Team
+`, resetLink)
+	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s\r\n", email, subject, body))
+	err := smtp.SendMail(addr, auth, cfg.FromEmail, to, msg)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %v", err)
+	}
+	return nil
+}
+
