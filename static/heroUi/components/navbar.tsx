@@ -140,7 +140,7 @@ export const Navbar = () => {
               <Popover>
                 <PopoverTrigger>
                   <span
-                    className="rounded-full inline-flex cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-default-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className="rounded-full inline-flex focus:outline-none focus-visible:ring-2 focus-visible:ring-default-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     aria-label="Profile menu"
                     role="button"
                     tabIndex={0}
@@ -156,76 +156,70 @@ export const Navbar = () => {
                     </Avatar>
                   </span>
                 </PopoverTrigger>
-                <PopoverContent className="min-w-[12rem] p-0 border border-default-200 bg-content1 shadow-lg rounded-medium z-50 overflow-hidden">
-                  <div className="px-3 pt-3 pb-2 border-b border-default-200">
-                    <div className="flex items-center gap-2">
-                      <Avatar size="sm">
-                        <Avatar.Image
-                          alt={user?.username ?? "User"}
-                          src={DEFAULT_AVATAR}
-                        />
-                        <Avatar.Fallback delayMs={600}>
-                          {user ? getInitials(user.username) : "?"}
-                        </Avatar.Fallback>
-                      </Avatar>
-                      <div className="flex flex-col gap-0 min-w-0">
-                        <p className="text-sm leading-5 font-medium truncate">
-                          {user?.username ?? "User"}
-                        </p>
-                        {user?.email && (
-                          <p className="text-xs leading-none text-default-500 truncate">
-                            {user.email}
+                <PopoverContent className="min-w-[12rem] p-0 border border-default-200 bg-content1 shadow-lg rounded-medium z-[100] overflow-hidden">
+                  <div className="profile-menu-content flex flex-col w-full">
+                    <div className="px-3 pt-3 pb-2 border-b border-default-200">
+                      <div className="flex items-center gap-2">
+                        <Avatar size="sm">
+                          <Avatar.Image
+                            alt={user?.username ?? "User"}
+                            src={DEFAULT_AVATAR}
+                          />
+                          <Avatar.Fallback delayMs={600}>
+                            {user ? getInitials(user.username) : "?"}
+                          </Avatar.Fallback>
+                        </Avatar>
+                        <div className="flex flex-col gap-0 min-w-0">
+                          <p className="text-sm leading-5 font-medium truncate">
+                            {user?.username ?? "User"}
                           </p>
-                        )}
+                          {user?.email && (
+                            <p className="text-xs leading-none text-default-500 truncate">
+                              {user.email}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <nav className="py-1" aria-label="Profile menu">
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left bg-transparent hover:bg-default-200 cursor-pointer rounded-none outline-none transition-colors"
+                        onClick={() => router.push("/Profile")}
+                      >
+                        <Icon icon="solar:user-linear" className="text-default-500" width={18} />
+                        My Profile
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left bg-transparent hover:bg-default-200 cursor-pointer rounded-none outline-none transition-colors"
+                        onClick={() => setTheme((theme ?? "dark") === "light" ? "dark" : "light")}
+                      >
+                        {(theme ?? "dark") === "dark" ? (
+                          <Icon icon="solar:sun-linear" className="text-default-500" width={18} />
+                        ) : (
+                          <Icon icon="solar:moon-linear" className="text-default-500" width={18} />
+                        )}
+                        Toggle Dark Mode
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left bg-transparent hover:bg-default-200 cursor-pointer rounded-none outline-none transition-colors"
+                        onClick={openHelpDrawer}
+                      >
+                        <Icon icon="solar:question-circle-linear" className="text-default-500" width={18} />
+                        Help
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left bg-transparent hover:bg-default-200 hover:text-danger text-danger cursor-pointer rounded-none outline-none transition-colors"
+                        onClick={handleLogout}
+                      >
+                        <Icon icon="solar:logout-2-linear" width={18} />
+                        Logout
+                      </button>
+                    </nav>
                   </div>
-                  <nav className="py-1" aria-label="Profile menu">
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-default-100 rounded-none outline-none"
-                      onClick={() => router.push("/Profile")}
-                    >
-                      <Icon icon="solar:user-linear" className="text-default-500" width={18} />
-                      My Profile
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-default-100 rounded-none outline-none"
-                      onClick={() => setTheme((theme ?? "dark") === "light" ? "dark" : "light")}
-                    >
-                      {(theme ?? "dark") === "dark" ? (
-                        <Icon icon="solar:sun-linear" className="text-default-500" width={18} />
-                      ) : (
-                        <Icon icon="solar:moon-linear" className="text-default-500" width={18} />
-                      )}
-                      Toggle Dark Mode
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-default-100 rounded-none outline-none"
-                      onClick={openHelpDrawer}
-                    >
-                      <Icon icon="solar:question-circle-linear" className="text-default-500" width={18} />
-                      Help
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-default-100 rounded-none outline-none text-pink-500"
-                      onClick={() => router.push("/matcha")}
-                    >
-                      <HeartFilledIcon className="text-danger" />
-                      Find Love
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-danger-50 hover:text-danger text-danger rounded-none outline-none"
-                      onClick={handleLogout}
-                    >
-                      <Icon icon="solar:logout-2-linear" width={18} />
-                      Logout
-                    </button>
-                  </nav>
                 </PopoverContent>
               </Popover>
               <Link href="/matcha" className="inline-flex shrink-0 items-center gap-1.5 min-h-9 px-3 py-2 rounded-lg text-sm font-normal text-white bg-pink-500 hover:bg-pink-600 whitespace-nowrap">

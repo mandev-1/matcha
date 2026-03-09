@@ -51,8 +51,8 @@ export function ModalCompat({
         isKeyboardDismissDisabled={!isDismissable}
         className={classNames?.base}
       >
-        <Modal.Container placement={placementProp} size={size}>
-          <Modal.Dialog className={classNames?.base}>
+        <Modal.Container placement={placementProp} size={size} className="relative z-10  [&>*]:pointer-events-auto">
+          <Modal.Dialog className={classNames?.base ? `${classNames.base} pointer-events-auto` : "pointer-events-auto"}>
             {children}
           </Modal.Dialog>
         </Modal.Container>

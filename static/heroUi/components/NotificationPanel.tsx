@@ -125,12 +125,23 @@ export function NotificationPanel() {
     <AnimatePresence mode="wait">
       {isOpen && (
         <LazyMotion features={domAnimation} strict>
+          {/* Backdrop: mobile only, when panel is expanded — hidden on desktop and when not expanded */}
+          <m.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[9998] md:hidden bg-black/40"
+            aria-hidden
+            onClick={() => setIsOpen(false)}
+            onKeyDown={(e) => e.key === "Escape" && setIsOpen(false)}
+          />
           <m.aside
             initial={{ x: "100%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
             transition={{ type: "tween", duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
-            className="fixed top-0 left-0 right-0 bottom-16 md:relative md:inset-auto md:bottom-auto z-40 md:z-auto w-full md:w-80 md:min-w-[280px] border-l border-default-200 dark:border-default-100 bg-content1 flex flex-col h-full md:h-full shrink-0 shadow-xl md:shadow-none"
+            className="fixed top-0 left-0 right-0 bottom-16 md:relative md:inset-auto md:bottom-auto z-[9999] md:z-auto w-full md:w-80 md:min-w-[280px] border-l border-default-200 dark:border-default-100 bg-white/80 dark:bg-default-100/75 backdrop-blur-2xl md:bg-content1 md:backdrop-blur-none flex flex-col h-full md:h-full shrink-0 shadow-xl md:shadow-none"
             aria-label="Notifications"
           >
       <div className="p-3 border-b border-default-200 dark:border-default-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

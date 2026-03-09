@@ -7,6 +7,19 @@
 @theme {
     --font-sans: "font", sans-serif;
     --font-mono: "monospace", monospace;
+
+    /* Override HeroUI "default" palette (used by bg-default-*, text-default-*, border-default-*, etc.).
+       Uncomment and set values to customize. Tailwind v4 maps these to utilities like bg-default-200. */
+    /* --color-default-50: ...; */
+    /* --color-default-100: ...; */
+    --color-default-200: #e0e0e1;
+    /* --color-default-300: ...; */
+    /* --color-default-400: ...; */
+    /* --color-default-500: ...; */
+    /* --color-default-600: ...; */
+    /* --color-default-700: ...; */
+    /* --color-default-800: ...; */
+    /* --color-default-900: ...; */
 }
 
 /* Dark mode: off-black background instead of pure black (#121214 = zinc-950-ish) */
