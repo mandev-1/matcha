@@ -567,6 +567,11 @@ export default function UserProfilePage() {
                     {profile.location}
                   </span>
                 )}
+                {/* Fame Rating */}
+                <span className="flex items-center gap-1">
+                  <Icon icon="solar:star-bold" className="text-yellow-400 text-base" />
+                  Fame rating: <span className="font-semibold text-foreground">{profile.fame_rating.toFixed(1)}</span>
+                </span>
               </div>
             </div>
 
