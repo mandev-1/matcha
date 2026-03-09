@@ -190,6 +190,73 @@ func VerifyEmailAPI(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// ForgotPasswordSendCodeRequest for POST /api/forgot-password/send-code
+type ForgotPasswordSendCodeRequest struct {
+	Email string `json:"email"`
+}
+
+// ForgotPasswordVerifyRequest for POST /api/forgot-password/verify
+type ForgotPasswordVerifyRequest struct {
+	Email string `json:"email"`
+	Code  string `json:"code"`
+}
+
+// ForgotPasswordResetRequest for POST /api/forgot-password/reset
+type ForgotPasswordResetRequest struct {
+	ResetToken   string `json:"reset_token"`
+	NewPassword  string `json:"new_password"`
+}
+
+// ForgotPasswordSendCodeAPI handles POST /api/forgot-password/send-code
+func ForgotPasswordSendCodeAPI(w http.ResponseWriter, r *http.Request) {
+	var req ForgotPasswordSendCodeRequest
+	if err := ParseJSONBody(r, &req); err != nil {
+		SendError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	cfg := config.Load()
+	if err := services.ForgotPasswordSendCode(req.Email, cfg); err != nil {
+		msg := err.Error()
+		if msg == "no account found with this email" {
+			// Don't reveal whether email exists
+			SendSuccess(w, map[string]interface{}{"message": "If an account exists with this email, you will receive a code shortly."})
+			return
+		}
+		SendError(w, http.StatusBadRequest, msg)
+		return
+	}
+	SendSuccess(w, map[string]interface{}{"message": "If an account exists with this email, you will receive a code shortly."})
+}
+
+// ForgotPasswordVerifyAPI handles POST /api/forgot-password/verify
+func ForgotPasswordVerifyAPI(w http.ResponseWriter, r *http.Request) {
+	var req ForgotPasswordVerifyRequest
+	if err := ParseJSONBody(r, &req); err != nil {
+		SendError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	resetToken, err := services.ForgotPasswordVerify(req.Email, req.Code)
+	if err != nil {
+		SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	SendSuccess(w, map[string]interface{}{"reset_token": resetToken})
+}
+
+// ForgotPasswordResetAPI handles POST /api/forgot-password/reset
+func ForgotPasswordResetAPI(w http.ResponseWriter, r *http.Request) {
+	var req ForgotPasswordResetRequest
+	if err := ParseJSONBody(r, &req); err != nil {
+		SendError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+	if err := services.ForgotPasswordReset(req.ResetToken, req.NewPassword); err != nil {
+		SendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	SendSuccess(w, map[string]interface{}{"message": "Password has been reset. You can now log in."})
+}
+
 // LogoutAPI handles logout API endpoint
 func LogoutAPI(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from token to update online status

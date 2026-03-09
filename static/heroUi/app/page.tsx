@@ -13,9 +13,10 @@ export default function Home() {
   useEffect(() => {
     // Only redirect if we're actually on the root path
     if (pathname === "/" && isAuthenticated) {
-      // If logged in but not set up, go to runway
       if (user && !user.is_setup) {
         router.push("/runway");
+      } else if (user?.is_setup) {
+        router.push("/discover");
       }
     }
   }, [pathname, isAuthenticated, user, router]);

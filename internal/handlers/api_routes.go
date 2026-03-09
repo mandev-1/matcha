@@ -20,6 +20,9 @@ func SetupAPIRoutes(mux *goji.Mux) {
 	mux.HandleFunc(pat.Post("/api/logout"), LogoutAPI)
 	mux.HandleFunc(pat.Get("/api/verify-email"), VerifyEmailAPI)
 	mux.HandleFunc(pat.Post("/api/resend-verification"), ResendVerificationAPI)
+	mux.HandleFunc(pat.Post("/api/forgot-password/send-code"), ForgotPasswordSendCodeAPI)
+	mux.HandleFunc(pat.Post("/api/forgot-password/verify"), ForgotPasswordVerifyAPI)
+	mux.HandleFunc(pat.Post("/api/forgot-password/reset"), ForgotPasswordResetAPI)
 
 	// Profile API
 	mux.HandleFunc(pat.Get("/api/profile"), ProfileAPI)

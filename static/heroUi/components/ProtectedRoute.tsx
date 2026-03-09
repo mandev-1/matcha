@@ -50,7 +50,7 @@ export function ProtectedRoute({
   }
 
   if (isAuthenticated && redirectIfAuth) {
-    return null; // Redirecting to runway or matcha
+    return null; // Redirecting to runway or discover
   }
 
   return <>{children}</>;

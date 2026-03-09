@@ -232,3 +232,113 @@ func ResendVerificationEmail(username string, cfg *config.Config) error {
 	return nil
 }
 
+// GeneratePasswordResetCode returns a 6-digit numeric code
+func GeneratePasswordResetCode() (string, error) {
+	b := make([]byte, 3)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	n := uint32(b[0])<<16 | uint32(b[1])<<8 | uint32(b[2])
+	return fmt.Sprintf("%06d", n%1000000), nil
+}
+
+// ForgotPasswordSendCode looks up user by email, generates a 6-digit code, stores it with 15min expiry, and sends email
+func ForgotPasswordSendCode(email string, cfg *config.Config) error {
+	email = strings.TrimSpace(strings.ToLower(email))
+	if email == "" {
+		return fmt.Errorf("email is required")
+	}
+	var userID int64
+	err := database.DB.QueryRow("SELECT id FROM users WHERE email = ?", email).Scan(&userID)
+	if err != nil {
+		return fmt.Errorf("no account found with this email")
+	}
+	code, err := GeneratePasswordResetCode()
+	if err != nil {
+		return fmt.Errorf("failed to generate code: %v", err)
+	}
+	expires := time.Now().UTC().Add(15 * time.Minute)
+	_, err = database.DB.Exec(
+		"UPDATE users SET password_reset_code = ?, password_reset_expires_at = ?, password_reset_token = NULL WHERE id = ?",
+		code, expires, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("database error: %v", err)
+	}
+	if err := SendPasswordResetCode(cfg, email, code); err != nil {
+		return fmt.Errorf("failed to send email: %v", err)
+	}
+	return nil
+}
+
+// ForgotPasswordVerify verifies the 6-digit code for the given email; on success returns a reset token
+func ForgotPasswordVerify(email, code string) (resetToken string, err error) {
+	email = strings.TrimSpace(strings.ToLower(email))
+	code = strings.TrimSpace(code)
+	if email == "" || code == "" {
+		return "", fmt.Errorf("email and code are required")
+	}
+	if len(code) != 6 {
+		return "", fmt.Errorf("code must be 6 digits")
+	}
+	var userID int64
+	var storedCode string
+	var expires *time.Time
+	err = database.DB.QueryRow(
+		"SELECT id, password_reset_code, password_reset_expires_at FROM users WHERE email = ?",
+		email,
+	).Scan(&userID, &storedCode, &expires)
+	if err != nil || storedCode == "" {
+		return "", fmt.Errorf("invalid or expired code")
+	}
+	if expires != nil && time.Now().UTC().After(*expires) {
+		_, _ = database.DB.Exec("UPDATE users SET password_reset_code = NULL, password_reset_expires_at = NULL WHERE id = ?", userID)
+		return "", fmt.Errorf("code has expired")
+	}
+	if storedCode != code {
+		return "", fmt.Errorf("invalid code")
+	}
+	resetToken, err = GenerateVerificationToken()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate reset token: %v", err)
+	}
+	_, err = database.DB.Exec(
+		"UPDATE users SET password_reset_code = NULL, password_reset_expires_at = NULL, password_reset_token = ? WHERE id = ?",
+		resetToken, userID,
+	)
+	if err != nil {
+		return "", fmt.Errorf("database error: %v", err)
+	}
+	return resetToken, nil
+}
+
+// ForgotPasswordReset sets a new password using the reset token, then clears the token
+func ForgotPasswordReset(resetToken, newPassword string) error {
+	resetToken = strings.TrimSpace(resetToken)
+	if resetToken == "" || newPassword == "" {
+		return fmt.Errorf("reset token and new password are required")
+	}
+	if len(newPassword) < 8 {
+		return fmt.Errorf("password must be at least 8 characters")
+	}
+	if IsCommonWord(newPassword) {
+		return fmt.Errorf("password cannot be a commonly used word")
+	}
+	hash, err := HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %v", err)
+	}
+	res, err := database.DB.Exec(
+		"UPDATE users SET password_hash = ?, password_reset_token = NULL WHERE password_reset_token = ?",
+		hash, resetToken,
+	)
+	if err != nil {
+		return fmt.Errorf("database error: %v", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("invalid or expired reset link")
+	}
+	return nil
+}
+

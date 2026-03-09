@@ -126,7 +126,7 @@ export default function Component() {
   };
 
   return (
-    <ProtectedRoute redirectIfAuth="/matcha">
+    <ProtectedRoute redirectIfAuth="/discover">
       <div className="flex h-full w-full items-center justify-center">
       <div className="rounded-large flex w-full max-w-sm flex-col gap-4 px-8 pt-6 pb-10">
         <p className="text-left text-3xl font-semibold text-pink-500">

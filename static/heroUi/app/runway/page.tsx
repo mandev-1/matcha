@@ -145,7 +145,7 @@ export default function RunwayPage() {
         if (user && token) {
           login(token, { ...user, is_setup: true });
         }
-        router.push("/matcha");
+        router.push("/discover");
       } else {
         addToast({
           title: "Setup failed",

@@ -336,7 +336,7 @@ export default function ChatPage() {
               className="bg-warning text-warning-foreground"
               onPress={() => {
                 setShowBlockDialog(false);
-                router.push("/matcha");
+                router.push("/discover");
               }}
             >
               OK

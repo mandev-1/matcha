@@ -49,7 +49,7 @@ export const Navbar = () => {
         <div className="flex shrink-0 min-w-0 overflow-hidden">
           <NextLink
             className="flex justify-start items-center gap-1"
-            href={isAuthenticated && user ? (user.is_setup ? "/matcha" : "/runway") : "/"}
+            href={isAuthenticated && user ? (user.is_setup ? "/discover" : "/runway") : "/"}
           >
             <Logo size={120} height={40} className="w-20 h-7 sm:w-24 sm:h-8 md:w-[120px] md:h-10" />
           </NextLink>
@@ -111,7 +111,7 @@ export const Navbar = () => {
                   <DropdownSection>
                     <DropdownItem
                       key="find-love"
-                      onPress={() => router.push("/matcha")}
+                      onPress={() => router.push("/discover")}
                       className="text-pink-500"
                     >
                       <HeartFilledIcon className="text-danger mr-2" />
@@ -222,7 +222,7 @@ export const Navbar = () => {
                   </div>
                 </PopoverContent>
               </Popover>
-              <Link href="/matcha" className="inline-flex shrink-0 items-center gap-1.5 min-h-9 px-3 py-2 rounded-lg text-sm font-normal text-white bg-pink-500 hover:bg-pink-600 whitespace-nowrap">
+              <Link href="/discover" className="inline-flex shrink-0 items-center gap-1.5 min-h-9 px-3 py-2 rounded-lg text-sm font-normal text-white bg-pink-500 hover:bg-pink-600 whitespace-nowrap">
                 <HeartFilledIcon className="text-white shrink-0" />
                 Find Love
               </Link>

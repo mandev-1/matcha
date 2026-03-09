@@ -172,6 +172,7 @@ run-migrations:
 	@sqlite3 data/matcha.db < migrations/add_notifications_related_user_id.sql 2>/dev/null && echo "  add_notifications_related_user_id.sql" || true
 	@sqlite3 data/matcha.db < migrations/add_bot_activity_log.sql && echo "  add_bot_activity_log.sql"
 	@sqlite3 data/matcha.db < migrations/remove_set_up_column.sql 2>/dev/null && echo "  remove_set_up_column.sql" || true
+	@sqlite3 data/matcha.db < migrations/add_password_reset.sql 2>/dev/null && echo "  add_password_reset.sql" || true
 	@echo "Migrations complete."
 
 # Add related_user_id to notifications (run once if you see "table notifications has no column named related_user_id")

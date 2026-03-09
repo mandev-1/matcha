@@ -43,3 +43,30 @@ The Matcha Team
 	return nil
 }
 
+// SendPasswordResetCode sends a 6-digit code to the user's email for password reset
+func SendPasswordResetCode(cfg *config.Config, email, code string) error {
+	addr := fmt.Sprintf("%s:%s", cfg.SMTPHost, cfg.SMTPPort)
+	var auth smtp.Auth
+	if cfg.SMTPUser != "" && cfg.SMTPPass != "" {
+		auth = smtp.PlainAuth("", cfg.SMTPUser, cfg.SMTPPass, cfg.SMTPHost)
+	}
+	to := []string{email}
+	subject := "Matcha – Your password reset code"
+	body := fmt.Sprintf(`
+Hi,
+
+Your password reset code is: %s
+
+This code expires in 15 minutes. If you didn't request a reset, please ignore this email.
+
+Best regards,
+The Matcha Team
+`, code)
+	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s\r\n", email, subject, body))
+	err := smtp.SendMail(addr, auth, cfg.FromEmail, to, msg)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %v", err)
+	}
+	return nil
+}
+

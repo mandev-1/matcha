@@ -108,7 +108,7 @@ function LoginContent() {
         if (data.data?.user?.is_setup === false || data.data?.user?.is_setup === 0) {
           router.push("/runway");
         } else {
-          router.push("/matcha");
+          router.push("/discover");
         }
       } else {
         setError(data.error || "Login failed");
@@ -122,7 +122,7 @@ function LoginContent() {
   };
 
   return (
-    <ProtectedRoute redirectIfAuth="/matcha">
+    <ProtectedRoute redirectIfAuth="/discover">
       <div className="flex min-h-[80vh] w-full items-center justify-center py-8">
       <div className="rounded-large flex w-full max-w-sm flex-col gap-4 px-8 pt-6 pb-10">
         <p className="text-left text-3xl font-semibold">
@@ -212,7 +212,10 @@ function LoginContent() {
           </TextField>
           <div className="flex w-full items-center justify-between px-1 py-2">
             <Checkbox defaultSelected name="remember">
-              Remember me
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              <Checkbox.Content>Remember me</Checkbox.Content>
             </Checkbox>
             <Link className="text-default-500" href="/forgot-password">
               Forgot password?
